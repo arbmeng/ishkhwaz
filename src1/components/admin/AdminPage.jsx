@@ -164,7 +164,7 @@ const parseFeaturesText = (text) => (text || '').split('\n').map(l => l.trim()).
 
 export const AdminPage = ({ onBack }) => {
   const { user, token } = useAuth();
-  const { jobs = [], deleteJob, addToast, settings = {}, syncBackendData } = useStore();
+  const { jobs = [], setJobs, deleteJob, addToast, settings = {}, syncBackendData } = useStore();
   const isAdmin = !!user && (user.role === 'admin' || user.role === 'owner');
 
   const [tab, setTab] = useState('users');
@@ -358,12 +358,25 @@ export const AdminPage = ({ onBack }) => {
   const handleApproveJob = async (id) => {
     soundService.playSuccess?.();
     const res = await apiService.approveJob(id, token);
-    if (res?.success) { addToast?.({ title: 'پەسەندکرا ✓', message: 'کارەکە ئێستا بۆ هەموو کاندیدەکان دیارە.', type: 'success' }); syncBackendData?.(); }
+    if (res?.success) {
+      // Patch locally right away — a full syncBackendData() refetch (7
+      // concurrent calls) can take several seconds, and on the shared host
+      // sometimes longer, which made a genuinely successful approve look
+      // like nothing happened. syncBackendData still runs after, to
+      // reconcile with the server.
+      setJobs?.(prev => prev.map(j => String(j.id) === String(id) ? { ...j, status: 'active' } : j));
+      addToast?.({ title: 'پەسەندکرا ✓', message: 'کارەکە ئێستا بۆ هەموو کاندیدەکان دیارە.', type: 'success' });
+      syncBackendData?.();
+    }
   };
   const handleRejectJob = async (id) => {
     soundService.playTick?.();
     const res = await apiService.rejectJob(id, '', token);
-    if (res?.success) { addToast?.({ title: 'ڕەتکرایەوە', message: 'کارەکە ڕەتکرایەوە.', type: 'info' }); syncBackendData?.(); }
+    if (res?.success) {
+      setJobs?.(prev => prev.map(j => String(j.id) === String(id) ? { ...j, status: 'rejected' } : j));
+      addToast?.({ title: 'ڕەتکرایەوە', message: 'کارەکە ڕەتکرایەوە.', type: 'info' });
+      syncBackendData?.();
+    }
   };
 
   if (!isAdmin) {
