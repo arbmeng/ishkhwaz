@@ -9,6 +9,25 @@ const adminHeaders = (token = '') => ({
   ...(token ? { 'Authorization': `Bearer ${token}` } : {})
 });
 
+// A handful of GET calls fire together in one Promise.all burst on every
+// app load (see StoreContext.syncBackendData) — on the shared MySQL host
+// this occasionally exceeds its connection ceiling and one or two of them
+// come back "Database unavailable" even though the data is fine moments
+// later. One retry after a short delay absorbs that without ever blocking
+// the UI further than the existing safe-fallback behavior already does.
+const fetchJsonRetry = async (url, options, retries = 1) => {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      if (res.ok) return await res.json();
+      if (attempt >= retries) throw new Error(`Request failed: ${res.status}`);
+    } catch (e) {
+      if (attempt >= retries) throw e;
+    }
+    await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+  }
+};
+
 export const checkBackendHealth = async () => {
   try {
     const response = await fetch(`${API_BASE_URL}/health`, { method: 'GET' });
@@ -149,9 +168,7 @@ export const apiService = {
 
   async getCategories() {
     try {
-      const res = await fetch(`${API_BASE_URL}/categories`);
-      if (!res.ok) throw new Error('Failed to fetch categories');
-      const data = await res.json();
+      const data = await fetchJsonRetry(`${API_BASE_URL}/categories`);
       return data.categories || [];
     } catch (e) {
       return [];
@@ -160,9 +177,7 @@ export const apiService = {
 
   async getSettings() {
     try {
-      const res = await fetch(`${API_BASE_URL}/settings`);
-      if (!res.ok) throw new Error('Failed to fetch settings');
-      const data = await res.json();
+      const data = await fetchJsonRetry(`${API_BASE_URL}/settings`);
       return data.settings || {};
     } catch (e) {
       return {};
@@ -185,9 +200,7 @@ export const apiService = {
 
   async getFreelancers() {
     try {
-      const res = await fetch(`${API_BASE_URL}/freelancers`);
-      if (!res.ok) throw new Error('Failed to fetch freelancers');
-      const data = await res.json();
+      const data = await fetchJsonRetry(`${API_BASE_URL}/freelancers`);
       return data.freelancers || [];
     } catch (e) {
       return [];
@@ -196,11 +209,9 @@ export const apiService = {
 
   async getNotifications(token) {
     try {
-      const res = await fetch(`${API_BASE_URL}/notifications`, {
+      const data = await fetchJsonRetry(`${API_BASE_URL}/notifications`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
-      if (!res.ok) throw new Error('Failed to fetch notifications');
-      const data = await res.json();
       return data.notifications || [];
     } catch (e) {
       return [];
@@ -261,9 +272,7 @@ export const apiService = {
     try {
       const query = new URLSearchParams(params).toString();
       const url = query ? `${API_BASE_URL}/jobs?${query}` : `${API_BASE_URL}/jobs`;
-      const res = await fetch(url, token ? { headers: { 'Authorization': `Bearer ${token}` } } : undefined);
-      if (!res.ok) throw new Error('Failed to fetch jobs');
-      const data = await res.json();
+      const data = await fetchJsonRetry(url, token ? { headers: { 'Authorization': `Bearer ${token}` } } : undefined);
       return data.jobs || data;
     } catch (e) {
       return [];
@@ -501,11 +510,9 @@ export const apiService = {
 
   async getApplications(token) {
     try {
-      const res = await fetch(`${API_BASE_URL}/applications`, {
+      const data = await fetchJsonRetry(`${API_BASE_URL}/applications`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-      if (!res.ok) throw new Error('Failed to fetch applications');
-      const data = await res.json();
       return data.applications || [];
     } catch (e) {
       return [];
@@ -556,8 +563,7 @@ export const apiService = {
   // someone actually buying one of these tiers, not the tiers themselves.
   async getPlanTiers() {
     try {
-      const res = await fetch(`${API_BASE_URL}/plans`);
-      const data = await res.json();
+      const data = await fetchJsonRetry(`${API_BASE_URL}/plans`);
       return data.plans || [];
     } catch (e) {
       return [];
