@@ -228,8 +228,11 @@ export const UserProfilePage = ({ onNavigate }) => {
   const displayAvatar = avatar     || user?.avatar || user?.company_logo || '';
   const initial       = displayName.trim().charAt(0) || (isEmployer ? 'ک' : 'ئ');
   const joinYear      = user?.created_at ? new Date(user.created_at).getFullYear() : null;
-  const isVIP         = user?.plan && user.plan !== 'free';
   const userPlanTier  = planTiers.find(t => t.id === user?.plan);
+  // The free tier's real id is a generated string (e.g. "_fc74"), never the
+  // literal "free" — comparing against that literal meant every user (auto-
+  // assigned the free plan at signup) showed a VIP badge on their own profile.
+  const isVIP         = !!userPlanTier && Number(userPlanTier.price) > 0;
   const planAccent    = userPlanTier ? (getPlanColor(userPlanTier.color).gradient || getPlanColor(userPlanTier.color).accent) : TEAL;
 
   const completion = useMemo(() => {
