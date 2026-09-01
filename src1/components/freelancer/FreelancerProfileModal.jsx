@@ -76,7 +76,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
   const isVerified  = Number(freelancer.verified) === 1 || Boolean(freelancer.verified);
   const isBoosted   = Boolean(freelancer.plan_boost_until && new Date(freelancer.plan_boost_until) > new Date());
   const govDisplay  = GOV_LABELS[gov] || gov || 'سلێمانی';
-  const profession  = freelancer.profession || freelancer.title || freelancer.role || null;
+  const profession  = freelancer.profession || freelancer.title || null;
 
   const tier = planTiers.find(t => t.id === freelancer.plan);
   const hasPaidPlan = tier && Number(tier.price) > 0;
