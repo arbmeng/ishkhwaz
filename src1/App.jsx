@@ -16,7 +16,6 @@ import { ConnectAuthorizePage } from './components/auth/ConnectAuthorizePage';
 import { AuthModal } from './components/auth/AuthModal';
 import { AccountBlockedModal } from './components/auth/AccountBlockedModal';
 import { PostJobPage } from './components/employer/PostJobPage';
-import { CVBuilderPage } from './components/freelancer/CVBuilderPage';
 import { KarnamaCVPage } from './components/freelancer/KarnamaCVPage';
 import { KarnamaTemplatePicker } from './components/freelancer/KarnamaTemplatePicker';
 import { InstallPage } from './components/pwa/InstallPage';
@@ -83,7 +82,7 @@ function MainAppContent() {
       if (target === 'profile' || target === 'user') return 'profile';
       if (target === 'dashboard' || target === 'my-company-dashboard' || target === 'company-dashboard' || target === 'my_company_dashboard') return 'my_company_dashboard';
       if (target === 'wallet' || target === 'plans' || target === 'upgrade') return 'plans';
-      if (target === 'cv' || target === 'build-cv' || target === 'cv_builder') return 'cv_builder';
+      if (target === 'cv' || target === 'build-cv' || target === 'cv_builder' || target === 'karnama_cv') return 'karnama_cv';
       if (target === 'install') return 'install_app';
       if (target === 'admin') return 'admin';
       if (target === 'how-it-works' || target === 'how_it_works' || target === 'guide') return 'how_it_works';
@@ -140,7 +139,7 @@ function MainAppContent() {
       else if (tabId === 'plans') path = '/plans';
       else if (tabId === 'home') path = '/';
       else if (tabId === 'post_job') path = '/post-job';
-      else if (tabId === 'cv_builder') path = '/cv';
+      else if (tabId === 'karnama_cv') path = '/cv';
       else if (tabId === 'install_app') path = '/install';
       else if (tabId === 'admin') path = '/admin';
       else if (tabId === 'how_it_works') path = '/how-it-works';
@@ -261,20 +260,10 @@ function MainAppContent() {
       );
     }
 
-    if (activeTab === 'cv_builder') {
-      return (
-        <CVBuilderPage
-          onBack={() => setActiveTab('home')}
-          onSuccess={() => setActiveTab('profile')}
-          onOpenKarnama={() => setActiveTab('karnama_cv')}
-        />
-      );
-    }
-
     if (activeTab === 'karnama_cv') {
       return (
         <KarnamaCVPage
-          onBack={() => setActiveTab('cv_builder')}
+          onBack={() => setActiveTab('profile')}
           onProceed={(resume) => { setPendingKarnamaResume(resume); setActiveTab('karnama_templates'); }}
         />
       );
