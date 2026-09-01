@@ -553,6 +553,7 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
                 <ResultRow
                   key={free.id}
                   accent={theme.accent}
+                  onAccent={theme.onAccent}
                   fire={isVip}
                   delay={i}
                   photoSrc={free.avatar}
@@ -690,7 +691,7 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
 // circular avatar sitting at the card's far edge.
 const ResultRow = ({
   photoSrc, photoSeed, name, verified, badges = [],
-  location, description, tags = [], fire = false,
+  location, description, tags = [], fire = false, accent = TEAL, onAccent = '#fff',
   secondaryLabel, secondaryIcon: SecondaryIcon, secondaryActive, onSecondary,
   onClick, delay = 0,
 }) => {
@@ -701,13 +702,13 @@ const ResultRow = ({
       onClick={onClick}
       style={{
         animationDelay: `${Math.min(delay, 8) * 40}ms`,
-        ...(fire ? { background: TEAL_SOFT, border: `1px solid ${TEAL}55` } : {}),
+        ...(fire ? { background: `${accent}15`, border: `1px solid ${accent}55` } : {}),
       }}
       className={`animate-fadeIn flex gap-3 p-4 rounded-3xl cursor-pointer transition-all duration-300 hover:-translate-y-0.5 ${
         fire ? '' : 'bg-white shadow-[0_2px_16px_rgba(0,0,0,0.05)] hover:shadow-[0_10px_28px_rgba(0,0,0,0.1)]'
       }`}
     >
-      <div className="w-12 h-12 shrink-0 rounded-full overflow-hidden" style={{ boxShadow: fire ? `0 0 0 2px ${TEAL}` : '0 0 0 1px #eeeeee' }}>
+      <div className="w-12 h-12 shrink-0 rounded-full overflow-hidden" style={{ boxShadow: fire ? `0 0 0 2px ${accent}` : '0 0 0 1px #eeeeee' }}>
         {photoSrc ? <img src={photoSrc} alt="" className="w-full h-full object-cover" /> : <Monogram name={photoSeed} className="w-full h-full" />}
       </div>
 
@@ -715,7 +716,7 @@ const ResultRow = ({
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex flex-wrap items-center gap-1.5">
             {fire && (
-              <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black text-white" style={{ background: TEAL }}>
+              <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black" style={{ background: accent, color: onAccent }}>
                 <Crown className="w-3 h-3" />VIP
               </span>
             )}
