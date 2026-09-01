@@ -1081,7 +1081,18 @@ $pdo->exec("
     sort_order INT DEFAULT 0,
     is_active TINYINT DEFAULT 1,
     audience VARCHAR(20) DEFAULT 'both',
+    max_cvs INT NOT NULL DEFAULT 1,
     created_at VARCHAR(32) NOT NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  CREATE TABLE IF NOT EXISTS resumes (
+    id VARCHAR(40) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    title VARCHAR(150) NOT NULL,
+    template_id VARCHAR(60) NOT NULL,
+    resume_data LONGTEXT NOT NULL,
+    created_at VARCHAR(32) NOT NULL,
+    updated_at VARCHAR(32) NOT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS profile_views_log (
@@ -1197,9 +1208,18 @@ foreach ([
     // featured-company badge, etc.) distinct from the freelancer CV-credit
     // plans, without either side seeing the other's cards on /plans.
     "ALTER TABLE plan_tiers ADD COLUMN audience VARCHAR(20) DEFAULT 'both'",
+    // How many saved resumes (see the new `resumes` table) this plan may
+    // hold at once — 0 means unlimited. Real, admin-editable per plan
+    // (Settings tab), not a hardcoded number in the frontend.
+    "ALTER TABLE plan_tiers ADD COLUMN max_cvs INT NOT NULL DEFAULT 1",
 ] as $migration) {
     try { $pdo->exec($migration); } catch (Exception $e) { /* already applied */ }
 }
+
+// Which saved resume (if any) a freelancer chose to send for this specific
+// application — lets a company reviewing an applicant see the actual resume
+// picked for that job, not just whatever's on their live profile.
+try { $pdo->exec("ALTER TABLE applications ADD COLUMN resume_id VARCHAR(40) NULL"); } catch (Exception $e) { /* already applied */ }
 
 // No auto-seeding here, deliberately: plan_tiers is entirely admin-managed
 // through /admin/plans/add|update|delete. If an admin deletes every plan
@@ -2740,10 +2760,20 @@ if (preg_match('#/applications$#', $uri) && $method === 'POST') {
     // silent, un-editable column default that the admin panel can't reach.
     $feeAmount = (int)($job['fee_amount'] ?? getSetting($pdo, 'cv_fee_amount', '2500'));
 
+    // If the freelancer picked one of their saved resumes to send for this
+    // specific application, verify it's real and actually theirs before
+    // recording it — never trust a client-supplied id blindly.
+    $resumeId = null;
+    if (!empty($input['resume_id'])) {
+        $resStmt = $pdo->prepare('SELECT id FROM resumes WHERE id = ? AND user_id = ?');
+        $resStmt->execute([sanitize($input['resume_id'], 40), $authUser['id']]);
+        if ($resStmt->fetch()) $resumeId = sanitize($input['resume_id'], 40);
+    }
+
     $appId = 'app_' . time() . rand(10, 99);
     $pdo->prepare('
-        INSERT INTO applications (id, job_id, job_title, company_name, company_id, freelancer_id, freelancer_name, freelancer_phone, cover_letter, cv_url, payment_method, payment_tx_id, status, payment_status, fee_paid, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO applications (id, job_id, job_title, company_name, company_id, freelancer_id, freelancer_name, freelancer_phone, cover_letter, cv_url, resume_id, payment_method, payment_tx_id, status, payment_status, fee_paid, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ')->execute([
         $appId,
         $jobId,
@@ -2755,6 +2785,7 @@ if (preg_match('#/applications$#', $uri) && $method === 'POST') {
         $authUser['phone'],
         sanitize($input['cover_letter'] ?? '', 2000),
         sanitize($input['cv_url'] ?? '', 800000),
+        $resumeId,
         $hasCredit ? 'Plan Credit' : sanitize($input['payment_method'] ?? 'FastPay', 50),
         $hasCredit ? 'PLAN-CREDIT' : sanitize($input['payment_tx_id'] ?? 'FP-' . rand(10000, 99999), 100),
         $appStatus,
@@ -3697,8 +3728,8 @@ if (preg_match('#/admin/plans/add$#', $uri) && $method === 'POST') {
     $audience = in_array($input['audience'] ?? '', ['freelancer', 'employer', 'both'], true) ? $input['audience'] : 'both';
 
     $pdo->prepare('
-        INSERT INTO plan_tiers (id, name_ku, name_en, tagline, icon, color, price, credits, boost_days, features, featured, is_primary_free, can_message, can_receive_invitations, can_see_profile_viewers, sort_order, audience, is_active, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+        INSERT INTO plan_tiers (id, name_ku, name_en, tagline, icon, color, price, credits, boost_days, features, featured, is_primary_free, can_message, can_receive_invitations, can_see_profile_viewers, sort_order, audience, max_cvs, is_active, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     ')->execute([
             $id, $nameKu,
             sanitize($input['name_en'] ?? '', 50),
@@ -3716,6 +3747,7 @@ if (preg_match('#/admin/plans/add$#', $uri) && $method === 'POST') {
             !empty($input['can_see_profile_viewers']) ? 1 : 0,
             $maxOrder + 1,
             $audience,
+            max(0, (int)($input['max_cvs'] ?? 1)),
             date('Y-m-d H:i:s'),
         ]);
 
@@ -3765,7 +3797,7 @@ if (preg_match('#/admin/plans/update$#', $uri) && $method === 'POST') {
         UPDATE plan_tiers SET
             name_ku = ?, name_en = ?, tagline = ?, icon = ?, color = ?,
             price = ?, credits = ?, boost_days = ?, features = ?, featured = ?, is_primary_free = ?,
-            can_message = ?, can_receive_invitations = ?, can_see_profile_viewers = ?, audience = ?, is_active = ?
+            can_message = ?, can_receive_invitations = ?, can_see_profile_viewers = ?, audience = ?, max_cvs = ?, is_active = ?
         WHERE id = ?
     ')->execute([
             sanitize($input['name_ku'] ?? $existing['name_ku'], 50),
@@ -3783,6 +3815,7 @@ if (preg_match('#/admin/plans/update$#', $uri) && $method === 'POST') {
             array_key_exists('can_receive_invitations', $input) ? (!empty($input['can_receive_invitations']) ? 1 : 0) : $existing['can_receive_invitations'],
             array_key_exists('can_see_profile_viewers', $input) ? (!empty($input['can_see_profile_viewers']) ? 1 : 0) : $existing['can_see_profile_viewers'],
             $audience,
+            isset($input['max_cvs']) ? max(0, (int)$input['max_cvs']) : $existing['max_cvs'],
             array_key_exists('is_active', $input) ? (!empty($input['is_active']) ? 1 : 0) : $existing['is_active'],
             $id,
         ]);
@@ -3803,6 +3836,91 @@ if (preg_match('#/admin/plans/delete$#', $uri) && $method === 'POST') {
     if (empty($id)) jsonErr(400, 'Plan ID required.');
     $pdo->prepare('DELETE FROM plan_tiers WHERE id = ?')->execute([$id]);
     notifyAdmins($pdo, 'plan_deleted', ['id' => $id]);
+    echo json_encode(['success' => true]);
+    exit(0);
+}
+
+// ================================================================
+// Resumes: List  GET /resumes  (own resumes only)
+// ================================================================
+if (preg_match('#/resumes$#', $uri) && $method === 'GET') {
+    $authUser = requireAuth($pdo);
+    $stmt = $pdo->prepare('SELECT id, title, template_id, resume_data, created_at, updated_at FROM resumes WHERE user_id = ? ORDER BY updated_at DESC');
+    $stmt->execute([$authUser['id']]);
+    $rows = $stmt->fetchAll();
+    foreach ($rows as &$r) { $r['resume_data'] = json_decode($r['resume_data'], true); }
+    echo json_encode(['success' => true, 'resumes' => $rows]);
+    exit(0);
+}
+
+// Resumes: Create  POST /resumes  { title, template_id, resume_data }
+// Enforces the real per-plan resume limit (plan_tiers.max_cvs, 0 = unlimited)
+// server-side — never trust a client-side count.
+if (preg_match('#/resumes$#', $uri) && $method === 'POST') {
+    $authUser = requireAuth($pdo);
+    $input = safeJson();
+    $title = sanitize($input['title'] ?? '', 150);
+    $templateId = sanitize($input['template_id'] ?? '', 60);
+    $resumeData = $input['resume_data'] ?? null;
+    if (empty($title) || empty($templateId) || !is_array($resumeData)) {
+        jsonErr(400, 'ناونیشان، شێواز و زانیاری سیڤی پێویستن.');
+    }
+
+    $maxCvs = 1;
+    if (!empty($authUser['plan'])) {
+        $planStmt = $pdo->prepare('SELECT max_cvs FROM plan_tiers WHERE id = ?');
+        $planStmt->execute([$authUser['plan']]);
+        $planRow = $planStmt->fetch();
+        if ($planRow) $maxCvs = (int)$planRow['max_cvs'];
+    }
+    if ($maxCvs > 0) {
+        $countStmt = $pdo->prepare('SELECT COUNT(*) c FROM resumes WHERE user_id = ?');
+        $countStmt->execute([$authUser['id']]);
+        $current = (int)$countStmt->fetch()['c'];
+        if ($current >= $maxCvs) {
+            jsonErr(403, "پلانەکەت ڕێگە بە {$maxCvs} سیڤی دەدات. تکایە سیڤیەکی کۆن بسڕەوە یان پلانەکەت بەرزبکەرەوە.");
+        }
+    }
+
+    $id = 'res_' . time() . rand(10, 99);
+    $now = date('Y-m-d H:i:s');
+    $pdo->prepare('INSERT INTO resumes (id, user_id, title, template_id, resume_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        ->execute([$id, $authUser['id'], $title, $templateId, json_encode($resumeData, JSON_UNESCAPED_UNICODE), $now, $now]);
+
+    echo json_encode(['success' => true, 'id' => $id]);
+    exit(0);
+}
+
+// Resumes: Update  POST /resumes/update  { id, title?, template_id?, resume_data? }
+if (preg_match('#/resumes/update$#', $uri) && $method === 'POST') {
+    $authUser = requireAuth($pdo);
+    $input = safeJson();
+    $id = sanitize($input['id'] ?? '', 40);
+    if (empty($id)) jsonErr(400, 'Resume ID required.');
+
+    $existing = $pdo->prepare('SELECT * FROM resumes WHERE id = ? AND user_id = ?');
+    $existing->execute([$id, $authUser['id']]);
+    $existing = $existing->fetch();
+    if (!$existing) jsonErr(404, 'سیڤیەکە نەدۆزرایەوە.');
+
+    $title = isset($input['title']) ? sanitize($input['title'], 150) : $existing['title'];
+    $templateId = isset($input['template_id']) ? sanitize($input['template_id'], 60) : $existing['template_id'];
+    $resumeData = is_array($input['resume_data'] ?? null) ? json_encode($input['resume_data'], JSON_UNESCAPED_UNICODE) : $existing['resume_data'];
+
+    $pdo->prepare('UPDATE resumes SET title = ?, template_id = ?, resume_data = ?, updated_at = ? WHERE id = ?')
+        ->execute([$title, $templateId, $resumeData, date('Y-m-d H:i:s'), $id]);
+
+    echo json_encode(['success' => true]);
+    exit(0);
+}
+
+// Resumes: Delete  POST /resumes/delete  { id }
+if (preg_match('#/resumes/delete$#', $uri) && $method === 'POST') {
+    $authUser = requireAuth($pdo);
+    $input = safeJson();
+    $id = sanitize($input['id'] ?? '', 40);
+    if (empty($id)) jsonErr(400, 'Resume ID required.');
+    $pdo->prepare('DELETE FROM resumes WHERE id = ? AND user_id = ?')->execute([$id, $authUser['id']]);
     echo json_encode(['success' => true]);
     exit(0);
 }
