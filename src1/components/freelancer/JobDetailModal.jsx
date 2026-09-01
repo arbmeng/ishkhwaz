@@ -128,7 +128,12 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
         }
       })();
 
-  const isVIP = user?.plan && user.plan !== 'free';
+  // Real remaining credit count, not a "VIP" label — the backend gates the
+  // free-apply path on this same plan_credits value regardless of plan id,
+  // and the free plan itself starts everyone with a few starter credits, so
+  // claiming "VIP" here was misleading (every free-tier user saw it, then
+  // got confused when a later application suddenly demanded real payment).
+  const freeCreditsLeft = Number(user?.plan_credits) || 0;
 
   const handleCopyFastpay = () => {
     soundService.playTick?.();
@@ -590,8 +595,8 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
                 </div>
               </div>
 
-              {/* VIP / Pro free benefit card if available */}
-              {isVIP ? (
+              {/* Free-credit benefit card, if the user's plan has any left */}
+              {freeCreditsLeft > 0 ? (
                 <div className="bg-white border border-[#beece2] rounded-2xl p-4 flex items-center justify-between shadow-2xs">
                   <button
                     onClick={() => handleFinalSubmit(true)}
@@ -603,10 +608,10 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
                   <div className="text-right">
                     <div className="text-xs font-black text-[#111d1a] flex items-center justify-end gap-1">
                       <Crown className="w-3.5 h-3.5 text-amber-500" />
-                      <span>داواکاری بێبەرامبەری VIP</span>
+                      <span>داواکاری بێبەرامبەر بە کرێدیت</span>
                     </div>
                     <div className="text-[11px] text-[#7b8e88] font-bold mt-0.5">
-                      لە پلانی VIP، ناردنی داواکاری بەخۆڕاییە
+                      {freeCreditsLeft} کرێدیتی ماوە لە پلانەکەت — ئەم داواکارییە بەخۆڕاییە
                     </div>
                   </div>
                 </div>

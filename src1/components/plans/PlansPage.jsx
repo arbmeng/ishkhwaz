@@ -128,7 +128,7 @@ export const PlansPage = ({ onBack }) => {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
-        {user?.plan && user.plan !== 'free' && (
+        {currentTier && Number(currentTier.price) > 0 && (
           <div className="mb-5 rounded-3xl p-5 flex items-center gap-4" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
             <PlanBadge plan={user.plan} size="lg" />
             <div className="flex-1">
