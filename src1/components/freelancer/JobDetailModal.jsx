@@ -43,7 +43,7 @@ const GOV_LABELS = {
 const FASTPAY_NUMBER_FALLBACK = '0770 123 4567';
 
 export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
-  const { user, openAuthModal } = useAuth();
+  const { user, token, openAuthModal } = useAuth();
   const {
     applications = [],
     submitCVApplication,
@@ -69,13 +69,15 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
 
   // Steps: 'detail' (1) | 'cv_mode' (2) | 'fastpay' (3) | 'success' (4)
   const [step, setStep] = useState('detail');
-  const [cvMode, setCvMode] = useState('profile'); // 'profile' | 'upload'
+  const [cvMode, setCvMode] = useState('profile'); // 'profile' | 'upload' | 'resume'
   const [cvFile, setCvFile] = useState(null);
   const [coverLetter, setCoverLetter] = useState('');
   const [paymentTxId, setPaymentTxId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [generatedTxId, setGeneratedTxId] = useState('');
+  const [resumes, setResumes] = useState([]);
+  const [selectedResumeId, setSelectedResumeId] = useState(null);
 
   const fileInputRef = useRef(null);
 
@@ -87,9 +89,25 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
       setCoverLetter('');
       setPaymentTxId('');
       setGeneratedTxId('');
+      setSelectedResumeId(null);
       if (job?.id) apiService.registerJobView(job.id);
     }
   }, [isOpen, job?.id]);
+
+  // Freelancer's saved multi-CV resumes (Karnama-built), so they can pick
+  // the most relevant one for this specific job instead of always sending
+  // the same generic profile-CV. Only fetched while the modal is open.
+  useEffect(() => {
+    if (!isOpen || !user || !token) return;
+    let cancelled = false;
+    apiService.getResumes(token).then(res => {
+      if (cancelled || !res?.success) return;
+      const list = res.resumes || [];
+      setResumes(list);
+      if (list.length) setSelectedResumeId(prev => prev || list[0].id);
+    });
+    return () => { cancelled = true; };
+  }, [isOpen, user, token]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -175,6 +193,10 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
       fileInputRef.current?.click();
       return;
     }
+    if (cvMode === 'resume' && !selectedResumeId) {
+      addToast?.({ title: 'سیڤیەک هەڵبژێرە', message: 'تکایە یەکێک لە سیڤییەکانت هەڵبژێرە.', type: 'warning' });
+      return;
+    }
     setStep('fastpay');
   };
 
@@ -196,6 +218,7 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
       cover_letter: coverLetter.trim(),
       cv_url: cvMode === 'upload' && cvFile ? cvFile.dataUri : (user?.cv_url || undefined),
       cv_mode: cvMode,
+      resume_id: cvMode === 'resume' ? selectedResumeId : undefined,
       payment_method: isFreeVip ? 'VIP Credit' : 'FastPay',
       payment_tx_id: txCode,
     });
@@ -512,6 +535,61 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Option 3: Pick a saved resume (only if the freelancer has any) */}
+              {resumes.length > 0 && (
+                <div
+                  onClick={() => {
+                    soundService.playTick?.();
+                    setCvMode('resume');
+                  }}
+                  className={`p-4 sm:p-5 rounded-2xl border-2 transition-all cursor-pointer relative shadow-2xs ${
+                    cvMode === 'resume'
+                      ? 'bg-[#e8f7f4] border-[#12796b]'
+                      : 'bg-white border-[#e8eeec] hover:border-[#12796b]/40'
+                  }`}
+                >
+                  {cvMode === 'resume' && (
+                    <div className="absolute top-4 left-4 w-5 h-5 rounded-full bg-[#12796b] text-white flex items-center justify-center shadow-xs">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                  )}
+
+                  <div className="flex items-start justify-end gap-3.5 pr-1">
+                    <div>
+                      <h4 className="text-sm font-black text-[#111d1a]">سیڤیەکی پاشەکەوتکراو</h4>
+                      <p className="text-[11px] text-[#5a6b65] font-medium mt-1 leading-relaxed">
+                        یەکێک لە سیڤییە دیزاینکراوەکانت هەڵبژێرە، گونجاوترین بۆ ئەم کارە.
+                      </p>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-[#12796b] text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  {cvMode === 'resume' && (
+                    <div className="mt-4 space-y-2" onClick={e => e.stopPropagation()}>
+                      {resumes.map(r => (
+                        <div
+                          key={r.id}
+                          onClick={() => {
+                            soundService.playTick?.();
+                            setSelectedResumeId(r.id);
+                          }}
+                          className={`flex items-center justify-between gap-2 p-3 rounded-xl border cursor-pointer transition ${
+                            selectedResumeId === r.id
+                              ? 'bg-white border-[#12796b]'
+                              : 'bg-[#f8faf9] border-[#e8eeed]'
+                          }`}
+                        >
+                          <span className="text-xs font-bold text-[#111d1a] truncate flex-1 text-right">{r.title}</span>
+                          {selectedResumeId === r.id && <Check className="w-4 h-4 text-[#12796b] shrink-0" />}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Optional Cover Letter */}
               <div className="space-y-1.5 pt-1">
