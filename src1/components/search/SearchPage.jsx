@@ -110,6 +110,20 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
       } else {
         setViewingFreelancerProfile(null);
       }
+
+      // Company profiles are opened via a query string (?company=NAME), not
+      // a path segment — without this, the browser back/forward button left
+      // the profile stuck open (URL changed, React state didn't follow).
+      const companyQuery = new URLSearchParams(window.location.search).get('company');
+      if (companyQuery) {
+        const targetComp = allCompanies.find(c => c.name.toLowerCase() === companyQuery.toLowerCase()) || {
+          name: companyQuery, logo: '', cover: '', governorateId: 'sulaymaniyah', industry: 'کۆمپانیا و بازرگانی'
+        };
+        setSelectedCompany(targetComp);
+      } else {
+        setSelectedCompany(null);
+        setInitialJobId(null);
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
