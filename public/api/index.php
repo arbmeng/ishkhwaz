@@ -188,6 +188,18 @@ function sanitize(string $val, int $maxLen = 255): string {
     return mb_substr(trim(strip_tags($val)), 0, $maxLen);
 }
 
+// A `??` chain only skips a genuinely null/unset value — an empty string
+// (the common default for an unset VARCHAR/TEXT column, e.g. a user who
+// never uploaded a company_logo) satisfies `??` immediately and silently
+// breaks any fallback chained after it. Use this wherever "first real,
+// non-empty value" is actually intended.
+function firstNonEmpty(...$candidates): string {
+    foreach ($candidates as $c) {
+        if (!empty($c)) return $c;
+    }
+    return '';
+}
+
 // Builds a user-facing (non-API) link back to the frontend, from whatever
 // host this request actually arrived on — never hardcoded, so it keeps
 // working if the app ever moves to yet another domain/subdomain.
@@ -2355,9 +2367,9 @@ if (preg_match('#/jobs$#', $uri) && $method === 'POST') {
     ')->execute([
         $jobId,
         $authUser['id'],
-        sanitize($input['company_name'] ?? $authUser['company_name'] ?? $authUser['name'], 200),
-        sanitize($input['company_logo'] ?? $input['photo'] ?? $authUser['company_logo'] ?? $authUser['avatar'] ?? '', 800000),
-        sanitize($input['company_cover'] ?? $authUser['company_cover'] ?? $authUser['cover'] ?? '', 800000),
+        sanitize(firstNonEmpty($input['company_name'] ?? null, $authUser['company_name'] ?? null, $authUser['name'] ?? null), 200),
+        sanitize(firstNonEmpty($input['company_logo'] ?? null, $input['photo'] ?? null, $authUser['company_logo'] ?? null, $authUser['avatar'] ?? null), 800000),
+        sanitize(firstNonEmpty($input['company_cover'] ?? null, $authUser['company_cover'] ?? null, $authUser['cover'] ?? null), 800000),
         sanitize($input['company_phone'] ?? $authUser['phone'] ?? '', 30),
         sanitize($input['company_email'] ?? $authUser['email'] ?? '', 150),
         sanitize($input['title_ku'] ?? $input['title'] ?? 'کاری نوێ', 200),
