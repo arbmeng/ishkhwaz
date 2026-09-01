@@ -25,18 +25,16 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
   const { addToast, categories: liveCategories = [] } = useStore();
 
   const [companyName] = useState(user?.company_name || user?.name || 'تیشک تێک');
-  const [title, setTitle] = useState('پەرەپێدەری وێب — React');
-  const [category, setCategory] = useState('تەکنەلۆژیا');
+  const [title, setTitle] = useState('');
+  const [category, setCategory] = useState('');
   const [jobType, setJobType] = useState('fullTime'); // fullTime | partTime | contract
   const [workplaceType, setWorkplaceType] = useState('onSite'); // onSite | remote | hybrid
   const [salaryMin, setSalaryMin] = useState(1200000);
   const [salaryMax, setSalaryMax] = useState(1800000);
   const [selectedGov, setSelectedGov] = useState('sulaymaniyah');
   const [selectedDistrict, setSelectedDistrict] = useState('بەکرەجۆ');
-  const [description, setDescription] = useState(
-    'بەدوای پەرەپێدەرێکی وێبدا دەگەڕێین کە ئەزموونی دوو ساڵی لە ئەزموونی React و Node.js هەبێت. کار لە ئۆفیسی سلێمانی، لەگەڵ تیمێکی چوار کەسی.'
-  );
-  const [skills, setSkills] = useState(['React', 'Node.js', 'TypeScript']);
+  const [description, setDescription] = useState('');
+  const [skills, setSkills] = useState([]);
   const [skillInput, setSkillInput] = useState('');
   const [isBoosted, setIsBoosted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,6 +57,10 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
   const handleSubmit = async () => {
     if (!title.trim()) {
       setErrorMsg('ناونیشانی کار پێویستە.');
+      return;
+    }
+    if (!category) {
+      setErrorMsg('بوار پێویستە.');
       return;
     }
     if (!token) {
@@ -84,7 +86,10 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
         description: description.trim(),
         required_skills: JSON.stringify(skills),
         company_name: companyName.trim(),
-        fee_amount: 2500,
+        // fee_amount intentionally omitted — the backend falls back to the
+        // real admin-configured cv_fee_amount setting when it's absent;
+        // hardcoding a value here would silently override that setting for
+        // every job posted through this form regardless of what admin set.
         status: 'active',
       };
 
@@ -256,12 +261,10 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
                   onChange={e => setCategory(e.target.value)}
                   className="w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3.5 text-xs font-bold text-[#111d1a] outline-none appearance-none cursor-pointer"
                 >
-                  <option value="تەکنەلۆژیا">تەکنەلۆژیا</option>
-                  <option value="بیناسازی">بیناسازی</option>
-                  <option value="پزیشکی">پزیشکی</option>
-                  <option value="فرۆشتن">فرۆشتن</option>
-                  <option value="ژمێریاری">ژمێریاری</option>
-                  <option value="گواستنەوە">گواستنەوە</option>
+                  <option value="" disabled>بوارێک هەڵبژێرە</option>
+                  {liveCategories.map(c => (
+                    <option key={c.id} value={c.id}>{c.name_ku}</option>
+                  ))}
                 </select>
                 <ChevronDown className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9e98] pointer-events-none" />
               </div>
