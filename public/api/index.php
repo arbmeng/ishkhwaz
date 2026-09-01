@@ -3830,10 +3830,13 @@ if (preg_match('#/ai/write$#', $uri) && $method === 'POST') {
     // word for them — which is genuinely how Kurdish tech professionals
     // write — and anchor it with a real native-quality example.
     $kurdishQualityBar = "Write in natural, fluent Central Kurdish (Sorani, Arabic-based script — کوردیی ناوەندی), exactly as an educated native professional from Slemani or Hewlêr would write it. Rules:\n"
+        . "- Register: use زمانی بازاڕی — the natural, everyday colloquial Kurdish a professional actually speaks/writes in real business life — NOT stiff formal/literary/journalistic Kurdish (وتاری فەرمی ڕۆژنامەیی). It must read like a real person describing themselves to a colleague, never like a government announcement or textbook passage.\n"
         . "- Never invent a Kurdish word. If you don't know the natural Sorani word for something, either use a simpler common synonym, or — for technical/domain terms (programming languages, software, tools, job titles like 'React developer', 'Excel', 'Photoshop') — just keep the English term as-is in Latin letters. This code-switching is completely normal and expected in real Kurdish professional writing; do not force-translate it.\n"
         . "- Do not literally translate English sentence structure — express the idea the way a Kurdish speaker naturally would.\n"
         . "- Correct Sorani grammar only (izafe, verb conjugation, word order) — no Kurmanji/Badini forms.\n"
         . "- Always end on a complete, properly punctuated sentence — plan the length so you never get cut off mid-sentence.\n"
+        . "- NEVER invent a specific fact that wasn't given to you — a year count, a named technology, a number of projects, a specific achievement or client result, or even a vague unverifiable claim like 'has worked for several years' or 'completed several successful projects.' If the input notes are sparse or empty, DO NOT describe any work history or track record at all — just state the person's role/title and genuine interest in it, in 1-2 short sentences, and stop there. A short honest text beats a longer one with any invented claim, however vague.\n"
+        . "- Avoid generic filler and repeated intensifiers (e.g. don't say 'the highest quality' twice in the same text, don't say 'a variety of different things' with nothing concrete backing it) — every sentence should carry real content from the input, not padding.\n"
         . "Match this level of natural quality (topic differs, but match the register/fluency/simplicity exactly):\n";
 
     if ($kind === 'cv_summary') {
