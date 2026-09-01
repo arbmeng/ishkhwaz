@@ -1,0 +1,31 @@
+# Dependencies & build output
+node_modules/
+dist/
+ishkhwaz-dist.zip
+index-*.js
+ishkhwaz-frontend-bundle.js
+
+# Secrets — never commit. deploy.py/index.php still read these locally;
+# they're just not tracked in git. See public/api/config.php and
+# deploy_config.py for what's expected to exist here.
+deploy_config.py
+public/api/config.php
+public/api/database.sqlite
+public/api/error.log
+check_dash.py
+
+# Old/duplicate backend experiments — confirmed dead, not the live API
+# (public/api/index.php is), and contain real database backups with
+# potential user data. Kept on disk for now, never tracked.
+ishkhwaz-api/
+laravel-backend/
+
+# Dev/preview run logs
+dev_err.log
+dev_out.log
+preview_err.log
+preview_out.log
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db

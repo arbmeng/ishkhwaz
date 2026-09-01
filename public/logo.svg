@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="limeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#bef264" />
+      <stop offset="50%" stop-color="#a3e635" />
+      <stop offset="100%" stop-color="#65a30d" />
+    </linearGradient>
+  </defs>
+  <!-- Background Dark Circle -->
+  <circle cx="256" cy="256" r="240" fill="#0c0d0e" />
+  
+  <!-- Outer Tilted Diamond Badge Frame -->
+  <rect x="146" y="146" width="220" height="220" rx="48" transform="rotate(45 256 256)" stroke="url(#limeGrad)" stroke-width="28" fill="#121316" />
+
+  <!-- Center Person Silhouette with Tie -->
+  <circle cx="256" cy="210" r="32" fill="url(#limeGrad)" />
+  <path d="M 196 300 C 196 260, 316 260, 316 300 Z" fill="url(#limeGrad)" />
+  <polygon points="256,260 248,295 256,310 264,295" fill="#121316" />
+
+  <!-- Top-Left Magnifying Glass -->
+  <g transform="translate(140, 140)">
+    <circle cx="24" cy="24" r="18" stroke="url(#limeGrad)" stroke-width="8" fill="none" />
+    <line x1="37" y1="37" x2="56" y2="56" stroke="url(#limeGrad)" stroke-width="9" stroke-linecap="round" />
+  </g>
+
+  <!-- Top-Right Megaphone Broadcast -->
+  <g transform="translate(300, 140)">
+    <path d="M 10 18 L 26 18 L 44 8 L 44 40 L 26 30 L 10 30 Z" fill="url(#limeGrad)" />
+    <path d="M 50 14 C 55 20, 55 28, 50 34" stroke="url(#limeGrad)" stroke-width="5" fill="none" stroke-linecap="round" />
+    <path d="M 58 8 C 66 18, 66 30, 58 40" stroke="url(#limeGrad)" stroke-width="5" fill="none" stroke-linecap="round" />
+  </g>
+
+  <!-- Bottom-Left Briefcase -->
+  <g transform="translate(140, 300)">
+    <rect x="8" y="14" width="48" height="34" rx="8" fill="url(#limeGrad)" />
+    <rect x="22" y="8" width="20" height="10" rx="3" stroke="url(#limeGrad)" stroke-width="4" fill="none" />
+    <rect x="26" y="26" width="12" height="8" rx="2" fill="#121316" />
+  </g>
+
+  <!-- Bottom-Right Document/CV -->
+  <g transform="translate(300, 300)">
+    <rect x="12" y="8" width="38" height="46" rx="6" fill="url(#limeGrad)" />
+    <line x1="20" y1="20" x2="40" y2="20" stroke="#121316" stroke-width="4" stroke-linecap="round" />
+    <line x1="20" y1="28" x2="40" y2="28" stroke="#121316" stroke-width="4" stroke-linecap="round" />
+    <line x1="20" y1="36" x2="34" y2="36" stroke="#121316" stroke-width="4" stroke-linecap="round" />
+  </g>
+</svg>

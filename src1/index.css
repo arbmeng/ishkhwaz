@@ -1,0 +1,227 @@
+@import "tailwindcss";
+
+@theme {
+  /* JetBrains Mono for all tabular data — prices, stats, pagination digits — app-wide */
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@layer base {
+  /* Used by the Karnama-template-derived CV renderer (src/cvTemplates) — the
+     resume's own chosen font, independent of whatever the surrounding app UI
+     is showing. */
+  /* ================= RICH MOTION & HOVER MICRO-ANIMATIONS ================= */
+  @keyframes cardStaggerIn {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes heartPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.35) rotate(-8deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+
+  @keyframes floatSoft {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  .job-card-anim {
+    animation: cardStaggerIn 0.35s cubic-bezier(0.2, 0.9, 0.4, 1.1) both;
+    transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.4, 1.1), box-shadow 0.22s cubic-bezier(0.2, 0.9, 0.4, 1.1), border-color 0.2s ease;
+  }
+
+  .job-card-anim:hover {
+    transform: translateY(-4px);
+    border-color: rgba(18, 121, 107, 0.45) !important;
+    box-shadow: 0 16px 36px -6px rgba(18, 121, 107, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+  }
+
+  .job-card-anim:active {
+    transform: translateY(-1px) scale(0.99);
+  }
+
+  .btn-spring {
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease, box-shadow 0.2s ease, color 0.15s ease;
+  }
+
+  .btn-spring:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 20px -4px rgba(18, 121, 107, 0.2);
+  }
+
+  .btn-spring:active {
+    transform: translateY(1px) scale(0.96);
+    box-shadow: none;
+  }
+
+  .chip-spring {
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .chip-spring:hover {
+    transform: translateY(-1px) scale(1.05);
+    box-shadow: 0 4px 12px -2px rgba(18, 121, 107, 0.15);
+  }
+
+  .chip-spring:active {
+    transform: scale(0.94);
+  }
+
+  .heart-pop {
+    animation: heartPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .interactive-sidebar-btn {
+    transition: all 0.2s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  }
+
+  .interactive-sidebar-btn:hover {
+    transform: translateX(-3px);
+    background-color: #f2faf7;
+  }
+
+  .interactive-sidebar-btn:active {
+    transform: translateX(0) scale(0.98);
+  }
+  .font-arabic { font-family: 'Vazirmatn', 'Noto Sans Arabic', system-ui, sans-serif; }
+  .font-latin { font-family: 'Inter', 'Vazirmatn', system-ui, sans-serif; }
+
+  :root {
+    --bg-primary: #F4FBF7;
+    --bg-card: #FFFFFF;
+    --accent-emerald: #059669;
+    --accent-lime: #84CC16;
+    --accent-lime-hover: #65A30D;
+    --text-primary: #064E3B;
+    --text-secondary: #334155;
+    --border-light: #A7F3D0;
+  }
+
+  body {
+    background-color: #F4FBF7;
+    background-image:
+      radial-gradient(at 0% 0%, rgba(132, 204, 22, 0.12) 0px, transparent 45%),
+      radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 45%);
+    background-attachment: fixed;
+    color: #0F172A;
+    font-family: 'Vazirmatn', 'Inter', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* ================= PRISTINE GREEN & WHITE THEME (MATCHING LOGO BRANDING) ================= */
+.bg-white {
+  background-color: #FFFFFF !important;
+  border-color: #A7F3D0;
+}
+
+.cinematic-glass {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid #A7F3D0;
+  box-shadow: 0 10px 30px -10px rgba(5, 150, 105, 0.08);
+}
+
+.cinematic-card {
+  background: #FFFFFF;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid #A7F3D0;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px -5px rgba(5, 150, 105, 0.08);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cinematic-card:hover {
+  background: #FFFFFF;
+  border-color: #84CC16;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 35px -8px rgba(132, 204, 22, 0.25);
+}
+
+.cinematic-lime-text {
+  color: #65A30D;
+}
+
+.animate-spin-slow {
+  animation: spin 25s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Referenced across the app (modals, page transitions, staggered lists) but
+   never actually defined until now — was a silent no-op everywhere. */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* City → districts drill-down transformation on the home page. */
+@keyframes morphIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-morph-in {
+  animation: morphIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Admin mind-map zoom transition — a level "exits" by scaling up and fading
+   out from the zoom origin (you're moving past it, into it), the next level
+   "enters" by scaling in from slightly-small and fading in (continuing that
+   same push forward). Origin point is set per-use via inline transform-origin. */
+@keyframes mapZoomOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(1.7); }
+}
+.animate-map-zoom-out {
+  animation: mapZoomOut 0.26s ease-in both;
+}
+
+@keyframes mapZoomIn {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-map-zoom-in {
+  animation: mapZoomIn 0.28s ease-out both;
+}
+
+/* Custom Green Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #A7F3D0;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #84CC16;
+}
