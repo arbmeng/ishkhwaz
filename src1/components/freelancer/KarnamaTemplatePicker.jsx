@@ -1,71 +1,91 @@
-import React, { useEffect, useRef, useState, Suspense } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { apiService } from '../../services/api';
+import React, { useRef, useState, Suspense } from 'react';
+import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { exportNodeToPdf, safeFilename } from '../../services/karnamaPdf';
 import { TEMPLATE_LIST } from '../../cvTemplates/registry';
-import { ArrowRight, CheckCircle2, Download, Eye, Crown, Sparkles, Check } from 'lucide-react';
+import { ArrowRight, Download, Eye, Crown, X, Loader2 } from 'lucide-react';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
 const TEAL = '#12796b';
 
+// Real A4 template dimensions (see cvTemplates/*.jsx — every one renders at
+// this fixed pixel size so the PDF export screenshots it 1:1). Thumbnails
+// scale that same live component down instead of faking a wireframe.
+const A4_W = 794;
+const A4_H = 1123;
+const THUMB_SCALE = 0.24;
+
+const TemplateFallback = () => (
+  <div className="w-full h-full flex items-center justify-center">
+    <Loader2 className="w-5 h-5 animate-spin text-stone-300" />
+  </div>
+);
+
+// One real template, scaled down and clipped to a thumbnail box — the
+// actual resume data renders here, with each template's own graceful
+// placeholder text for any field the user hasn't filled in yet (see
+// cvTemplates/shared/placeholderText.js), never a fabricated wireframe.
+const LiveThumbnail = ({ template, resume }) => {
+  const Comp = template.component;
+  return (
+    <div className="w-full h-72 rounded-[22px] border border-[#e8eeed] relative overflow-hidden bg-white shadow-inner flex items-center justify-center">
+      <div style={{ width: A4_W * THUMB_SCALE, height: A4_H * THUMB_SCALE, overflow: 'hidden' }}>
+        <div style={{ width: A4_W, height: A4_H, transform: `scale(${THUMB_SCALE})`, transformOrigin: 'top right' }}>
+          <Suspense fallback={<TemplateFallback />}>
+            <Comp resume={{ ...resume, accentColor: template.accentColorDefault }} />
+          </Suspense>
+        </div>
+      </div>
+      {template.isPremium && (
+        <span className="absolute top-3 left-3 px-2 py-0.5 rounded-full bg-[#12796b] text-white text-[9px] font-black flex items-center gap-1 shadow-2xs">
+          <Crown className="w-2.5 h-2.5" /> پارەدان
+        </span>
+      )}
+    </div>
+  );
+};
+
 export const KarnamaTemplatePicker = ({ baseResume, onBack, onDone }) => {
-  const { token } = useAuth();
+  const { addToast } = useStore();
   const [filterType, setFilterType] = useState('all'); // all | free | paid
-  const [selectedId, setSelectedId] = useState('FreeExecutiveLine');
+  const [selectedId, setSelectedId] = useState(TEMPLATE_LIST[0].id);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const previewRef = useRef(null);
 
-  // Filter list
-  const templates = [
-    {
-      id: 'FreeExecutiveLine',
-      name: 'ئەدیتۆریال',
-      isFree: true,
-      priceText: 'بەخۆڕایی',
-      preview: 'linear-gradient(180deg, #12796b 0%, #0d5c50 15%, #ffffff 15%)',
-    },
-    {
-      id: 'FreeModernMinimal',
-      name: 'دوو ستوونی',
-      isFree: true,
-      priceText: 'بەخۆڕایی',
-      preview: 'linear-gradient(90deg, #f0f4f2 0%, #f0f4f2 35%, #ffffff 35%)',
-    },
-    {
-      id: 'ProBronzeRibbon',
-      name: 'پریمیەم زێڕین',
-      isFree: false,
-      isVip: true,
-      priceText: '7,000 IQD',
-      preview: 'linear-gradient(180deg, #d4af37 0%, #aa820a 20%, #ffffff 20%)',
-    },
-    {
-      id: 'FreeCleanATS',
-      name: 'کۆمپاکت',
-      isFree: false,
-      priceText: '5,000 IQD',
-      preview: 'linear-gradient(180deg, #111d1a 0%, #334155 12%, #ffffff 12%)',
-    },
-  ];
-
-  const filteredTemplates = templates.filter(t => {
-    if (filterType === 'free') return t.isFree;
-    if (filterType === 'paid') return !t.isFree;
+  const filteredTemplates = TEMPLATE_LIST.filter(t => {
+    if (filterType === 'free') return !t.isPremium;
+    if (filterType === 'paid') return t.isPremium;
     return true;
   });
 
-  const selectedTemplate = templates.find(t => t.id === selectedId) || templates[0];
+  const selectedTemplate = TEMPLATE_LIST.find(t => t.id === selectedId) || TEMPLATE_LIST[0];
+  const SelectedComp = selectedTemplate.component;
+  const selectedResume = { ...baseResume, accentColor: selectedTemplate.accentColorDefault };
 
+  // Real client-side export — screenshots the live, full-size template DOM
+  // (see services/karnamaPdf.js) into a real multi-page PDF. Premium
+  // templates aren't wired to a purchase flow yet, so downloading one is
+  // honestly blocked with a real message instead of either giving it away
+  // free or silently doing nothing.
   const handleDownload = async () => {
     soundService.playTick?.();
+    if (selectedTemplate.isPremium) {
+      addToast?.({ title: 'پێویستە بیکڕیت', message: 'ئەم دیزاینە پارەدانە — تایبەتمەندی کڕینی هێشتا چالاک نییە.', type: 'info' });
+      return;
+    }
+    if (!previewRef.current) {
+      addToast?.({ title: 'چاوەڕوان بە', message: 'تکایە دووبارە هەوڵبدەرەوە.', type: 'info' });
+      return;
+    }
     setBusy(true);
     try {
-      if (onDone) {
-        onDone(selectedTemplate);
-      }
-    } catch (e) {}
+      await exportNodeToPdf(previewRef.current, `${safeFilename(baseResume?.name)}.pdf`);
+      addToast?.({ title: 'داگیرا ✓', message: 'سیڤیەکەت بە سەرکەوتوویی داگیرا.', type: 'success' });
+      onDone?.(selectedTemplate);
+    } catch (e) {
+      addToast?.({ title: 'سەرنەکەوت', message: 'دروستکردنی PDF سەرکەوتوو نەبوو، دووبارە هەوڵبدەرەوە.', type: 'error' });
+    }
     setBusy(false);
   };
 
@@ -148,7 +168,7 @@ export const KarnamaTemplatePicker = ({ baseResume, onBack, onDone }) => {
           ))}
         </div>
 
-        {/* ── 4-Column Template Grid (Matching Image 2) ────────── */}
+        {/* ── Template Grid — every card is the real component, real data ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-4">
           {filteredTemplates.map(t => {
             const isSelected = selectedId === t.id;
@@ -166,38 +186,12 @@ export const KarnamaTemplatePicker = ({ baseResume, onBack, onDone }) => {
                     : 'border-[#e8eeec] hover:border-[#cbd5d1] shadow-2xs'
                 }`}
               >
-                {/* Visual Preview Box */}
-                <div
-                  className="w-full h-72 rounded-[22px] border border-[#e8eeed] relative overflow-hidden bg-white shadow-inner flex flex-col p-4 space-y-2.5"
-                >
-                  {/* Badge top left */}
-                  {t.isVip && (
-                    <span className="absolute top-3 left-3 px-2 py-0.5 rounded-full bg-[#12796b] text-white text-[9px] font-black flex items-center gap-1 shadow-2xs">
-                      <Crown className="w-2.5 h-2.5" /> VIP
-                    </span>
-                  )}
-                  {!t.isFree && !t.isVip && (
-                    <span className="absolute top-3 left-3 px-2 py-0.5 rounded-full bg-[#111d1a] text-white text-[9px] font-black">
-                      پارەدان
-                    </span>
-                  )}
+                <LiveThumbnail template={t} resume={baseResume} />
 
-                  {/* Mock CV wireframe elements */}
-                  <div className="h-4 w-3/4 rounded-md" style={{ background: t.isFree ? '#12796b' : '#334155' }} />
-                  <div className="h-2 w-1/2 rounded bg-[#e2e8e5]" />
-                  <div className="h-px w-full bg-[#e8eeed] my-2" />
-                  <div className="space-y-1.5 pt-1">
-                    <div className="h-2 w-full rounded bg-[#f0f4f2]" />
-                    <div className="h-2 w-5/6 rounded bg-[#f0f4f2]" />
-                    <div className="h-2 w-4/6 rounded bg-[#f0f4f2]" />
-                  </div>
-                </div>
-
-                {/* Card Title & Pricing */}
                 <div className="pt-3.5 px-2 flex items-center justify-between">
                   <div className="text-right">
                     <h4 className="text-sm font-black text-[#111d1a]">{t.name}</h4>
-                    <p className="text-[11px] text-[#7b8e88] font-bold mt-0.5">{t.priceText}</p>
+                    <p className="text-[11px] text-[#7b8e88] font-bold mt-0.5">{t.isPremium ? 'پارەدان' : 'بەخۆڕایی'}</p>
                   </div>
 
                   {isSelected && (
@@ -211,15 +205,14 @@ export const KarnamaTemplatePicker = ({ baseResume, onBack, onDone }) => {
           })}
         </div>
 
-        {/* ── Bottom Floating Bar (Matching Image 2) ──────────── */}
+        {/* ── Bottom Floating Bar ──────────────────────────────── */}
         <div className="fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#e8eeec] px-4 sm:px-8 py-3.5 shadow-lg">
           <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
-            
-            {/* Left Action Buttons in RTL */}
+
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setPreviewOpen(true)}
+                onClick={() => { soundService.playTick?.(); setPreviewOpen(true); }}
                 className="px-4 py-3 rounded-2xl bg-white border border-[#e8eeed] text-[#4a5854] text-xs font-black hover:bg-[#f8faf9] active:scale-95 transition flex items-center gap-1.5"
               >
                 <Eye className="w-4 h-4" />
@@ -230,21 +223,56 @@ export const KarnamaTemplatePicker = ({ baseResume, onBack, onDone }) => {
                 type="button"
                 onClick={handleDownload}
                 disabled={busy}
-                className="px-6 py-3 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-xs font-black shadow-[0_4px_14px_rgba(18,121,107,0.3)] active:scale-95 transition flex items-center gap-2"
+                className="px-6 py-3 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-xs font-black shadow-[0_4px_14px_rgba(18,121,107,0.3)] active:scale-95 transition flex items-center gap-2 disabled:opacity-60"
               >
-                <Download className="w-4 h-4" />
-                <span>دروستکردن و داگرتن</span>
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                <span>{busy ? 'دروستکردن...' : 'دروستکردن و داگرتن'}</span>
               </button>
             </div>
 
-            {/* Right Status Text in RTL */}
             <div className="text-right text-xs font-bold text-[#7b8e88]">
               <span>شێوازی هەڵبژێردراو: </span>
               <strong className="text-[#111d1a] font-black">{selectedTemplate.name}</strong>
               <span> — </span>
-              <span className="text-[#12796b]">{selectedTemplate.priceText}</span>
+              <span className="text-[#12796b]">{selectedTemplate.isPremium ? 'پارەدان' : 'بەخۆڕایی'}</span>
             </div>
 
+          </div>
+        </div>
+
+        {/* ── Full-size real preview — the same live component that's about
+             to be exported, not a mock. Purely visual; the node handleDownload
+             actually screenshots is the always-mounted offscreen copy below,
+             so downloading never depends on the preview modal being open. ── */}
+        {previewOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col items-center overflow-y-auto py-8 px-4" onClick={() => setPreviewOpen(false)}>
+            <button
+              onClick={() => setPreviewOpen(false)}
+              className="fixed top-4 left-4 w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-lg active:scale-95 transition z-10"
+              aria-label="داخستن"
+            >
+              <X className="w-5 h-5 text-[#111d1a]" />
+            </button>
+            <div
+              onClick={e => e.stopPropagation()}
+              className="shadow-2xl"
+              style={{ width: A4_W, transform: 'scale(0.9)', transformOrigin: 'top center' }}
+            >
+              <Suspense fallback={<div style={{ width: A4_W, height: A4_H }} className="bg-white flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-stone-300" /></div>}>
+                <SelectedComp resume={selectedResume} />
+              </Suspense>
+            </div>
+          </div>
+        )}
+
+        {/* Offscreen full-size render of whatever's selected — always mounted
+            so handleDownload can screenshot it immediately, with no dependency
+            on the preview modal ever having been opened. */}
+        <div style={{ position: 'fixed', top: 0, left: -9999, pointerEvents: 'none' }} aria-hidden="true">
+          <div ref={previewRef}>
+            <Suspense fallback={null}>
+              <SelectedComp resume={selectedResume} />
+            </Suspense>
           </div>
         </div>
 
