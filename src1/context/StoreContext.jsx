@@ -322,6 +322,7 @@ export const StoreProvider = ({ children }) => {
   return (
     <StoreContext.Provider value={{
       jobs,
+      setJobs,
       applications,
       freelancers,
       savedJobIds,
