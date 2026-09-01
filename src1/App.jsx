@@ -18,6 +18,7 @@ import { AccountBlockedModal } from './components/auth/AccountBlockedModal';
 import { PostJobPage } from './components/employer/PostJobPage';
 import { KarnamaCVPage } from './components/freelancer/KarnamaCVPage';
 import { KarnamaTemplatePicker } from './components/freelancer/KarnamaTemplatePicker';
+import { ResumesPage } from './components/freelancer/ResumesPage';
 import { InstallPage } from './components/pwa/InstallPage';
 import { ToastSystem } from './components/ui/ToastSystem';
 import { pushService } from './services/pushService';
@@ -82,6 +83,7 @@ function MainAppContent() {
       if (target === 'profile' || target === 'user') return 'profile';
       if (target === 'dashboard' || target === 'my-company-dashboard' || target === 'company-dashboard' || target === 'my_company_dashboard') return 'my_company_dashboard';
       if (target === 'wallet' || target === 'plans' || target === 'upgrade') return 'plans';
+      if (target === 'resumes' || target === 'my-resumes') return 'resumes';
       if (target === 'cv' || target === 'build-cv' || target === 'cv_builder' || target === 'karnama_cv') return 'karnama_cv';
       if (target === 'install') return 'install_app';
       if (target === 'admin') return 'admin';
@@ -140,6 +142,7 @@ function MainAppContent() {
       else if (tabId === 'home') path = '/';
       else if (tabId === 'post_job') path = '/post-job';
       else if (tabId === 'karnama_cv') path = '/cv';
+      else if (tabId === 'resumes') path = '/resumes';
       else if (tabId === 'install_app') path = '/install';
       else if (tabId === 'admin') path = '/admin';
       else if (tabId === 'how_it_works') path = '/how-it-works';
@@ -263,7 +266,7 @@ function MainAppContent() {
     if (activeTab === 'karnama_cv') {
       return (
         <KarnamaCVPage
-          onBack={() => setActiveTab('profile')}
+          onBack={() => setActiveTab('resumes')}
           onProceed={(resume) => { setPendingKarnamaResume(resume); setActiveTab('karnama_templates'); }}
         />
       );
@@ -274,7 +277,16 @@ function MainAppContent() {
         <KarnamaTemplatePicker
           baseResume={pendingKarnamaResume}
           onBack={() => setActiveTab('karnama_cv')}
-          onDone={() => { setPendingKarnamaResume(null); setActiveTab('profile'); }}
+          onDone={() => { setPendingKarnamaResume(null); setActiveTab('resumes'); }}
+        />
+      );
+    }
+
+    if (activeTab === 'resumes') {
+      return (
+        <ResumesPage
+          onBack={() => setActiveTab('profile')}
+          onCreateNew={() => setActiveTab('karnama_cv')}
         />
       );
     }

@@ -555,7 +555,7 @@ export const UserProfilePage = ({ onNavigate }) => {
             </>
           ) : (
             <>
-              <ActionRow icon={FileText} title="کارنامەکانم (CV)" sub={user?.cv_url ? '١ سیڤی چالاک' : 'دروستکردنی CV'} onClick={() => { soundService.playTick?.(); onNavigate?.('karnama_cv'); }} delay={0} />
+              <ActionRow icon={FileText} title="کارنامەکانم (CV)" sub={user?.cv_url ? '١ سیڤی چالاک' : 'دروستکردنی CV'} onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }} delay={0} />
               <ActionRow icon={Heart} title="کارە پاشەکەوتکراوەکان" sub={`${savedCount} کار`} onClick={() => { soundService.playTick?.(); setShowSaved(true); }} delay={0} />
               <ActionRow icon={Send} title="داواکارییە نێردراوەکانم" sub={`${applCount} داواکاری`} onClick={() => { soundService.playTick?.(); onNavigate?.('my_applications'); }} delay={0} />
             </>
@@ -759,11 +759,11 @@ export const UserProfilePage = ({ onNavigate }) => {
                 ) : (
                   <>
                     <div className="flex items-center justify-between">
-                      <button onClick={() => { soundService.playTick?.(); onNavigate?.('karnama_cv'); }} className="text-xs font-bold hover:underline" style={{ color: TEAL }}>بەڕێوەبردن</button>
+                      <button onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }} className="text-xs font-bold hover:underline" style={{ color: TEAL }}>بەڕێوەبردن</button>
                       <h3 className="text-sm font-black" style={{ color: '#1a2321' }}>کارنامەکانم (CV)</h3>
                     </div>
                     <button
-                      onClick={() => { soundService.playTick?.(); onNavigate?.('karnama_cv'); }}
+                      onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }}
                       className="w-full p-4 rounded-2xl border flex items-center justify-between hover:border-[#12796b]/40 hover:bg-[#f4faf8] cursor-pointer transition-all duration-200 group"
                       style={{ background: CARD, borderColor: '#eef3f1' }}
                     >
@@ -1447,7 +1447,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                     </p>
                     <button
                       type="button"
-                      onClick={() => { setShowEdit(false); onNavigate?.('karnama_cv'); }}
+                      onClick={() => { setShowEdit(false); onNavigate?.('resumes'); }}
                       className="mt-2 px-5 py-2.5 rounded-xl bg-[#12796b] text-white text-xs font-black hover:bg-[#0d5c50] transition"
                     >
                       چوون بۆ بەڕێوەبردنی کارنامەکان →
