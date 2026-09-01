@@ -678,6 +678,62 @@ export const apiService = {
     }
   },
 
+  // Saved resumes — multiple per user, capped server-side by their real
+  // plan's max_cvs (0 = unlimited). Used both for the Resumes page and for
+  // picking which one to send on a specific job application.
+  async getResumes(token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/resumes`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+  async createResume(payload, token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/resumes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+  async updateResume(id, payload, token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/resumes/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id, ...payload }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+  async deleteResume(id, token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/resumes/delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+
   // AI writing assist — one endpoint, dispatched by `kind`:
   // 'cv_summary' | 'cv_experience' | 'job_description'. See input shapes at
   // each call site; the backend builds the actual prompt.
