@@ -10,9 +10,9 @@ import { pushService } from '../../services/pushService';
 import { AboutModal } from '../layout/AboutModal';
 import {
   Settings, Share2, Camera, FileText, Eye, CheckCircle2, Save,
-  Heart, Trash2, Briefcase, ChevronLeft, LogOut, User, Phone,
-  Bell, MapPin, Plus, X, Layers, Sparkles, Edit, Building2,
-  Send, ExternalLink, PlusCircle, ShieldCheck, Mail, FileCheck,
+  Heart, Trash2, Briefcase, ChevronLeft, LogOut, User,
+  Bell, MapPin, Plus, X, Layers, Sparkles, Building2,
+  ExternalLink, ShieldCheck, FileCheck,
   HelpCircle, Info
 } from 'lucide-react';
 
@@ -41,13 +41,6 @@ const SUGGESTED_SKILLS = [
   'Sales', 'Flutter', 'Video Editing', 'WordPress'
 ];
 
-/* ─── Section wrapper — no entrance animation, appears instantly ──── */
-const FadeCard = ({ children, className = '' }) => (
-  <div className={className}>
-    {children}
-  </div>
-);
-
 /* ─── Progress bar ───────────────────────────────────────────────── */
 const ProgressBar = ({ pct }) => {
   const [width, setWidth] = useState(0);
@@ -66,43 +59,35 @@ const ProgressBar = ({ pct }) => {
   );
 };
 
-/* ─── Stat card ─────────────────────────────────────────────────── */
-const StatCard = ({ value, label, onClick, delay }) => (
-  <FadeCard delay={delay}>
-    <button
-      onClick={onClick}
-      className="w-full bg-white rounded-2xl p-4 text-center border border-[#e4eae7] shadow-sm hover:border-[#12796b]/50 hover:shadow-md active:scale-95 transition-all duration-200 cursor-pointer group"
-    >
-      <div className="text-2xl font-black text-[#1a2321] font-mono leading-none group-hover:text-[#12796b] transition-colors">
-        {value}
-      </div>
-      <div className="text-[11px] font-bold text-[#7b8e88] mt-2 group-hover:text-[#12796b] transition-colors truncate">
-        {label}
-      </div>
-    </button>
-  </FadeCard>
+/* ─── Bento card section head (eyebrow + title + optional link) ──── */
+const BentoHead = ({ eyebrow, title, link, onLink }) => (
+  <div className="flex items-center justify-between mb-3.5">
+    {link && (
+      <button onClick={onLink} className="text-[11.5px] font-black flex items-center gap-1 hover:underline" style={{ color: TEAL }}>
+        {link} <ChevronLeft className="w-3 h-3 rtl:rotate-180" />
+      </button>
+    )}
+    <div>
+      <span className="text-[10.5px] font-black uppercase tracking-wide block" style={{ color: TEAL }}>{eyebrow}</span>
+      <h3 className="text-[15.5px] font-black mt-0.5" style={{ color: TXT }}>{title}</h3>
+    </div>
+  </div>
 );
 
-/* ─── Action row item ─────────────────────────────────────────────── */
-const ActionRow = ({ icon: Icon, title, sub, onClick, delay }) => (
-  <FadeCard delay={delay}>
-    <div
-      onClick={onClick}
-      className="flex items-center justify-between p-4 hover:bg-[#f2faf7] active:bg-[#eaf7f2] transition-all duration-150 cursor-pointer group"
-    >
-      <ChevronLeft className="w-4 h-4 text-[#c1d4cf] group-hover:text-[#12796b] transition-colors" />
-      <div className="flex items-center gap-3.5">
-        <div className="text-right">
-          <div className="text-sm font-black text-[#1a2321] group-hover:text-[#12796b] transition-colors">{title}</div>
-          {sub && <div className="text-[11px] text-[#7b8e88] font-medium mt-0.5">{sub}</div>}
-        </div>
-        <div className="w-10 h-10 rounded-xl bg-[#e8f7f4] text-[#12796b] flex items-center justify-center shrink-0 border border-[#d2efe9] group-hover:bg-[#d4f7ee] group-hover:border-[#beece2] transition-all">
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
-    </div>
-  </FadeCard>
-);
+/* ─── Completion ring around the avatar ─────────────────────────── */
+const CompletionRing = ({ pct, size = 108, strokeW = 4 }) => {
+  const r = (size - strokeW) / 2;
+  const c = 2 * Math.PI * r;
+  const [offset, setOffset] = useState(c);
+  useEffect(() => { const t = setTimeout(() => setOffset(c - (pct / 100) * c), 150); return () => clearTimeout(t); }, [pct, c]);
+  return (
+    <svg width={size} height={size} className="absolute inset-0" style={{ transform: 'rotate(-90deg)' }}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e4eae7" strokeWidth={strokeW} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={TEAL} strokeWidth={strokeW} strokeLinecap="round"
+        strokeDasharray={c} strokeDashoffset={offset} style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.22,1,.36,1)' }} />
+    </svg>
+  );
+};
 
 /* ═══════════════════════════════════════════════════════════════════ */
 export const UserProfilePage = ({ onNavigate }) => {
@@ -435,507 +420,300 @@ export const UserProfilePage = ({ onNavigate }) => {
   }, []);
 
   /* ══════════════════════════════════════════════════════════════════
-     MOBILE VIEW  (< 1024px)
+     PROFILE HERO — identity rail + bento grid, one responsive layout
+     shared by mobile and desktop (rail stacks on top below 1024px)
   ══════════════════════════════════════════════════════════════════ */
-  const MobileView = () => (
-    <div className="block lg:hidden w-full max-w-xl mx-auto space-y-4 pb-4" dir="rtl" style={{ fontFamily: NK }}>
+  const ProfileHero = () => (
+    <div className="w-full max-w-6xl mx-auto" dir="rtl" style={{ fontFamily: NK }}>
 
       {/* ── Top bar ── */}
-      <FadeCard delay={0}>
-        <header className="flex items-center justify-between pt-3 pb-1 px-1">
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={() => { soundService.playTick?.(); setShowSettings(true); }}
-              className="w-10 h-10 rounded-2xl bg-white border border-[#e4ebe8] flex items-center justify-center shadow-sm hover:bg-[#f0faf7] active:scale-90 transition-all duration-150"
-            >
-              <Settings className="w-4.5 h-4.5 text-[#4a5854]" />
-            </button>
-            <button
-              onClick={handleShare}
-              className="w-10 h-10 rounded-2xl bg-white border border-[#e4ebe8] flex items-center justify-center shadow-sm hover:bg-[#f0faf7] active:scale-90 transition-all duration-150 relative"
-            >
-              <Share2 className="w-4.5 h-4.5 text-[#4a5854]" />
-            </button>
-          </div>
-          <h1 className="text-[22px] font-black text-[#15231e]">
-            {isEmployer ? 'پڕۆفایلی کۆمپانیا' : 'پڕۆفایل'}
-          </h1>
-        </header>
-      </FadeCard>
-
-      {/* ── Identity card ── */}
-      <FadeCard delay={60}>
-        <section
-          className="rounded-[28px] p-5 shadow-sm relative overflow-hidden"
-          style={{ background: `linear-gradient(135deg, ${MINT} 0%, ${MINT2} 100%)`, border: `1px solid ${BORDER}` }}
+      <div className="flex items-center justify-between pt-1 pb-4 px-1">
+        <button
+          onClick={() => { soundService.playTick?.(); setShowSettings(true); }}
+          className="w-10 h-10 rounded-2xl bg-white border border-[#e4eae7] shadow-sm flex items-center justify-center text-[#4a5854] hover:text-[#12796b] active:scale-90 transition"
         >
-          <div className="flex items-center justify-between gap-3 relative">
-            <div className="flex-1 min-w-0 text-right">
-              <div className="flex items-center gap-2 flex-wrap justify-start">
-                <h2 className="text-[19px] font-black truncate" style={{ color: TXT }}>{displayName}</h2>
-                {isVIP && (
-                  <span className="profile-vip-pulse text-white text-[11px] font-black px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0"
-                    style={{ background: planAccent }}>
-                    <span className="text-[10px]">👑</span> VIP
-                  </span>
-                )}
-                {isEmployer && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-[#12796b] text-white">
-                    خاوەنکار
-                  </span>
-                )}
-              </div>
-              <div className="text-xs font-bold mt-1 truncate" style={{ color: SUB }}>{displayTitle}</div>
-              <div className="text-[11px] font-medium mt-1 truncate" style={{ color: MUTED }}>
-                {govObj?.name_ku || 'سلێمانی'}{joinYear ? ` · ئەندام لە ${joinYear}` : ''}
-              </div>
-            </div>
+          <Settings className="w-4.5 h-4.5" />
+        </button>
+        <h1 className="text-lg font-black" style={{ color: TXT }}>
+          {isEmployer ? 'پڕۆفایلی کۆمپانیا' : 'پڕۆفایل'}
+        </h1>
+      </div>
 
-            <div className="relative shrink-0">
-              <div
-                onClick={() => avatarRef.current?.click()}
-                className={`w-[70px] h-[70px] ${isEmployer ? 'rounded-2xl' : 'rounded-full'} border-2 bg-[#c8eee6] flex items-center justify-center overflow-hidden cursor-pointer active:scale-95 transition-transform shadow-md group`}
-                style={{ borderColor: 'rgba(18,121,107,0.3)' }}
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 items-start">
+
+        {/* ══════════ IDENTITY RAIL ══════════ */}
+        <aside className="bg-white rounded-[26px] border border-[#e4eae7] shadow-sm p-6 lg:sticky lg:top-5 relative overflow-hidden">
+          {/* subtle kilim-inspired weave, restrained */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-[0.05]"
+            style={{
+              backgroundImage: `repeating-linear-gradient(45deg, ${TXT} 0 1.5px, transparent 1.5px 22px), repeating-linear-gradient(-45deg, ${TXT} 0 1.5px, transparent 1.5px 22px)`,
+              WebkitMaskImage: 'radial-gradient(circle at 100% 0%, #000 0%, transparent 62%)',
+              maskImage: 'radial-gradient(circle at 100% 0%, #000 0%, transparent 62%)',
+            }}
+          />
+
+          <div className="flex items-start justify-between gap-2 relative">
+            {isVIP && (
+              <span
+                className="profile-vip-pulse text-white text-[10.5px] font-black px-2.5 py-1 rounded-full inline-flex items-center gap-1 shrink-0"
+                style={{ background: planAccent }}
               >
-                {displayAvatar
-                  ? <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
-                  : <span className="text-2xl font-black" style={{ color: TXT }}>{initial}</span>}
-                <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
-                  <Camera className="w-4 h-4" />
-                </div>
+                <span className="text-[10px]">👑</span> VIP
+              </span>
+            )}
+            <span
+              className="text-[10.5px] font-black px-2.5 py-1 rounded-full shrink-0"
+              style={{ background: CARD, color: TXT, border: '1px solid #e4eae7' }}
+            >
+              {isEmployer ? 'کۆمپانیا و خاوەنکار' : 'کارخواز'}
+            </span>
+          </div>
+
+          <div className="relative w-[108px] h-[108px] mx-auto my-5">
+            <CompletionRing pct={completion} />
+            <div
+              onClick={() => avatarRef.current?.click()}
+              className={`absolute inset-[9px] ${isEmployer ? 'rounded-2xl' : 'rounded-full'} overflow-hidden border-2 border-white cursor-pointer group flex items-center justify-center shadow-sm`}
+              style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}
+            >
+              {displayAvatar
+                ? <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
+                : <span className="text-3xl font-black text-white">{initial}</span>}
+              <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white">
+                <Camera className="w-4 h-4" />
               </div>
             </div>
+            <span
+              className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-black px-2 py-0.5 rounded-full border-2 border-white font-mono"
+              style={{ background: TEAL }}
+            >
+              {completion}٪
+            </span>
           </div>
 
-          <div className="h-px my-4" style={{ background: BORDER }} />
-
-          {/* Completion */}
-          <div className="space-y-2 text-right">
-            <div className="flex justify-between text-xs font-bold" style={{ color: '#1a554d' }}>
-              <span className="font-mono">{completion}%</span>
-              <span>تەواوی پڕۆفایل</span>
-            </div>
-            <ProgressBar pct={completion} />
-          </div>
+          <h2 className="text-center text-xl font-black relative" style={{ color: TXT }}>{displayName}</h2>
+          <p className="text-center text-xs font-bold mt-1 relative" style={{ color: SUB }}>{displayTitle}</p>
+          <p className="text-center text-[11px] font-medium mt-1 mb-6 relative" style={{ color: MUTED }}>
+            {govObj?.name_ku || 'سلێمانی'}{distObj?.name_ku ? `، ${distObj.name_ku}` : ''}{joinYear ? ` · ئەندام لە ${joinYear}` : ''}
+          </p>
 
           <button
             onClick={() => { soundService.playTick?.(); setShowEdit(true); }}
-            className="shimmer-btn w-full mt-4 py-3.5 px-4 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.98] transition-transform cursor-pointer flex items-center justify-center gap-2"
+            className="shimmer-btn w-full py-3.5 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.98] transition relative mb-2.5"
           >
             {isEmployer ? 'دەستکاری زانیاری کۆمپانیا' : 'دەستکاری پڕۆفایل'}
           </button>
-        </section>
-      </FadeCard>
 
-      {/* ── Stats row ── */}
-      <div className="grid grid-cols-3 gap-3">
-        {isEmployer ? (
-          <>
-            <StatCard value={employerJobs.length} label="کارەکانم" onClick={() => { soundService.playTick?.(); onNavigate?.('employer'); }} delay={120} />
-            <StatCard value={employerReceivedApplications} label="داواکارییەکان" onClick={() => { soundService.playTick?.(); onNavigate?.('employer'); }} delay={160} />
-            <StatCard value={profileViews} label="بینینەکان" onClick={() => { soundService.playTick?.(); setShowViewers(true); }} delay={200} />
-          </>
-        ) : (
-          <>
-            <StatCard value={profileViews} label="بینینی پڕۆفایل" onClick={() => { soundService.playTick?.(); setShowViewers(true); }} delay={120} />
-            <StatCard value={applCount}    label="داواکارییەکانم" onClick={() => { soundService.playTick?.(); onNavigate?.('my_applications'); }} delay={160} />
-            <StatCard value={savedCount}   label="پاشەکەوتکراو"   onClick={() => { soundService.playTick?.(); setShowSaved(true); }} delay={200} />
-          </>
-        )}
-      </div>
-
-      {/* ── Action list ── */}
-      <FadeCard delay={260}>
-        <section className="bg-white rounded-2xl border border-[#e4eae7] shadow-sm divide-y divide-[#f0f4f2] overflow-hidden">
-          {isEmployer ? (
-            <>
-              <ActionRow icon={PlusCircle} title="بڵاوکردنەوەی هەلی کاری نوێ" sub="پۆستکردنی هەلی کار" onClick={() => { soundService.playTick?.(); onNavigate?.('post_job'); }} delay={0} />
-              <ActionRow icon={Briefcase} title="بەڕێوەبردنی کارە بڵاوکراوەکان" sub={`${employerJobs.length} کاری چالاک`} onClick={() => { soundService.playTick?.(); onNavigate?.('employer'); }} delay={0} />
-              <ActionRow icon={User} title="ڕێنمای کارخوازان" sub="گەڕان بۆ کاندیدە بەهرەمەندەکان" onClick={() => { soundService.playTick?.(); onNavigate?.('freelancers'); }} delay={0} />
-            </>
-          ) : (
-            <>
-              <ActionRow icon={FileText} title="کارنامەکانم (CV)" sub={user?.cv_url ? '١ سیڤی چالاک' : 'دروستکردنی CV'} onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }} delay={0} />
-              <ActionRow icon={Heart} title="کارە پاشەکەوتکراوەکان" sub={`${savedCount} کار`} onClick={() => { soundService.playTick?.(); setShowSaved(true); }} delay={0} />
-              <ActionRow icon={Send} title="داواکارییە نێردراوەکانم" sub={`${applCount} داواکاری`} onClick={() => { soundService.playTick?.(); onNavigate?.('my_applications'); }} delay={0} />
-            </>
-          )}
-        </section>
-      </FadeCard>
-
-      {/* ── Logout ── */}
-      <FadeCard delay={320}>
-        <button
-          onClick={() => { soundService.playTick?.(); setShowLogout(true); }}
-          className="w-full rounded-2xl py-3.5 px-4 flex items-center justify-center gap-2 cursor-pointer transition-all duration-200 hover:shadow-sm active:scale-[0.98] border"
-          style={{ background: '#fef5f5', borderColor: '#fad8d8' }}
-        >
-          <LogOut className="w-4 h-4" style={{ color: '#d84848' }} />
-          <span className="font-black text-sm" style={{ color: '#d84848' }}>چوونەدەرەوە</span>
-        </button>
-      </FadeCard>
-    </div>
-  );
-
-  /* ══════════════════════════════════════════════════════════════════
-     DESKTOP VIEW  (≥ 1024px)
-  ══════════════════════════════════════════════════════════════════ */
-  const DesktopView = () => (
-    <div className="hidden lg:block w-full" dir="rtl" style={{ fontFamily: NK }}>
-      <div className="bg-white rounded-[32px] border border-[#e4eae7] shadow-sm overflow-hidden w-full">
-
-        {/* ── Banner ── */}
-        <div
-          className="relative overflow-hidden"
-          style={{
-            height: '200px',
-            background: cover ? `url(${cover}) center/cover no-repeat` : 'linear-gradient(135deg, #12796b 0%, #1a6b62 50%, #2e8a7f 100%)',
-          }}
-        >
-          <div className="absolute inset-0 bg-black/25" />
-
-          {/* Actions on Top Left in visual (top right in RTL) */}
-          <div className="absolute top-6 right-6 flex items-center gap-3">
-            <button
-              onClick={() => { soundService.playTick?.(); setShowEdit(true); }}
-              className="px-5 py-2.5 rounded-xl bg-white/95 hover:bg-white text-[#12796b] text-xs font-black shadow-md active:scale-95 transition-all duration-150 flex items-center gap-2"
-            >
-              <Edit className="w-3.5 h-3.5" /> {isEmployer ? 'دەستکاری کۆمپانیا' : 'دەستکاری پڕۆفایل'}
-            </button>
+          <div className="flex gap-2 relative">
             <button
               onClick={handleShare}
-              className="px-5 py-2.5 rounded-xl text-white text-xs font-bold border border-white/30 active:scale-95 transition-all duration-150 flex items-center gap-2 backdrop-blur-sm relative hover:bg-white/20"
+              className="flex-1 py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border transition hover:text-white hover:bg-[#12796b] hover:border-[#12796b]"
+              style={{ background: CARD, borderColor: '#e4eae7', color: SUB }}
             >
               <Share2 className="w-3.5 h-3.5" /> هاوبەشکردن
             </button>
             <button
-              onClick={() => { soundService.playTick?.(); setShowSettings(true); }}
-              className="w-10 h-10 rounded-xl text-white border border-white/25 active:scale-95 transition-all duration-150 flex items-center justify-center backdrop-blur-sm hover:bg-white/20"
+              onClick={() => { soundService.playTick?.(); setShowLogout(true); }}
+              className="flex-1 py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border transition"
+              style={{ background: '#fef5f5', borderColor: '#fad8d8', color: '#d84848' }}
             >
-              <Settings className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" /> چوونەدەرەوە
             </button>
           </div>
-        </div>
 
-        {/* ── Avatar + Identity strip ── */}
-        <div className="px-10 pb-7 pt-0 border-b border-[#f0f4f2]">
-          <div className="flex items-end justify-between" style={{ marginTop: '-60px', marginBottom: '16px' }}>
-            <div className="flex items-center gap-3 pb-1">
+          <div className="h-px my-5 relative" style={{ background: '#eef3f1' }} />
+
+          <div className="flex text-center relative">
+            {(isEmployer ? [
+              { val: employerJobs.length, label: 'هەلی کار', fn: () => onNavigate?.('employer') },
+              { val: employerReceivedApplications, label: 'داواکاری', fn: () => onNavigate?.('employer') },
+              { val: profileViews, label: 'بینین', fn: () => setShowViewers(true) },
+            ] : [
+              { val: profileViews, label: 'بینین', fn: () => setShowViewers(true) },
+              { val: applCount, label: 'داواکاری', fn: () => onNavigate?.('my_applications') },
+              { val: savedCount, label: 'پاشەکەوت', fn: () => setShowSaved(true) },
+            ]).map(({ val, label, fn }, i) => (
               <button
-                onClick={() => { soundService.playTick?.(); setShowLogout(true); }}
-                className="px-4 py-2.5 rounded-xl text-[#d84848] text-xs font-bold border border-[#fad8d8] active:scale-95 transition-all duration-150 flex items-center gap-1.5"
-                style={{ background: '#fef5f5' }}
+                key={label}
+                onClick={() => { soundService.playTick?.(); fn(); }}
+                className="flex-1 py-1.5 rounded-xl hover:bg-[#f4faf8] transition"
+                style={i > 0 ? { borderRight: '1px solid #eef3f1' } : {}}
               >
-                <LogOut className="w-3.5 h-3.5" /> چوونەدەرەوە
+                <div className="text-lg font-black font-mono" style={{ color: TXT }}>{val}</div>
+                <div className="text-[10px] font-bold mt-0.5" style={{ color: MUTED }}>{label}</div>
               </button>
-            </div>
-
-            {/* Avatar + name */}
-            <div className="flex items-end gap-6 text-right">
-              <div className="pb-1">
-                <div className="flex items-center gap-3 justify-end">
-                  {isVIP && (
-                    <span className="profile-vip-pulse text-white text-xs font-black px-3 py-1 rounded-full inline-flex items-center gap-1 shadow-md"
-                      style={{ background: planAccent }}>
-                      <span className="text-[11px]">👑</span> VIP
-                    </span>
-                  )}
-                  {isEmployer && (
-                    <span className="px-2.5 py-1 rounded-full text-xs font-black bg-[#12796b] text-white">
-                      کۆمپانیا و خاوەنکار
-                    </span>
-                  )}
-                  <h2 className="text-[28px] font-black tracking-tight" style={{ color: TXT }}>{displayName}</h2>
-                </div>
-                <div className="text-sm font-bold mt-1" style={{ color: SUB }}>
-                  {displayTitle}
-                  <span className="font-medium" style={{ color: MUTED }}>
-                    {' '}·{' '}{govObj?.name_ku || 'سلێمانی'}، {distObj?.name_ku || ''}{joinYear ? ` · ئەندام لە ${joinYear}` : ''}
-                  </span>
-                </div>
-              </div>
-
-              <div
-                onClick={() => avatarRef.current?.click()}
-                className={`w-32 h-32 ${isEmployer ? 'rounded-3xl' : 'rounded-full'} border-[5px] border-white bg-[#c8eee6] flex items-center justify-center overflow-hidden shadow-xl cursor-pointer group relative shrink-0`}
-              >
-                {displayAvatar
-                  ? <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
-                  : <span className="text-4xl font-black" style={{ color: TXT }}>{initial}</span>}
-                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white">
-                  <Camera className="w-7 h-7" />
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
-        </div>
+        </aside>
 
-        {/* ── Main grid ── */}
-        <div className="p-10 grid grid-cols-12 gap-8">
+        {/* ══════════ BENTO GRID ══════════ */}
+        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
 
-          {/* Left sidebar (col 1-4) */}
-          <div className="col-span-4 space-y-5">
+          {/* About */}
+          <div className="col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+            <BentoHead eyebrow="دەربارە" title={isEmployer ? 'دەربارەی کۆمپانیا' : 'دەربارەی من'} />
+            <p className="text-[13.5px] leading-[1.9] font-medium" style={{ color: SUB }}>
+              {bio || user?.bio || (
+                <span style={{ color: MUTED }}>
+                  {isEmployer ? 'کورتەیەک دەربارەی کار و بەرهەمەکانی کۆمپانیاکەت بنووسە.' : 'کورتەیەک دەربارەی خۆت و ئەزموونەکانت بنووسە.'}
+                </span>
+              )}
+            </p>
+          </div>
 
-            {/* Completion card */}
-            <FadeCard delay={80}>
-              <div
-                className="rounded-3xl p-6 shadow-sm space-y-4 text-right"
-                style={{ background: `linear-gradient(135deg, ${MINT} 0%, ${MINT2} 100%)`, border: `1px solid ${BORDER}` }}
-              >
-                <div className="flex justify-between text-sm font-black" style={{ color: '#15463e' }}>
-                  <span className="font-mono text-base">{completion}%</span>
-                  <span>تەواوی پڕۆفایل</span>
-                </div>
-                <ProgressBar pct={completion} />
-                <p className="text-xs font-medium leading-relaxed" style={{ color: '#3a7c73' }}>
-                  {isEmployer
-                    ? 'پڕۆفایلی تەواوی کۆمپانیا دەبێتە هۆی وەرگرتنی کاندیدی باشتر.'
-                    : 'پڕۆفایلی تەواو ٣ ئەوەندە زیاتر لەلایەن خاوەنکارانەوە دەبینرێت.'}
-                </p>
+          {isFreelancer ? (
+            <>
+              {/* Resumes */}
+              <div className="col-span-1 lg:col-span-3 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5 flex flex-col">
+                <BentoHead eyebrow="سیڤیەکان" title="کارنامەکانم" link="هەموو" onLink={() => { soundService.playTick?.(); onNavigate?.('resumes'); }} />
                 <button
-                  onClick={() => { soundService.playTick?.(); setShowEdit(true); }}
-                  className="shimmer-btn w-full py-3 px-4 rounded-xl text-white font-black text-xs shadow-sm transition-transform active:scale-95"
+                  onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }}
+                  className="flex-1 rounded-2xl border flex items-center gap-3 p-4 transition hover:border-[#12796b]/40 hover:bg-[#f4faf8]"
+                  style={{ background: CARD, borderColor: '#eef3f1' }}
                 >
-                  {isEmployer ? 'نوێکردنەوەی زانیاری' : 'تەواوکردنی پڕۆفایل'}
+                  <div className="w-11 h-12 rounded-xl flex items-center justify-center shrink-0 border" style={{ background: '#e0f3ee', borderColor: '#c1ede3' }}>
+                    <FileText className="w-6 h-6" style={{ color: TEAL }} />
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-black" style={{ color: TXT }}>کارنامەی فەرمی</div>
+                    <div className="text-[11px] mt-0.5" style={{ color: MUTED }}>{user?.cv_url ? 'سیڤی بارکراو' : 'دروستکردنی CV'}</div>
+                  </div>
                 </button>
               </div>
-            </FadeCard>
 
-            {/* Stats card */}
-            <FadeCard delay={140}>
-              <div className="bg-white border border-[#e4eae7] rounded-3xl p-6 shadow-sm space-y-4 text-right">
-                <h3 className="text-sm font-black" style={{ color: '#1a2321' }}>ئامارەکان</h3>
-                {isEmployer ? (
-                  [
-                    { val: employerJobs.length, label: 'هەلی کاری بڵاوکراوە', fn: () => onNavigate?.('employer') },
-                    { val: employerReceivedApplications, label: 'داواکاری وەرگیراو', fn: () => onNavigate?.('employer') },
-                    { val: profileViews, label: 'بینینی پڕۆفایل', fn: () => setShowViewers(true) },
-                  ].map(({ val, label, fn }) => (
-                    <button
-                      key={label}
-                      onClick={() => { soundService.playTick?.(); fn(); }}
-                      className="w-full flex items-center justify-between p-3.5 rounded-2xl border hover:border-[#12796b]/40 hover:bg-[#f4faf8] cursor-pointer transition-all duration-200 group"
-                      style={{ background: CARD, borderColor: '#eef3f1' }}
-                    >
-                      <span className="text-lg font-black font-mono group-hover:text-[#12796b] transition-colors" style={{ color: '#1a2321' }}>{val}</span>
-                      <span className="text-xs font-bold" style={{ color: '#62736e' }}>{label}</span>
-                    </button>
-                  ))
+              {/* Location */}
+              <div className="col-span-1 lg:col-span-3 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+                <BentoHead eyebrow="شوێن" title="ناونیشان" />
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#e0f3ee', color: TEAL }}>
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-black" style={{ color: TXT }}>{govObj?.name_ku}{distObj?.name_ku ? `، ${distObj.name_ku}` : ''}</div>
+                    <div className="text-[11px] font-bold mt-0.5" style={{ color: MUTED }}>ناوچەی کارکردن</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Skills */}
+              <div className="col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+                <BentoHead eyebrow="شارەزایی" title="کارامەیی و تواناکان" />
+                <div className="flex flex-wrap gap-2">
+                  {(skills.length ? skills : parseJsonArray(user?.skills)).map(s => (
+                    <span key={s} className="px-3.5 py-2 rounded-xl border text-xs font-bold" style={{ background: '#fff', borderColor: '#dce5e1', color: '#2d3a36' }}>
+                      {s}
+                    </span>
+                  ))}
+                  {skills.length === 0 && !parseJsonArray(user?.skills).length && (
+                    <span className="text-xs font-bold" style={{ color: MUTED }}>هیچ شارەزاییەک زیاد نەکراوە.</span>
+                  )}
+                  <button
+                    onClick={() => { soundService.playTick?.(); setShowEdit(true); }}
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1"
+                    style={{ background: CARD, color: TEAL }}
+                  >
+                    <Plus className="w-3.5 h-3.5" /> زیادکردن
+                  </button>
+                </div>
+              </div>
+
+              {/* Experience timeline */}
+              <div className="col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+                <BentoHead eyebrow="مێژوو" title="ئەزموونی کار" link="زیادکردن" onLink={() => { soundService.playTick?.(); setShowEdit(true); }} />
+                {experiences.length === 0 ? (
+                  <p className="text-xs font-bold" style={{ color: MUTED }}>هیچ ئەزموونێک زیاد نەکراوە.</p>
                 ) : (
-                  [
-                    { val: profileViews,  label: 'بینینی پڕۆفایل',  fn: () => setShowViewers(true) },
-                    { val: applCount,     label: 'داواکاری نێردراو', fn: () => onNavigate?.('my_applications') },
-                    { val: savedCount,    label: 'پاشەکەوتکراو',   fn: () => setShowSaved(true) },
-                  ].map(({ val, label, fn }) => (
-                    <button
-                      key={label}
-                      onClick={() => { soundService.playTick?.(); fn(); }}
-                      className="w-full flex items-center justify-between p-3.5 rounded-2xl border hover:border-[#12796b]/40 hover:bg-[#f4faf8] cursor-pointer transition-all duration-200 group"
-                      style={{ background: CARD, borderColor: '#eef3f1' }}
-                    >
-                      <span className="text-lg font-black font-mono group-hover:text-[#12796b] transition-colors" style={{ color: '#1a2321' }}>{val}</span>
-                      <span className="text-xs font-bold" style={{ color: '#62736e' }}>{label}</span>
-                    </button>
-                  ))
+                  <div className="space-y-5">
+                    {experiences.map((exp, i) => (
+                      <div key={exp.id || i} className="relative pr-5">
+                        {i < experiences.length - 1 && (
+                          <span className="absolute right-[3px] top-3 bottom-[-20px] w-px" style={{ background: '#eef3f1' }} />
+                        )}
+                        <span className="absolute -right-[2px] top-1 w-2.5 h-2.5 rounded-full" style={{ background: TEAL }} />
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="text-[10.5px] font-mono shrink-0" style={{ color: MUTED }}>{exp.period}</span>
+                          <h4 className="text-sm font-black" style={{ color: TXT }}>{exp.title}</h4>
+                        </div>
+                        {exp.description && <p className="text-xs font-medium mt-1 leading-relaxed" style={{ color: SUB }}>{exp.description}</p>}
+                        {exp.link && (
+                          <a href={exp.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-black mt-1 hover:underline" style={{ color: TEAL }}>
+                            بینینی لینک <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
-            </FadeCard>
+            </>
+          ) : (
+            <>
+              {/* Verified strip — only when the admin has actually verified this account */}
+              {Number(user?.verified) === 1 && (
+                <div className="col-span-1 lg:col-span-3 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5 flex items-center">
+                  <div className="w-full flex items-center gap-2.5 rounded-xl p-3.5" style={{ background: '#e8f7f4', border: '1px solid #c1ede3' }}>
+                    <ShieldCheck className="w-4.5 h-4.5 shrink-0" style={{ color: TEAL_DEEP }} />
+                    <span className="text-[11.5px] font-bold" style={{ color: TEAL_DEEP }}>کۆمپانیای پشتڕاستکراو</span>
+                  </div>
+                </div>
+              )}
 
-            {/* Action card */}
-            <FadeCard delay={200}>
-              <div className="bg-white border border-[#e4eae7] rounded-3xl p-6 shadow-sm space-y-4 text-right">
-                {isEmployer ? (
-                  <>
-                    <h3 className="text-sm font-black" style={{ color: '#1a2321' }}>هەلی کاری کۆمپانیا</h3>
-                    <button
-                      onClick={() => { soundService.playTick?.(); onNavigate?.('post_job'); }}
-                      className="w-full p-4 rounded-2xl border flex items-center justify-between hover:border-[#12796b]/40 hover:bg-[#f4faf8] cursor-pointer transition-all duration-200 group text-white"
-                      style={{ background: TEAL }}
-                    >
-                      <Plus className="w-5 h-5" />
-                      <span className="text-xs font-black">بڵاوکردنەوەی هەلی کاری نوێ</span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <button onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }} className="text-xs font-bold hover:underline" style={{ color: TEAL }}>بەڕێوەبردن</button>
-                      <h3 className="text-sm font-black" style={{ color: '#1a2321' }}>کارنامەکانم (CV)</h3>
-                    </div>
-                    <button
-                      onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }}
-                      className="w-full p-4 rounded-2xl border flex items-center justify-between hover:border-[#12796b]/40 hover:bg-[#f4faf8] cursor-pointer transition-all duration-200 group"
-                      style={{ background: CARD, borderColor: '#eef3f1' }}
-                    >
-                      <div className="w-11 h-12 rounded-xl flex items-center justify-center shrink-0 border" style={{ background: '#e0f3ee', borderColor: '#c1ede3' }}>
-                        <FileText className="w-6 h-6" style={{ color: TEAL }} />
-                      </div>
-                      <div className="text-right flex-1 pr-3">
-                        <div className="text-xs font-black" style={{ color: '#1a2321' }}>کارنامەی فەرمی</div>
-                        <div className="text-[11px] mt-0.5" style={{ color: '#7b8e88' }}>{user?.cv_url ? 'سیڤی بارکراو' : 'دروستکردنی CV'}</div>
-                      </div>
-                    </button>
-                  </>
-                )}
-              </div>
-            </FadeCard>
-
-          </div>
-
-          {/* Right main area (col 5-12) */}
-          <div className="col-span-8 space-y-8 text-right">
-
-            {/* About */}
-            <FadeCard delay={100}>
-              <div className="space-y-3">
-                <h3 className="text-lg font-black" style={{ color: '#1a2321' }}>{isEmployer ? 'دەربارەی کۆمپانیا' : 'دەربارەی من'}</h3>
-                <div
-                  className="text-sm font-medium leading-[1.9] p-6 rounded-2xl border"
-                  style={{ background: CARD, borderColor: '#eef3f1', color: '#4a5854', minHeight: '80px' }}
+              {/* Post job CTA */}
+              <div className={Number(user?.verified) === 1 ? 'col-span-1 lg:col-span-3' : 'col-span-2 lg:col-span-6'}>
+                <button
+                  onClick={() => { soundService.playTick?.(); onNavigate?.('post_job'); }}
+                  className="w-full h-full min-h-[76px] rounded-[18px] flex items-center justify-between px-5 text-white font-black text-xs shadow-sm transition active:scale-[0.98]"
+                  style={{ background: TEAL }}
                 >
-                  {bio || user?.bio || (
-                    <span style={{ color: '#aabdb7' }}>{isEmployer ? 'کورتەیەک دەربارەی کار و بەرهەمەکانی کۆمپانیاکەت بنووسە.' : 'کورتەیەک دەربارەی خۆت و ئەزموونەکانت بنووسە.'}</span>
-                  )}
-                </div>
+                  <Plus className="w-5 h-5" />
+                  بڵاوکردنەوەی هەلی کاری نوێ
+                </button>
               </div>
-            </FadeCard>
 
-            {/* Employer: Active Jobs List / Freelancer: Skills */}
-            {isEmployer ? (
-              <FadeCard delay={160}>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <button onClick={() => onNavigate?.('post_job')} className="text-xs font-bold hover:underline flex items-center gap-1" style={{ color: TEAL }}>
-                      <Plus className="w-3.5 h-3.5" /> هەلی کاری نوێ
-                    </button>
-                    <h3 className="text-lg font-black" style={{ color: '#1a2321' }}>هەلی کارە چالاکەکان ({employerJobs.length})</h3>
-                  </div>
-
-                  {employerJobs.length === 0 ? (
-                    <div className="p-8 rounded-2xl border text-center text-xs font-bold text-stone-400" style={{ background: CARD, borderColor: '#eef3f1' }}>
-                      هێشتا هیچ هەلی کارێکت بڵاونەکردووەتەوە.
-                    </div>
-                  ) : (
-                    <div className="space-y-2.5">
-                      {employerJobs.map(job => (
-                        <div key={job.id} className="p-4 rounded-2xl border flex items-center justify-between hover:bg-[#f4faf8] transition bg-white" style={{ borderColor: '#eef3f1' }}>
-                          <button onClick={() => onNavigate?.('employer')} className="text-xs font-bold px-3 py-1.5 rounded-xl border border-stone-200 hover:bg-stone-50">
-                            بەڕێوەبردن
-                          </button>
-                          <div className="text-right">
-                            <h4 className="text-xs font-black text-stone-900">{job.title_ku || job.title}</h4>
-                            <p className="text-[11px] text-stone-400 mt-0.5">{job.governorate_name || job.governorate || 'سلێمانی'}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </FadeCard>
-            ) : (
-              <FadeCard delay={160}>
-                <div className="space-y-3">
-                  <h3 className="text-lg font-black" style={{ color: '#1a2321' }}>شارەزاییەکان</h3>
-                  <div className="flex flex-wrap gap-2.5">
-                    {(skills.length ? skills : parseJsonArray(user?.skills)).map(s => (
-                      <span
-                        key={s}
-                        className="px-4 py-2 rounded-2xl border text-xs font-bold transition-all duration-200 cursor-default hover:scale-105 hover:shadow-sm"
-                        style={{ background: '#fff', borderColor: '#dce5e1', color: '#2d3a36' }}
-                      >
-                        {s}
-                      </span>
-                    ))}
-                    {skills.length === 0 && !parseJsonArray(user?.skills).length && (
-                      <span className="text-xs font-bold" style={{ color: '#aabdb7' }}>هیچ شارەزاییەک زیاد نەکراوە.</span>
-                    )}
-                    <button
-                      onClick={() => { soundService.playTick?.(); setShowEdit(true); }}
-                      className="px-3.5 py-2 rounded-2xl text-xs font-bold transition-all duration-200 hover:shadow-sm active:scale-95 flex items-center gap-1"
-                      style={{ background: '#f0f4f2', color: TEAL }}
-                    >
-                      <Plus className="w-3.5 h-3.5" /> زیادکردن
-                    </button>
-                  </div>
-                </div>
-              </FadeCard>
-            )}
-
-            {/* Experience timeline (Freelancers) / Company Info Details (Employer) */}
-            {isFreelancer ? (
-              <FadeCard delay={220}>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => { soundService.playTick?.(); setShowEdit(true); }}
-                      className="text-xs font-bold hover:underline flex items-center gap-1"
-                      style={{ color: TEAL }}
-                    >
-                      <Plus className="w-3.5 h-3.5" /> ئەزموون زیاد بکە
-                    </button>
-                    <h3 className="text-lg font-black" style={{ color: '#1a2321' }}>مێژووی کار</h3>
-                  </div>
-
-                  <div className="relative pr-6 space-y-6 border-r-2" style={{ borderColor: '#e4eae7' }}>
-                    {(experiences.length ? experiences : []).map((exp, i) => (
-                      <div key={exp.id || i} className="relative group">
-                        <span
-                          className="absolute -right-[31px] top-[5px] w-3.5 h-3.5 rounded-full border-2 border-white transition-transform group-hover:scale-125"
-                          style={{ background: exp.current ? TEAL : '#c8d5d0' }}
-                        />
-                        <div>
-                          <div className="flex items-start justify-between gap-4">
-                            <h4 className="text-sm font-black" style={{ color: '#1a2321' }}>{exp.title}</h4>
-                            <span className="text-[11px] font-mono shrink-0" style={{ color: '#7b8e88' }}>{exp.period}</span>
-                          </div>
-                          {exp.description && (
-                            <p className="text-xs font-medium mt-1 leading-relaxed" style={{ color: '#62736e' }}>{exp.description}</p>
-                          )}
-                          {exp.link && (
-                            <a href={exp.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-black mt-1 hover:underline" style={{ color: TEAL }}>
-                              بینینی لینک <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
+              {/* Jobs list */}
+              <div className="col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+                <BentoHead eyebrow="چالاک" title={`هەلی کارەکان (${employerJobs.length})`} link="هەموو" onLink={() => { soundService.playTick?.(); onNavigate?.('employer'); }} />
+                {employerJobs.length === 0 ? (
+                  <p className="text-xs font-bold" style={{ color: MUTED }}>هێشتا هیچ هەلی کارێکت بڵاونەکردووەتەوە.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {employerJobs.map(job => (
+                      <div key={job.id} className="p-3.5 rounded-xl border flex items-center justify-between gap-3 hover:bg-[#f4faf8] transition" style={{ borderColor: '#eef3f1', background: CARD }}>
+                        <button onClick={() => { soundService.playTick?.(); onNavigate?.('employer'); }} className="text-[10.5px] font-bold px-3 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 shrink-0">
+                          بەڕێوەبردن
+                        </button>
+                        <div className="text-right flex-1 min-w-0">
+                          <div className="text-xs font-black truncate" style={{ color: TXT }}>{job.title_ku || job.title}</div>
+                          <div className="text-[11px] mt-0.5" style={{ color: MUTED }}>{job.governorate_name || job.governorate || 'سلێمانی'}</div>
                         </div>
                       </div>
                     ))}
-                    {experiences.length === 0 && (
-                      <div className="text-xs font-bold py-3" style={{ color: '#aabdb7' }}>هیچ ئەزموونێک زیاد نەکراوە.</div>
-                    )}
                   </div>
-                </div>
-              </FadeCard>
-            ) : (
-              <FadeCard delay={220}>
-                <div className="space-y-4">
-                  <h3 className="text-lg font-black" style={{ color: '#1a2321' }}>زانیاری فەرمی کۆمپانیا</h3>
-                  <div className="bg-[#f8faf9] p-5 rounded-2xl border border-stone-200 divide-y divide-stone-100 text-xs">
-                    <div className="py-2.5 flex items-center justify-between">
-                      <span className="font-bold text-stone-900">{companyName}</span>
-                      <span className="text-stone-400">ناوی کۆمپانیا</span>
-                    </div>
-                    <div className="py-2.5 flex items-center justify-between">
-                      <span className="font-bold text-stone-900">{industry}</span>
-                      <span className="text-stone-400">بواری چالاکی</span>
-                    </div>
-                    <div className="py-2.5 flex items-center justify-between">
-                      <span className="font-bold text-stone-900">{phone || 'دیارینەکراوە'}</span>
-                      <span className="text-stone-400">ژمارەی تەلەفۆن</span>
-                    </div>
-                    <div className="py-2.5 flex items-center justify-between">
-                      <span className="font-bold text-stone-900">{email || user?.email || 'دیارینەکراوە'}</span>
-                      <span className="text-stone-400">ئیمەیلی فەرمی</span>
-                    </div>
-                    <div className="py-2.5 flex items-center justify-between">
-                      <span className="font-bold text-stone-900">{companyReg || 'دیارینەکراوە'}</span>
-                      <span className="text-stone-400">ژمارەی تۆماری بازرگانی</span>
-                    </div>
-                  </div>
-                </div>
-              </FadeCard>
-            )}
+                )}
+              </div>
 
-          </div>
+              {/* Company info table */}
+              <div className="col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+                <BentoHead eyebrow="زانیاری فەرمی" title="تۆماری کۆمپانیا" />
+                <div className="divide-y" style={{ borderColor: '#eef3f1' }}>
+                  {[
+                    [companyName, 'ناوی کۆمپانیا'],
+                    [industry, 'بواری چالاکی'],
+                    [phone || 'دیارینەکراوە', 'ژمارەی تەلەفۆن'],
+                    [email || user?.email || 'دیارینەکراوە', 'ئیمەیلی فەرمی'],
+                    [companyReg || 'دیارینەکراوە', 'ژمارەی تۆماری بازرگانی'],
+                  ].map(([val, label]) => (
+                    <div key={label} className="py-2.5 flex items-center justify-between text-xs">
+                      <span className="font-bold" style={{ color: TXT }}>{val}</span>
+                      <span style={{ color: MUTED }}>{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
         </div>
       </div>
     </div>
@@ -1471,23 +1249,6 @@ export const UserProfilePage = ({ onNavigate }) => {
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-[#f8faf9] border border-stone-200 space-y-2">
-                    <label className="text-xs font-bold text-stone-900 block">زمانی کارپێکردن</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {Object.entries(LANG_META).map(([code, m]) => (
-                        <button
-                          key={code}
-                          type="button"
-                          onClick={() => { soundService.playTick?.(); setLang(code); }}
-                          className={`py-2 rounded-xl text-xs font-bold border transition ${
-                            lang === code ? 'bg-[#111d1a] text-white border-[#111d1a]' : 'bg-white text-stone-600 border-stone-200'
-                          }`}
-                        >
-                          {m.flag} {m.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -1685,8 +1446,7 @@ export const UserProfilePage = ({ onNavigate }) => {
       <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
       <input ref={coverRef} type="file" accept="image/*" onChange={handleCoverChange} className="hidden" />
 
-      <MobileView />
-      <DesktopView />
+      <ProfileHero />
 
       {showEdit     && <EditModal />}
       {showSettings && <SettingsModal />}
