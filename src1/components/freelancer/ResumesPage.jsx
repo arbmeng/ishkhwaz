@@ -5,7 +5,7 @@ import { apiService } from '../../services/api';
 import { soundService } from '../../services/soundService';
 import { exportNodeToPdf, safeFilename } from '../../services/karnamaPdf';
 import { getTemplate } from '../../cvTemplates/registry';
-import { ArrowLeft, Plus, Download, Trash2, FileText, Loader2, Send } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Trash2, FileText, Loader2, Send, Palette } from 'lucide-react';
 
 const TEAL = '#12796b';
 const TEAL_DEEP = '#0d5c50';
@@ -28,7 +28,7 @@ const HiddenExportNode = ({ resume, innerRef }) => {
   );
 };
 
-export const ResumesPage = ({ onBack, onCreateNew }) => {
+export const ResumesPage = ({ onBack, onCreateNew, onEditStyle }) => {
   const { token, user } = useAuth();
   const { addToast, planTiers = [] } = useStore();
   const [resumes, setResumes] = useState([]);
@@ -138,6 +138,15 @@ export const ResumesPage = ({ onBack, onCreateNew }) => {
                     <h3 className="text-sm font-black text-stone-900 truncate">{r.title}</h3>
                     <p className="text-[11px] text-stone-400 font-bold truncate">{template.name}</p>
                   </div>
+                  {onEditStyle && (
+                    <button
+                      onClick={() => { soundService.playTick?.(); onEditStyle(r.id); }}
+                      className="w-10 h-10 rounded-xl bg-stone-50 border border-stone-200 flex items-center justify-center text-stone-600 active:scale-95 transition shrink-0"
+                      aria-label="گۆڕینی شێواز"
+                    >
+                      <Palette className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDownload(r)}
                     disabled={downloadingId === r.id}
