@@ -408,7 +408,22 @@ export const JobFeed = ({ onNavigate }) => {
         className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.12)] hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden group"
         style={isBoosted ? { boxShadow: `0 0 0 2px ${TEAL}, 0 2px 16px rgba(0,0,0,0.05)` } : {}}>
         <div className="relative h-36 sm:h-40">
-          <CoverArt seed={f.name} cover={f.cover} className="w-full h-full" />
+          {/* No dedicated cover photo on most freelancer profiles yet — fall
+              back to their real avatar (blurred fill + centered real shot)
+              before falling back to a name-initial monogram, so a name
+              starting with "ئ" (very common in Kurdish) doesn't render as
+              what looks like the app's own logo on the card. */}
+          {f.cover ? (
+            <CoverArt seed={f.name} cover={f.cover} className="w-full h-full" />
+          ) : f.avatar ? (
+            <div className="relative w-full h-full overflow-hidden">
+              <img src={f.avatar} alt="" className="absolute inset-0 w-full h-full object-cover scale-125 blur-md opacity-60" />
+              <div className="absolute inset-0 bg-black/10" />
+              <img src={f.avatar} alt={f.name} className="absolute inset-0 w-full h-full object-contain" />
+            </div>
+          ) : (
+            <CoverArt seed={f.name} cover={null} className="w-full h-full" />
+          )}
 
           <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black bg-white/90 backdrop-blur text-stone-700 shadow-sm">
             {f.governorate || 'کوردستان'}
@@ -426,7 +441,11 @@ export const JobFeed = ({ onNavigate }) => {
             </span>
           )}
 
-          {f.avatar && (
+          {/* Only show the small corner photo when the banner itself is
+              showing something else (a real cover) — when the banner is
+              already this same avatar (the fallback above), a second
+              copy overlapping it is redundant. */}
+          {f.cover && f.avatar && (
             <img src={f.avatar} alt={f.name}
               className="absolute -bottom-4 right-4 w-10 h-10 rounded-full object-cover border-2 border-white shadow-md" />
           )}
