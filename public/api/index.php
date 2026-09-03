@@ -4175,10 +4175,17 @@ if (preg_match('#/ai-cv/build$#', $uri) && $method === 'POST') {
         . '"visibleSections":{"experience":true,"education":true,"skills":true,"languages":true,"certifications":true,"projects":true,"references":true}}'
         . "\n\nCRITICAL: use ONLY facts explicitly present in the transcript. Never invent a company name, date, number, skill, or achievement that wasn't actually said. If a whole section has no real information in the transcript, output it as an empty array [] — do not fabricate placeholder entries to fill it. summary must be 2-4 honest sentences built only from what was said, natural colloquial Sorani (زمانی بازاڕی), no invented outcomes/claims.";
 
+    // A generous max_tokens here (this used to be 1600) let real requests run
+    // long enough to hit the host's upstream proxy timeout before curl's own
+    // 40s timeout — the client saw a raw connection failure, not a graceful
+    // JSON error. Extraction rarely needs anywhere near that many tokens
+    // (it's mostly restating facts already in the transcript), so keeping
+    // this tight is a real latency fix, not just a size optimization.
+    set_time_limit(55);
     $raw = callOpenAIChat([
         ['role' => 'system', 'content' => $extractSystem],
         ['role' => 'user', 'content' => $transcript],
-    ], 1600, true);
+    ], 900, true);
     if ($raw === null) jsonErr(502, 'دروستکردنی سیڤی سەرکەوتوو نەبوو. تکایە دواتر هەوڵبدەرەوە.');
 
     $data = json_decode($raw, true);
