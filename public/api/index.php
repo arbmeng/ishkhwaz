@@ -15,13 +15,33 @@ ini_set('log_errors', '1');
 ini_set('error_log', __DIR__ . '/error.log');
 set_exception_handler(function ($e) {
     error_log($e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
-    http_response_code(500);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success' => false, 'message' => 'Internal server error.']);
+    // Defensive: an exception thrown after real output has already started
+    // (e.g. a streaming response) can't set a response code or add headers
+    // anymore — trying to anyway is itself a fatal error that would mask
+    // the original one. Just stop cleanly in that case.
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'message' => 'Internal server error.']);
+    }
     exit(0);
 });
 set_error_handler(function ($severity, $message, $file, $line) {
+    // Respect the @ suppression operator — error_reporting() returns 0
+    // inside a suppressed expression. Without this check, `@`-suppressed
+    // warnings anywhere in the app still got converted into thrown
+    // exceptions by this handler, defeating the whole point of `@`.
+    if (!(error_reporting() & $severity)) return false;
     throw new ErrorException($message, 0, $severity, $file, $line);
+});
+// Catches true engine fatals (E_ERROR from memory exhaustion, E_PARSE, etc.)
+// that bypass set_error_handler/set_exception_handler entirely — the last
+// line of defense before a request just dies with no trace at all.
+register_shutdown_function(function () {
+    $err = error_get_last();
+    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        error_log('FATAL (shutdown): ' . $err['message'] . ' @ ' . $err['file'] . ':' . $err['line']);
+    }
 });
 
 // ----- CORS: allowlist, not wildcard — an API using bearer tokens should still
@@ -677,7 +697,13 @@ function safeJson(): array {
 }
 
 function jsonErr(int $code, string $msg): void {
-    http_response_code($code);
+    // A streaming response (see callOpenAIChatStreaming) may have already
+    // sent real output before this is called — headers can't be touched
+    // anymore at that point, and trying to anyway is itself a fatal error
+    // that would mask whatever originally went wrong.
+    if (!headers_sent()) {
+        http_response_code($code);
+    }
     echo json_encode(['success' => false, 'message' => $msg]);
     exit(0);
 }
@@ -739,6 +765,75 @@ function callOpenAIChat(array $messages, int $maxTokens = 500, bool $jsonMode = 
     $data = json_decode($raw, true);
     $text = trim($data['choices'][0]['message']['content'] ?? '');
     return $text !== '' ? $text : null;
+}
+
+// Same as callOpenAIChat, but streams the OpenAI response and emits a
+// whitespace heartbeat to the client on every chunk received.
+//
+// Why this exists: this host's LiteSpeed PHP SAPI enforces a `hard_timeout`
+// (an LSAPI watchdog completely separate from PHP's own max_execution_time/
+// set_time_limit — confirmed via `php -i`, and NOT overridable via
+// .user.ini, which was tried first and had no effect) that silently
+// SIGKILLs a PHP worker if it goes a short period with no observable
+// activity — bypassing every PHP-level error/exception/shutdown handler,
+// so a real, legitimate ~4-6s OpenAI call died with zero trace in error.log
+// every single time (confirmed via checkpoint logging + memory tracing —
+// this is not a slow/timeout issue, memory stayed under 5MB throughout).
+// The watchdog is a hung-process detector, not a max-duration cap, so
+// continuously flushing bytes as real data streams in keeps the process
+// "responding" and avoids the kill — this is the standard technique for
+// this exact class of platform constraint, not a way around it.
+// A leading run of whitespace bytes before the real JSON body is valid —
+// JSON.parse()/PHP json_decode() both ignore leading whitespace per spec.
+function callOpenAIChatStreaming(array $messages, int $maxTokens = 500, bool $jsonMode = false): ?string {
+    $payload = [
+        'model' => OPENAI_MODEL,
+        'messages' => $messages,
+        'temperature' => 0.5,
+        'max_tokens' => $maxTokens,
+        'stream' => true,
+    ];
+    if ($jsonMode) $payload['response_format'] = ['type' => 'json_object'];
+
+    $content = '';
+    $buffer = '';
+    $ch = curl_init('https://api.openai.com/v1/chat/completions');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . OPENAI_API_KEY, 'Content-Type: application/json'],
+        CURLOPT_TIMEOUT => 55,
+        CURLOPT_WRITEFUNCTION => function ($curlHandle, $chunk) use (&$content, &$buffer) {
+            $buffer .= $chunk;
+            while (($nl = strpos($buffer, "\n")) !== false) {
+                $line = substr($buffer, 0, $nl);
+                $buffer = substr($buffer, $nl + 1);
+                $line = trim($line);
+                if ($line === '' || $line === 'data: [DONE]') continue;
+                if (str_starts_with($line, 'data: ')) {
+                    $evt = json_decode(substr($line, 6), true);
+                    $delta = $evt['choices'][0]['delta']['content'] ?? '';
+                    if ($delta !== '') $content .= $delta;
+                }
+            }
+            // Heartbeat — a single space, immediately flushed to the SAPI
+            // layer, so LSAPI sees this worker actively producing output
+            // instead of looking hung. flush() alone (no ob_flush()) is
+            // correct here — this endpoint has no active user-level output
+            // buffer to operate on, and calling ob_flush() with none active
+            // raises a warning that this app's own error handler turns into
+            // a thrown exception even through `@` suppression.
+            echo ' ';
+            @flush();
+            return strlen($chunk);
+        },
+    ]);
+    curl_exec($ch);
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($status < 200 || $status >= 300) return null;
+    $content = trim($content);
+    return $content !== '' ? $content : null;
 }
 
 // Real per-plan capability check (plan_tiers.has_ai_cv_assistant), same
@@ -4133,6 +4228,12 @@ if (preg_match('#/ai-cv/messages$#', $uri) && $method === 'POST') {
 }
 
 if (preg_match('#/ai-cv/build$#', $uri) && $method === 'POST') {
+    // Keep running to completion even if the client disconnects mid-stream
+    // (e.g. a page navigation) — the resume should still get saved rather
+    // than half-built, and this also protects against transient client-side
+    // timeouts cutting the connection before our own heartbeat-streamed
+    // response actually finishes.
+    ignore_user_abort(true);
     $authUser = requireAuth($pdo);
     if (!userHasAiCvAccess($pdo, $authUser)) jsonErr(403, 'ئەم تایبەتمەندییە تەنها بۆ ئەندامانی VIP بەردەستە.');
 
@@ -4182,15 +4283,23 @@ if (preg_match('#/ai-cv/build$#', $uri) && $method === 'POST') {
     // (it's mostly restating facts already in the transcript), so keeping
     // this tight is a real latency fix, not just a size optimization.
     set_time_limit(55);
-    $raw = callOpenAIChat([
+    $raw = callOpenAIChatStreaming([
         ['role' => 'system', 'content' => $extractSystem],
         ['role' => 'user', 'content' => $transcript],
     ], 900, true);
     if ($raw === null) jsonErr(502, 'دروستکردنی سیڤی سەرکەوتوو نەبوو. تکایە دواتر هەوڵبدەرەوە.');
 
     $data = json_decode($raw, true);
-    if (!is_array($data) || empty($data['personalInfo']['fullName'])) {
+    if (!is_array($data)) {
         jsonErr(502, 'نەمانتوانی سیڤییەکە دروست بکەین. تکایە زانیاری زیاتر لە چاتەکەدا بدە و دووبارە هەوڵبدەرەوە.');
+    }
+    // The model occasionally leaves fullName blank even with everything
+    // else populated (variance, not a sign of a failed extraction) — fall
+    // back to the real name already on the account rather than hard-
+    // failing the whole build over one empty field. Never fabricated: this
+    // is the user's own real registered name, not invented.
+    if (empty($data['personalInfo']['fullName'])) {
+        $data['personalInfo']['fullName'] = $authUser['name'] ?? '';
     }
 
     // Defensive defaults — never let a missing key break a template render.
