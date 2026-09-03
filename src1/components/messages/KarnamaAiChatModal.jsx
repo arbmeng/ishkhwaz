@@ -21,13 +21,14 @@ const formatClock = (isoOrText) => {
 // said (see /ai-cv/* in the backend). Same visual language as the real
 // MessageThreadModal, but its own independent data flow — no application
 // thread, no milestones/dispute, just a chat plus a "build my CV" moment.
-export const KarnamaAiChatModal = ({ onClose, onNavigate }) => {
+export const KarnamaAiChatModal = ({ onClose, onNavigate, onEditResumeStyle }) => {
   const { token } = useAuth();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [ready, setReady] = useState(false);
+  const [builtResumeId, setBuiltResumeId] = useState(null);
   const [building, setBuilding] = useState(false);
   const [built, setBuilt] = useState(false);
   const bottomRef = useRef(null);
@@ -102,6 +103,7 @@ export const KarnamaAiChatModal = ({ onClose, onNavigate }) => {
     setBuilding(false);
     if (res?.success) {
       soundService.playSuccess?.();
+      setBuiltResumeId(res.resume_id || null);
       setBuilt(true);
     } else {
       setMessages(prev => [...prev, { id: `builderr-${Date.now()}`, role: 'assistant', body: res?.message || 'دروستکردنی سیڤی سەرکەوتوو نەبوو.', created_at: new Date().toISOString() }]);
@@ -226,11 +228,21 @@ export const KarnamaAiChatModal = ({ onClose, onNavigate }) => {
               <CheckCircle2 className="w-6 h-6 text-white" />
             </div>
             <p className="text-sm font-black" style={{ color: TEAL_DEEP }}>سیڤیەکەت بە سەرکەوتوویی دروستکرا!</p>
-            <p className="text-xs font-bold" style={{ color: '#3a7c73' }}>دەتوانیت لە بەشی سیڤیەکانت ببینیت، شێوازی دیزاینی بۆ هەڵبژێریت و بیکەیت بە ئامادە بۆ ناردن.</p>
+            <p className="text-xs font-bold" style={{ color: '#3a7c73' }}>ئێستا دەتوانیت شێوازی دیزاینی بۆ هەڵبژێریت و بیکەیت بە ئامادە بۆ ناردن.</p>
+            {builtResumeId && (
+              <button
+                onClick={() => { soundService.playTick?.(); onClose?.(); onEditResumeStyle?.(builtResumeId); }}
+                className="w-full py-3 rounded-xl text-white text-xs font-black shadow-sm transition active:scale-95 flex items-center justify-center gap-2"
+                style={{ background: TEAL }}
+              >
+                <Sparkles className="w-4 h-4" />
+                هەڵبژاردنی شێوازی سیڤی
+              </button>
+            )}
             <button
-              onClick={() => { onClose?.(); onNavigate?.('resumes'); }}
-              className="w-full py-3 rounded-xl text-white text-xs font-black shadow-sm transition active:scale-95"
-              style={{ background: TEAL }}
+              onClick={() => { soundService.playTick?.(); onClose?.(); onNavigate?.('resumes'); }}
+              className="w-full py-3 rounded-xl text-xs font-black shadow-sm transition active:scale-95 border"
+              style={{ background: 'white', borderColor: '#c1ede3', color: TEAL_DEEP }}
             >
               چوون بۆ سیڤیەکانم ←
             </button>

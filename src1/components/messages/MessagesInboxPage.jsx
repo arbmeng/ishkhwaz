@@ -40,7 +40,7 @@ const counterpartFor = (thread, currentUserId) => {
   };
 };
 
-export const MessagesInboxPage = ({ onNavigate }) => {
+export const MessagesInboxPage = ({ onNavigate, onEditResumeStyle }) => {
   const { user, token } = useAuth();
   const { addToast } = useStore();
   const [threads, setThreads] = useState([]);
@@ -311,7 +311,7 @@ export const MessagesInboxPage = ({ onNavigate }) => {
 
       {/* ── Karnama AI Chat ─────────────────────────────────────── */}
       {showKarnamaAi && (
-        <KarnamaAiChatModal onClose={() => setShowKarnamaAi(false)} onNavigate={onNavigate} />
+        <KarnamaAiChatModal onClose={() => setShowKarnamaAi(false)} onNavigate={onNavigate} onEditResumeStyle={onEditResumeStyle} />
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { apiService } from '../../services/api';
@@ -54,14 +54,39 @@ const LiveThumbnail = ({ template, resume, locked }) => {
   );
 };
 
-export const KarnamaTemplatePicker = ({ baseResume, onBack, onDone }) => {
+// resumeId, when set, switches this into "change the design of an already-
+// saved resume" mode: it fetches that resume's real data itself (no need
+// for the caller to have it on hand) and updates it in place on selection
+// instead of creating a new one.
+export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) => {
   const { token, user } = useAuth();
   const { addToast, planTiers = [] } = useStore();
+  const isEditMode = !!resumeId;
   const [filterType, setFilterType] = useState('all'); // all | free | paid
   const [selectedId, setSelectedId] = useState(TEMPLATE_LIST[0].id);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState(baseResume?.personalInfo?.jobTitle || '');
+  const [resumeData, setResumeData] = useState(baseResume || null);
+  const [loadingResume, setLoadingResume] = useState(isEditMode && !baseResume);
+
+  // Edit mode: fetch this resume's own real data + current title/template —
+  // never guessed or left blank.
+  useEffect(() => {
+    if (!isEditMode || baseResume) return;
+    let cancelled = false;
+    apiService.getResumes(token).then(res => {
+      if (cancelled || !res?.success) return;
+      const match = (res.resumes || []).find(r => r.id === resumeId);
+      if (match) {
+        setResumeData(match.resume_data);
+        setTitle(match.title || '');
+        if (match.template_id) setSelectedId(match.template_id);
+      }
+      setLoadingResume(false);
+    });
+    return () => { cancelled = true; };
+  }, [isEditMode, resumeId, baseResume, token]);
 
   // Real plan check — same price>0 pattern used everywhere else in the app
   // (PlansPage, FreelancerProfileModal, etc.), not a separate fake purchase
@@ -77,7 +102,7 @@ export const KarnamaTemplatePicker = ({ baseResume, onBack, onDone }) => {
 
   const selectedTemplate = TEMPLATE_LIST.find(t => t.id === selectedId) || TEMPLATE_LIST[0];
   const SelectedComp = selectedTemplate.component;
-  const selectedResume = { ...baseResume, accentColor: selectedTemplate.accentColorDefault };
+  const selectedResume = { ...resumeData, accentColor: selectedTemplate.accentColorDefault };
   const selectedLocked = selectedTemplate.isPremium && !hasPaidPlan;
 
   const pickTemplate = (t) => {
@@ -104,20 +129,26 @@ export const KarnamaTemplatePicker = ({ baseResume, onBack, onDone }) => {
       return;
     }
     setSaving(true);
-    const res = await apiService.createResume({
-      title: title.trim(),
-      template_id: selectedTemplate.id,
-      resume_data: baseResume,
-    }, token);
+    const res = isEditMode
+      ? await apiService.updateResume(resumeId, { title: title.trim(), template_id: selectedTemplate.id }, token)
+      : await apiService.createResume({ title: title.trim(), template_id: selectedTemplate.id, resume_data: resumeData }, token);
     setSaving(false);
 
     if (res?.success) {
-      addToast?.({ title: 'پاشەکەوتکرا ✓', message: 'سیڤیەکەت زیادکرا بۆ لیستی سیڤیەکانت.', type: 'success' });
+      addToast?.({ title: 'پاشەکەوتکرا ✓', message: isEditMode ? 'شێوازی سیڤییەکەت گۆڕدرا.' : 'سیڤیەکەت زیادکرا بۆ لیستی سیڤیەکانت.', type: 'success' });
       onDone?.(selectedTemplate);
     } else {
       addToast?.({ title: 'سەرنەکەوت', message: res?.message || 'پاشەکەوتکردن سەرکەوتوو نەبوو.', type: 'error' });
     }
   };
+
+  if (loadingResume) {
+    return (
+      <div dir="rtl" className="min-h-screen flex items-center justify-center" style={{ background: '#f4f7f6', fontFamily: NK }}>
+        <Loader2 className="w-6 h-6 animate-spin text-stone-300" />
+      </div>
+    );
+  }
 
   return (
     <div
@@ -147,7 +178,7 @@ export const KarnamaTemplatePicker = ({ baseResume, onBack, onDone }) => {
               <ArrowRight className="w-5 h-5" />
             </button>
             <span className="text-xs font-bold text-[#7b8e88]">
-              قۆناغی ١ لە ٦
+              {isEditMode ? 'گۆڕینی شێواز' : 'قۆناغی ١ لە ٦'}
             </span>
           </div>
 
@@ -214,7 +245,7 @@ export const KarnamaTemplatePicker = ({ baseResume, onBack, onDone }) => {
                     : 'border-[#e8eeec] hover:border-[#cbd5d1] shadow-2xs'
                 }`}
               >
-                <LiveThumbnail template={t} resume={baseResume} locked={locked} />
+                <LiveThumbnail template={t} resume={resumeData} locked={locked} />
 
                 <div className="pt-3.5 px-2 flex items-center justify-between">
                   <div className="text-right">
@@ -261,7 +292,7 @@ export const KarnamaTemplatePicker = ({ baseResume, onBack, onDone }) => {
                 className="px-6 py-3 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-xs font-black shadow-[0_4px_14px_rgba(18,121,107,0.3)] active:scale-95 transition flex items-center gap-2 disabled:opacity-60"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                <span>{saving ? 'پاشەکەوتکردن...' : 'دیاریکردنی ئەم شێوازە'}</span>
+                <span>{saving ? 'پاشەکەوتکردن...' : (isEditMode ? 'پاشەکەوتکردنی شێوازی نوێ' : 'دیاریکردنی ئەم شێوازە')}</span>
               </button>
             </div>
 

@@ -35,6 +35,14 @@ function MainAppContent() {
   // Draft CV data collected in KarnamaCVPage's wizard, handed off to the
   // in-app template picker — nothing leaves Ish-khwaz until the user saves.
   const [pendingKarnamaResume, setPendingKarnamaResume] = useState(null);
+  const [editingResumeId, setEditingResumeId] = useState(null);
+  // Reused by both "just built by Karnama AI" and "change an existing saved
+  // resume's design" — the template picker fetches its own resume_data by
+  // id in the latter case, so this is the only extra state it needs.
+  const startResumeStyleEdit = (resumeId) => {
+    setEditingResumeId(resumeId);
+    setActiveTab('karnama_templates');
+  };
   const [showSidebarDrawer, setShowSidebarDrawer] = useState(false);
   // The brief branded splash plays on every cold open (like a native app) —
   // only the 3-step onboarding carousel inside it is gated to first-time-ever,
@@ -272,12 +280,17 @@ function MainAppContent() {
       );
     }
 
-    if (activeTab === 'karnama_templates' && pendingKarnamaResume) {
+    if (activeTab === 'karnama_templates' && (pendingKarnamaResume || editingResumeId)) {
       return (
         <KarnamaTemplatePicker
           baseResume={pendingKarnamaResume}
-          onBack={() => setActiveTab('karnama_cv')}
-          onDone={() => { setPendingKarnamaResume(null); setActiveTab('resumes'); }}
+          resumeId={editingResumeId}
+          onBack={() => {
+            const wasEditing = !!editingResumeId;
+            setEditingResumeId(null);
+            setActiveTab(wasEditing ? 'resumes' : 'karnama_cv');
+          }}
+          onDone={() => { setPendingKarnamaResume(null); setEditingResumeId(null); setActiveTab('resumes'); }}
         />
       );
     }
@@ -287,6 +300,7 @@ function MainAppContent() {
         <ResumesPage
           onBack={() => setActiveTab('profile')}
           onCreateNew={() => setActiveTab('karnama_cv')}
+          onEditStyle={startResumeStyleEdit}
         />
       );
     }
@@ -312,7 +326,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'messages') {
-      return <MessagesInboxPage onNavigate={setActiveTab} />;
+      return <MessagesInboxPage onNavigate={setActiveTab} onEditResumeStyle={startResumeStyleEdit} />;
     }
 
     if (activeTab === 'profile') {
@@ -364,8 +378,12 @@ function MainAppContent() {
         )}
       </div>
 
-      {/* Mobile Bottom Navigation Bar (Hidden on Desktop / Windows PCs) */}
-      {!isAuthOrRegisterPage && (
+      {/* Mobile Bottom Navigation Bar (Hidden on Desktop / Windows PCs) —
+          also hidden on the CV wizard/template-picker full-screen flows:
+          both have their own fixed bottom action bar at the same z-index,
+          and on mobile the shared nav was winning the stacking tie and
+          physically blocking taps on the real "save" button underneath. */}
+      {!isAuthOrRegisterPage && activeTab !== 'karnama_cv' && activeTab !== 'karnama_templates' && (
         <BottomNavbar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
