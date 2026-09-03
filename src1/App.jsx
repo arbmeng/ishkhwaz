@@ -312,7 +312,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'messages') {
-      return <MessagesInboxPage />;
+      return <MessagesInboxPage onNavigate={setActiveTab} />;
     }
 
     if (activeTab === 'profile') {

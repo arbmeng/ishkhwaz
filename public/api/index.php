@@ -713,6 +713,44 @@ function callOpenAI(string $systemPrompt, string $userPrompt, int $maxTokens = 4
     return $text !== '' ? $text : null;
 }
 
+// Same as callOpenAI but takes a full multi-turn message array (for a real
+// back-and-forth conversation, not a single system+user pair) and can ask
+// for strict JSON output. Used by the Karnama AI chat/build endpoints.
+function callOpenAIChat(array $messages, int $maxTokens = 500, bool $jsonMode = false): ?string {
+    $payload = [
+        'model' => OPENAI_MODEL,
+        'messages' => $messages,
+        'temperature' => 0.5,
+        'max_tokens' => $maxTokens,
+    ];
+    if ($jsonMode) $payload['response_format'] = ['type' => 'json_object'];
+    $ch = curl_init('https://api.openai.com/v1/chat/completions');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . OPENAI_API_KEY, 'Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 40,
+    ]);
+    $raw = curl_exec($ch);
+    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($raw === false || $status < 200 || $status >= 300) return null;
+    $data = json_decode($raw, true);
+    $text = trim($data['choices'][0]['message']['content'] ?? '');
+    return $text !== '' ? $text : null;
+}
+
+// Real per-plan capability check (plan_tiers.has_ai_cv_assistant), same
+// pattern as the other plan feature flags — never a hardcoded plan id.
+function userHasAiCvAccess(PDO $pdo, array $user): bool {
+    if (empty($user['plan'])) return false;
+    $stmt = $pdo->prepare('SELECT has_ai_cv_assistant FROM plan_tiers WHERE id = ?');
+    $stmt->execute([$user['plan']]);
+    $row = $stmt->fetch();
+    return $row && (int)$row['has_ai_cv_assistant'] === 1;
+}
+
 // Second pass: hand the first draft back to the model as a dedicated Kurdish
 // copy-edit task. Generating good Sorani in one shot is unreliable (the
 // model occasionally hallucinates a word that isn't real Kurdish, or picks
@@ -1082,7 +1120,17 @@ $pdo->exec("
     is_active TINYINT DEFAULT 1,
     audience VARCHAR(20) DEFAULT 'both',
     max_cvs INT NOT NULL DEFAULT 1,
+    has_ai_cv_assistant TINYINT NOT NULL DEFAULT 0,
     created_at VARCHAR(32) NOT NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  CREATE TABLE IF NOT EXISTS ai_cv_chats (
+    id VARCHAR(40) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    role VARCHAR(10) NOT NULL,
+    body TEXT NOT NULL,
+    created_at VARCHAR(32) NOT NULL,
+    INDEX idx_user (user_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS resumes (
@@ -1212,6 +1260,10 @@ foreach ([
     // hold at once — 0 means unlimited. Real, admin-editable per plan
     // (Settings tab), not a hardcoded number in the frontend.
     "ALTER TABLE plan_tiers ADD COLUMN max_cvs INT NOT NULL DEFAULT 1",
+    // Gates the Karnama AI chat assistant (see /ai-cv/* below) — a real
+    // per-plan capability flag, same pattern as can_message etc. above,
+    // not a hardcoded plan id check in the endpoint.
+    "ALTER TABLE plan_tiers ADD COLUMN has_ai_cv_assistant TINYINT NOT NULL DEFAULT 0",
 ] as $migration) {
     try { $pdo->exec($migration); } catch (Exception $e) { /* already applied */ }
 }
@@ -3996,6 +4048,168 @@ if (preg_match('#/ai/write$#', $uri) && $method === 'POST') {
 
     if ($text === null) jsonErr(502, 'AI ئێستا بەردەست نییە. تکایە دواتر هەوڵبدەرەوە یان بە دەست بنووسە.');
     echo json_encode(['success' => true, 'text' => $text]);
+    exit(0);
+}
+
+// ================================================================
+// Karnama AI — a VIP-only chat assistant (see plan_tiers.has_ai_cv_assistant)
+// that interviews the user conversationally, then builds a real saved
+// resume from what was actually said in the chat. Three endpoints:
+//   GET  /ai-cv/messages         — chat history + whether this user has access
+//   POST /ai-cv/messages {message} — send one chat turn, get the reply
+//   POST /ai-cv/build            — extract the conversation into a resume
+//   DELETE /ai-cv/messages       — clear the conversation, start over
+// ================================================================
+
+if (preg_match('#/ai-cv/messages$#', $uri) && $method === 'GET') {
+    $authUser = requireAuth($pdo);
+    $hasAccess = userHasAiCvAccess($pdo, $authUser);
+    $messages = [];
+    if ($hasAccess) {
+        $stmt = $pdo->prepare('SELECT id, role, body, created_at FROM ai_cv_chats WHERE user_id = ? ORDER BY created_at ASC');
+        $stmt->execute([$authUser['id']]);
+        $messages = $stmt->fetchAll();
+    }
+    echo json_encode(['success' => true, 'has_access' => $hasAccess, 'messages' => $messages]);
+    exit(0);
+}
+
+if (preg_match('#/ai-cv/messages$#', $uri) && $method === 'DELETE') {
+    $authUser = requireAuth($pdo);
+    if (!userHasAiCvAccess($pdo, $authUser)) jsonErr(403, 'ئەم تایبەتمەندییە تەنها بۆ ئەندامانی VIP بەردەستە.');
+    $pdo->prepare('DELETE FROM ai_cv_chats WHERE user_id = ?')->execute([$authUser['id']]);
+    echo json_encode(['success' => true]);
+    exit(0);
+}
+
+if (preg_match('#/ai-cv/messages$#', $uri) && $method === 'POST') {
+    $authUser = requireAuth($pdo);
+    if (!userHasAiCvAccess($pdo, $authUser)) jsonErr(403, 'ئەم تایبەتمەندییە تەنها بۆ ئەندامانی VIP بەردەستە.');
+    if (!rateLimitCheck($pdo, $clientIp, 'ai_cv_chat')) jsonErr(429, 'زۆر جار داواتکرد. کەمێک چاوەڕوان بە.');
+
+    $input = safeJson();
+    $userText = trim(sanitize($input['message'] ?? '', 1000));
+    if ($userText === '') jsonErr(400, 'پەیامەکە بەتاڵە.');
+
+    $now = date('Y-m-d H:i:s');
+    $pdo->prepare('INSERT INTO ai_cv_chats (id, user_id, role, body, created_at) VALUES (?, ?, ?, ?, ?)')
+        ->execute(['aic_' . time() . rand(100, 999), $authUser['id'], 'user', $userText, $now]);
+
+    $histStmt = $pdo->prepare('SELECT role, body FROM ai_cv_chats WHERE user_id = ? ORDER BY created_at ASC');
+    $histStmt->execute([$authUser['id']]);
+    $history = $histStmt->fetchAll();
+
+    // Real known facts from the actual profile — passed in as ground truth
+    // so the assistant doesn't ask for things already on file, and never
+    // has to guess/invent them either.
+    $knownFacts = "Name: " . ($authUser['name'] ?? '(unknown)')
+        . "\nPhone: " . ($authUser['phone'] ?? '(unknown)')
+        . "\nEmail: " . ($authUser['email'] ?? '(unknown)')
+        . "\nCurrent profession on file: " . ($authUser['profession'] ?? '(unknown)')
+        . "\nGovernorate: " . ($authUser['governorate'] ?? '(unknown)');
+
+    $system = "You are Karnama AI, a friendly Kurdish CV-building assistant inside the Ish-khwaz job app, chatting with a VIP user to build their CV through natural conversation. Write in natural, fluent Central Kurdish (Sorani, Arabic-based script), colloquial register (زمانی بازاڕی) — the way a helpful professional actually talks, not stiff formal Kurdish.\n"
+        . "Real known facts about this user already on file (use these, don't re-ask for them, don't contradict them):\n{$knownFacts}\n\n"
+        . "Your job: through short, one-question-at-a-time chat turns, gather what's needed for a real CV — job title/profession, a short professional summary of their background, work experience (company, role, dates, what they did), education, skills, languages, and anything else useful (projects, certifications). Ask ONE focused question per turn, keep each message short (1-3 sentences), like a real chat, not an essay or a form.\n"
+        . "CRITICAL — never invent or assume any fact the user hasn't actually told you or that isn't in the known-facts list above. If they give a vague or short answer, accept it as-is and move to the next question rather than padding it with invented specifics. It is completely fine for a section to end up thin or empty if that's genuinely all they have — never fabricate to fill it in.\n"
+        . "Once you've gathered enough real information for at least a basic real CV (job title + at least one of: real experience, real education, or real skills), say a short natural closing line telling them their CV is ready to build, and end your message with the exact literal marker [READY_TO_BUILD] on its own at the very end (this marker is never shown to the user, it's stripped automatically — just always include it once you're genuinely ready, and never include it before then).";
+
+    $messages = [['role' => 'system', 'content' => $system]];
+    foreach ($history as $h) {
+        $messages[] = ['role' => $h['role'] === 'assistant' ? 'assistant' : 'user', 'content' => $h['body']];
+    }
+
+    $reply = callOpenAIChat($messages, 350);
+    if ($reply === null) jsonErr(502, 'AI ئێستا بەردەست نییە. تکایە دواتر هەوڵبدەرەوە.');
+
+    $ready = str_contains($reply, '[READY_TO_BUILD]');
+    $cleanReply = trim(str_replace('[READY_TO_BUILD]', '', $reply));
+
+    $pdo->prepare('INSERT INTO ai_cv_chats (id, user_id, role, body, created_at) VALUES (?, ?, ?, ?, ?)')
+        ->execute(['aic_' . time() . rand(100, 999), $authUser['id'], 'assistant', $cleanReply, date('Y-m-d H:i:s')]);
+
+    echo json_encode(['success' => true, 'reply' => $cleanReply, 'ready' => $ready]);
+    exit(0);
+}
+
+if (preg_match('#/ai-cv/build$#', $uri) && $method === 'POST') {
+    $authUser = requireAuth($pdo);
+    if (!userHasAiCvAccess($pdo, $authUser)) jsonErr(403, 'ئەم تایبەتمەندییە تەنها بۆ ئەندامانی VIP بەردەستە.');
+
+    $histStmt = $pdo->prepare('SELECT role, body FROM ai_cv_chats WHERE user_id = ? ORDER BY created_at ASC');
+    $histStmt->execute([$authUser['id']]);
+    $history = $histStmt->fetchAll();
+    $userTurns = array_filter($history, fn($h) => $h['role'] === 'user');
+    if (count($userTurns) < 2) jsonErr(400, 'پێویستە زیاتر گفتوگۆ بکەیت پێش دروستکردنی سیڤی — تکایە زانیاری زیاتر بدە.');
+
+    // Same real server-side per-plan resume limit as POST /resumes — never
+    // trust a client-side count, and this endpoint must respect the exact
+    // same cap a manually-built resume would.
+    $maxCvs = 1;
+    $planStmt = $pdo->prepare('SELECT max_cvs FROM plan_tiers WHERE id = ?');
+    $planStmt->execute([$authUser['plan']]);
+    $planRow = $planStmt->fetch();
+    if ($planRow) $maxCvs = (int)$planRow['max_cvs'];
+    if ($maxCvs > 0) {
+        $countStmt = $pdo->prepare('SELECT COUNT(*) c FROM resumes WHERE user_id = ?');
+        $countStmt->execute([$authUser['id']]);
+        $current = (int)$countStmt->fetch()['c'];
+        if ($current >= $maxCvs) jsonErr(403, "پلانەکەت ڕێگە بە {$maxCvs} سیڤی دەدات. تکایە سیڤیەکی کۆن بسڕەوە یان پلانەکەت بەرزبکەرەوە.");
+    }
+
+    $transcript = '';
+    foreach ($history as $h) {
+        $transcript .= ($h['role'] === 'assistant' ? 'Karnama AI' : 'User') . ": {$h['body']}\n";
+    }
+
+    $extractSystem = "You extract a structured CV from a real chat transcript between a Kurdish CV assistant and a user. Output STRICT JSON only, matching exactly this shape (Kurdish text values, Sorani, colloquial-but-professional register, Arabic script):\n"
+        . '{"personalInfo":{"fullName":"","jobTitle":"","photo":"","email":"","phone":"","city":"","country":"کوردستان","website":"","linkedin":"","summary":""},'
+        . '"sections":{"experience":[{"id":"e1","company":"","role":"","startDate":"","endDate":"","current":false,"location":"","description":""}],'
+        . '"education":[{"id":"ed1","institution":"","degree":"","field":"","startDate":"","endDate":"","description":""}],'
+        . '"skills":[{"id":"s1","name":"","level":3}],'
+        . '"languages":[{"id":"l1","name":"","level":""}],'
+        . '"certifications":[{"id":"c1","name":"","issuer":"","date":""}],'
+        . '"projects":[{"id":"p1","name":"","description":"","link":""}],'
+        . '"references":[]},'
+        . '"sectionOrder":["experience","education","skills","languages","certifications","projects","references"],'
+        . '"visibleSections":{"experience":true,"education":true,"skills":true,"languages":true,"certifications":true,"projects":true,"references":true}}'
+        . "\n\nCRITICAL: use ONLY facts explicitly present in the transcript. Never invent a company name, date, number, skill, or achievement that wasn't actually said. If a whole section has no real information in the transcript, output it as an empty array [] — do not fabricate placeholder entries to fill it. summary must be 2-4 honest sentences built only from what was said, natural colloquial Sorani (زمانی بازاڕی), no invented outcomes/claims.";
+
+    $raw = callOpenAIChat([
+        ['role' => 'system', 'content' => $extractSystem],
+        ['role' => 'user', 'content' => $transcript],
+    ], 1600, true);
+    if ($raw === null) jsonErr(502, 'دروستکردنی سیڤی سەرکەوتوو نەبوو. تکایە دواتر هەوڵبدەرەوە.');
+
+    $data = json_decode($raw, true);
+    if (!is_array($data) || empty($data['personalInfo']['fullName'])) {
+        jsonErr(502, 'نەمانتوانی سیڤییەکە دروست بکەین. تکایە زانیاری زیاتر لە چاتەکەدا بدە و دووبارە هەوڵبدەرەوە.');
+    }
+
+    // Defensive defaults — never let a missing key break a template render.
+    $data['personalInfo'] = array_merge([
+        'fullName' => '', 'jobTitle' => '', 'photo' => '', 'email' => $authUser['email'] ?? '',
+        'phone' => $authUser['phone'] ?? '', 'city' => '', 'country' => 'کوردستان', 'website' => '', 'linkedin' => '', 'summary' => '',
+    ], $data['personalInfo']);
+    $data['sections'] = array_merge([
+        'experience' => [], 'education' => [], 'skills' => [], 'languages' => [], 'certifications' => [], 'projects' => [], 'references' => [],
+    ], is_array($data['sections'] ?? null) ? $data['sections'] : []);
+    $data['sectionOrder'] = $data['sectionOrder'] ?? ['experience', 'education', 'skills', 'languages', 'certifications', 'projects', 'references'];
+    $data['visibleSections'] = $data['visibleSections'] ?? ['experience' => true, 'education' => true, 'skills' => true, 'languages' => true, 'certifications' => true, 'projects' => true, 'references' => true];
+    $data['language'] = 'ku';
+    $data['direction'] = 'rtl';
+
+    $id = 'res_' . time() . rand(10, 99);
+    $now = date('Y-m-d H:i:s');
+    $title = sanitize($data['personalInfo']['jobTitle'] ?: 'سیڤی دروستکراو بە Karnama AI', 150);
+    $pdo->prepare('INSERT INTO resumes (id, user_id, title, template_id, resume_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        ->execute([$id, $authUser['id'], $title, 'free-clean-ats', json_encode($data, JSON_UNESCAPED_UNICODE), $now, $now]);
+
+    // Clear the conversation so the next time this user opens Karnama AI it
+    // starts a clean new interview rather than continuing a "finished" one.
+    $pdo->prepare('DELETE FROM ai_cv_chats WHERE user_id = ?')->execute([$authUser['id']]);
+
+    echo json_encode(['success' => true, 'resume_id' => $id]);
     exit(0);
 }
 

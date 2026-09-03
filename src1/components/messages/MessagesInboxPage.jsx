@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useStore } from '../../context/StoreContext';
 import { apiService } from '../../services/api';
 import { soundService } from '../../services/soundService';
 import { realtimeService } from '../../services/realtimeService';
 import { MessageThreadModal } from './MessageThreadModal';
-import { MessageSquare, Loader2, Search, X, Headphones, Briefcase } from 'lucide-react';
+import { KarnamaAiChatModal } from './KarnamaAiChatModal';
+import { MessageSquare, Loader2, Search, X, Headphones, Briefcase, Sparkles, Lock } from 'lucide-react';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
 
@@ -38,12 +40,15 @@ const counterpartFor = (thread, currentUserId) => {
   };
 };
 
-export const MessagesInboxPage = () => {
+export const MessagesInboxPage = ({ onNavigate }) => {
   const { user, token } = useAuth();
+  const { addToast } = useStore();
   const [threads, setThreads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [openThread, setOpenThread] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [karnamaAccess, setKarnamaAccess] = useState(null);
+  const [showKarnamaAi, setShowKarnamaAi] = useState(false);
 
   // 100% Real Live Fetch from Database
   const loadThreads = async () => {
@@ -66,6 +71,23 @@ export const MessagesInboxPage = () => {
   useEffect(() => {
     loadThreads();
   }, [token, user?.id]);
+
+  // Real per-plan check (plan_tiers.has_ai_cv_assistant) — decides whether
+  // the pinned Karnama AI row opens the chat or a VIP upsell nudge.
+  useEffect(() => {
+    if (!token) { setKarnamaAccess(false); return; }
+    apiService.getAiCvChat(token).then(res => setKarnamaAccess(Boolean(res?.has_access)));
+  }, [token]);
+
+  const openKarnamaAi = () => {
+    soundService.playTick?.();
+    if (karnamaAccess) {
+      setShowKarnamaAi(true);
+    } else {
+      addToast?.({ title: 'تایبەتە بۆ VIP', message: 'کارنامە AI تەنها بۆ ئەندامانی پلانی VIP بەردەستە.', type: 'warning' });
+      onNavigate?.('plans');
+    }
+  };
 
   // Live real-time update when a new message arrives
   useEffect(() => {
@@ -142,6 +164,37 @@ export const MessagesInboxPage = () => {
             </button>
           )}
         </div>
+
+        {/* ── Pinned: Karnama AI (VIP-only conversational CV builder) ── */}
+        <button
+          type="button"
+          onClick={openKarnamaAi}
+          className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 text-right bg-white rounded-[24px] border shadow-[0_2px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_20px_rgba(18,121,107,0.1)] active:scale-[0.99] transition-all cursor-pointer"
+          style={{ borderColor: '#c1ede3' }}
+        >
+          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+            <div
+              className="w-12 h-12 rounded-[18px] flex items-center justify-center text-white shrink-0 shadow-sm relative"
+              style={{ background: 'linear-gradient(135deg, #12796b, #0d5c50)' }}
+            >
+              <Sparkles className="w-6 h-6" />
+              {karnamaAccess === false && (
+                <span className="absolute -bottom-1 -left-1 w-5 h-5 rounded-full bg-white border border-[#e4eae7] flex items-center justify-center shadow-2xs">
+                  <Lock className="w-2.5 h-2.5 text-[#7b8e88]" />
+                </span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1 text-right">
+              <div className="flex items-center gap-2">
+                <span className="text-[15px] font-black text-[#111d1a] truncate leading-tight">کارنامە AI</span>
+                <span className="shrink-0 text-[9.5px] font-black px-1.5 py-0.5 rounded-full text-white" style={{ background: '#12796b' }}>VIP</span>
+              </div>
+              <p className="text-xs text-[#7a8e88] font-bold truncate m-0 mt-1 leading-normal">
+                قسەم لەگەڵ بکە، سیڤیەکەت بۆ دروست دەکەم
+              </p>
+            </div>
+          </div>
+        </button>
 
         {/* ── Real Conversation List Card ──────────────────────── */}
         <section
@@ -254,6 +307,11 @@ export const MessagesInboxPage = () => {
           isSupport={openThread.isSupport}
           onClose={closeConversation}
         />
+      )}
+
+      {/* ── Karnama AI Chat ─────────────────────────────────────── */}
+      {showKarnamaAi && (
+        <KarnamaAiChatModal onClose={() => setShowKarnamaAi(false)} onNavigate={onNavigate} />
       )}
     </div>
   );

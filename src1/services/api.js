@@ -734,6 +734,58 @@ export const apiService = {
     }
   },
 
+  // Karnama AI — VIP-only conversational CV builder (see /ai-cv/* in the backend).
+  async getAiCvChat(token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/ai-cv/messages`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+  async sendAiCvMessage(message, token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/ai-cv/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ message }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+  async buildAiCvResume(token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/ai-cv/build`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+  async resetAiCvChat(token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/ai-cv/messages`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+
   // AI writing assist — one endpoint, dispatched by `kind`:
   // 'cv_summary' | 'cv_experience' | 'job_description'. See input shapes at
   // each call site; the backend builds the actual prompt.
