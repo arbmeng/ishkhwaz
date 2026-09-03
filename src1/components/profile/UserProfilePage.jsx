@@ -530,10 +530,10 @@ export const UserProfilePage = ({ onNavigate }) => {
         </aside>
 
         {/* ══════════ BENTO GRID ══════════ */}
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
 
           {/* About */}
-          <div className="col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
             <BentoHead eyebrow="دەربارە" title={isEmployer ? 'دەربارەی کۆمپانیا' : 'دەربارەی من'} />
             <p className="text-[13.5px] leading-[1.9] font-medium" style={{ color: SUB }}>
               {bio || user?.bio || (
@@ -579,7 +579,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               </div>
 
               {/* Skills */}
-              <div className="col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
                 <BentoHead eyebrow="شارەزایی" title="کارامەیی و تواناکان" />
                 <div className="flex flex-wrap gap-2">
                   {(skills.length ? skills : parseJsonArray(user?.skills)).map(s => (
@@ -601,7 +601,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               </div>
 
               {/* Experience timeline */}
-              <div className="col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
                 <BentoHead eyebrow="مێژوو" title="ئەزموونی کار" link="زیادکردن" onLink={() => { soundService.playTick?.(); setShowEdit(true); }} />
                 {experiences.length === 0 ? (
                   <p className="text-xs font-bold" style={{ color: MUTED }}>هیچ ئەزموونێک زیاد نەکراوە.</p>
@@ -642,7 +642,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               )}
 
               {/* Post job CTA */}
-              <div className={Number(user?.verified) === 1 ? 'col-span-1 lg:col-span-3' : 'col-span-2 lg:col-span-6'}>
+              <div className={Number(user?.verified) === 1 ? 'col-span-1 lg:col-span-3' : 'col-span-1 sm:col-span-2 lg:col-span-6'}>
                 <button
                   onClick={() => { soundService.playTick?.(); onNavigate?.('post_job'); }}
                   className="w-full h-full min-h-[76px] rounded-[18px] flex items-center justify-between px-5 text-white font-black text-xs shadow-sm transition active:scale-[0.98]"
@@ -654,7 +654,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               </div>
 
               {/* Jobs list */}
-              <div className="col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
                 <BentoHead eyebrow="چالاک" title={`هەلی کارەکان (${employerJobs.length})`} link="هەموو" onLink={() => { soundService.playTick?.(); onNavigate?.('employer'); }} />
                 {employerJobs.length === 0 ? (
                   <p className="text-xs font-bold" style={{ color: MUTED }}>هێشتا هیچ هەلی کارێکت بڵاونەکردووەتەوە.</p>
@@ -676,7 +676,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               </div>
 
               {/* Company info table */}
-              <div className="col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
                 <BentoHead eyebrow="زانیاری فەرمی" title="تۆماری کۆمپانیا" />
                 <div className="divide-y" style={{ borderColor: '#eef3f1' }}>
                   {[
