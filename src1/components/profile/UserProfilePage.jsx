@@ -41,24 +41,6 @@ const SUGGESTED_SKILLS = [
   'Sales', 'Flutter', 'Video Editing', 'WordPress'
 ];
 
-/* ─── Progress bar ───────────────────────────────────────────────── */
-const ProgressBar = ({ pct }) => {
-  const [width, setWidth] = useState(0);
-  useEffect(() => { const t = setTimeout(() => setWidth(pct), 120); return () => clearTimeout(t); }, [pct]);
-  return (
-    <div className="w-full h-2.5 bg-white/70 rounded-full overflow-hidden border border-[#c1ede3]" style={{ padding: '2px' }}>
-      <div
-        className="h-full rounded-full"
-        style={{
-          width: `${width}%`,
-          background: 'linear-gradient(90deg, #12796b, #2db89f)',
-          transition: 'width 1.1s cubic-bezier(0.22,1,0.36,1)',
-        }}
-      />
-    </div>
-  );
-};
-
 /* ─── Bento card section head (eyebrow + title + optional link) ──── */
 const BentoHead = ({ eyebrow, title, link, onLink }) => (
   <div className="flex items-center justify-between mb-3.5">
@@ -742,6 +724,23 @@ export const UserProfilePage = ({ onNavigate }) => {
       { id: 'settings', label: 'ڕێکخستن', icon: Settings },
     ];
 
+    // Shared field styling — one place so every tab's inputs stay consistent.
+    const fieldCls = 'w-full bg-white border rounded-xl px-4 py-3 text-xs font-bold outline-none transition';
+    const fieldStyle = { borderColor: '#e4eae7', color: TXT };
+    const fieldFocus = 'focus:border-[#12796b]';
+    const Field = ({ label, children }) => (
+      <div className="space-y-1.5 text-right">
+        <label className="text-xs font-bold" style={{ color: TXT }}>{label}</label>
+        {children}
+      </div>
+    );
+    const SectionCard = ({ title, children, className = '' }) => (
+      <div className={`rounded-[18px] border p-5 space-y-4 ${className}`} style={{ background: CARD, borderColor: '#eef3f1' }}>
+        {title && <h4 className="text-xs font-black" style={{ color: TXT }}>{title}</h4>}
+        {children}
+      </div>
+    );
+
     return (
       <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-0 lg:p-6"
         style={{ animation: 'profileFadeUp 0.25s ease both' }}>
@@ -751,16 +750,16 @@ export const UserProfilePage = ({ onNavigate }) => {
         >
           {/* Header Bar */}
           <div
-            className="px-6 border-b border-[#f0f4f2] flex items-center justify-between bg-[#fbfdfc] shrink-0"
+            className="px-6 border-b border-[#eef3f1] flex items-center justify-between bg-white shrink-0"
             style={{
               paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 12px))',
               paddingBottom: '14px',
             }}
           >
-            <button onClick={() => setShowEdit(false)} className="w-9 h-9 rounded-2xl bg-[#f0f4f2] text-[#4a5854] hover:bg-[#e4ece9] flex items-center justify-center transition active:scale-95">
+            <button onClick={() => setShowEdit(false)} className="w-9 h-9 rounded-2xl flex items-center justify-center transition active:scale-95" style={{ background: CARD, color: SUB }}>
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-sm sm:text-base font-black text-[#111d1a]">
+            <h3 className="text-sm sm:text-base font-black" style={{ color: TXT }}>
               {isEmployer ? 'دەستکاری پڕۆفایلی کۆمپانیا' : 'دەستکاری پڕۆفایل'}
             </h3>
           </div>
@@ -772,34 +771,33 @@ export const UserProfilePage = ({ onNavigate }) => {
             }}
           >
 
-            {/* ──── RIGHT COLUMN: Sidebar Navigation (Cols 8-12 in RTL) ──── */}
-            <div className="lg:col-span-4 p-5 lg:border-l border-[#f0f4f2] space-y-4 bg-[#fbfdfc] order-1 lg:order-2">
-              <div className="bg-white rounded-3xl p-5 border border-[#e8eeec] shadow-2xs text-center space-y-3">
-                <div
-                  onClick={() => avatarRef.current?.click()}
-                  className={`w-20 h-20 ${isEmployer ? 'rounded-2xl' : 'rounded-full'} mx-auto bg-[#c8eee6] border-2 border-[#12796b]/30 flex items-center justify-center text-2xl font-black text-[#12796b] overflow-hidden cursor-pointer relative group`}
-                >
-                  {displayAvatar ? (
-                    <img src={displayAvatar} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span>{initial}</span>
-                  )}
-                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white">
-                    <Camera className="w-5 h-5" />
+            {/* ──── RIGHT COLUMN: identity card + tab nav ──── */}
+            <div className="lg:col-span-4 p-5 lg:border-l border-[#eef3f1] space-y-4 bg-[#fbfdfc] order-1 lg:order-2">
+              <div className="bg-white rounded-[18px] p-5 border shadow-sm text-center" style={{ borderColor: '#e4eae7' }}>
+                <div className="relative w-20 h-20 mx-auto mb-3">
+                  <CompletionRing pct={completion} size={80} strokeW={3} />
+                  <div
+                    onClick={() => avatarRef.current?.click()}
+                    className={`absolute inset-2 ${isEmployer ? 'rounded-xl' : 'rounded-full'} overflow-hidden cursor-pointer group flex items-center justify-center border-2 border-white shadow-sm`}
+                    style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}
+                  >
+                    {displayAvatar ? (
+                      <img src={displayAvatar} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xl font-black text-white">{initial}</span>
+                    )}
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white">
+                      <Camera className="w-4 h-4" />
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="text-base font-black text-[#111d1a] truncate">{displayName}</h4>
-                  <p className="text-xs text-[#7b8e88] font-bold mt-0.5 truncate">{displayTitle}</p>
-                </div>
+                <h4 className="text-base font-black truncate" style={{ color: TXT }}>{displayName}</h4>
+                <p className="text-xs font-bold mt-0.5 truncate" style={{ color: SUB }}>{displayTitle}</p>
 
-                <div className="space-y-1.5 pt-2 border-t border-[#f4f7f6]">
-                  <div className="flex items-center justify-between text-[11px] font-bold text-[#12796b]">
-                    <span className="font-mono">{completion}%</span>
-                    <span>تەواوی پڕۆفایل</span>
-                  </div>
-                  <ProgressBar pct={completion} />
+                <div className="flex items-center justify-center gap-1.5 mt-3 pt-3 border-t" style={{ borderColor: '#f0f4f2' }}>
+                  <span className="text-sm font-black font-mono" style={{ color: TEAL }}>{completion}%</span>
+                  <span className="text-[11px] font-bold" style={{ color: MUTED }}>تەواوی پڕۆفایل</span>
                 </div>
               </div>
 
@@ -812,11 +810,10 @@ export const UserProfilePage = ({ onNavigate }) => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveSection(tab.id)}
-                      className={`w-full flex items-center justify-between py-3 px-4 rounded-2xl transition-all ${
-                        isActive
-                          ? 'bg-[#d4f7ee] text-[#12796b] font-black shadow-xs'
-                          : 'hover:bg-white text-[#5a6b65]'
-                      }`}
+                      className="w-full flex items-center justify-between py-3 px-4 rounded-xl transition-all"
+                      style={isActive
+                        ? { background: '#e8f7f4', color: TEAL_DEEP, fontWeight: 900, boxShadow: '0 1px 2px rgba(17,61,54,.04)' }
+                        : { color: SUB }}
                     >
                       <div className="flex items-center gap-2.5">
                         <Icon className="w-4 h-4" />
@@ -829,16 +826,17 @@ export const UserProfilePage = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* ──── LEFT COLUMN (Main Tab Content Area): Cols 1-8 in RTL ──── */}
-            <div className="lg:col-span-8 p-6 lg:p-8 space-y-6 order-2 lg:order-1">
+            {/* ──── LEFT COLUMN: Main Tab Content Area ──── */}
+            <div className="lg:col-span-8 p-6 lg:p-8 space-y-5 order-2 lg:order-1">
 
               {/* Top Form Header with Save & Cancel Buttons */}
-              <div className="flex items-start justify-between gap-4 border-b border-[#f4f7f6] pb-5">
+              <div className="flex items-start justify-between gap-4 border-b pb-5" style={{ borderColor: '#f4f7f6' }}>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setShowEdit(false)}
-                    className="py-2.5 px-4 rounded-2xl bg-white border border-[#e8eeed] text-xs font-bold text-[#4a5854] hover:bg-[#f8faf9] active:scale-95 transition"
+                    className="py-2.5 px-4 rounded-xl border text-xs font-bold transition active:scale-95"
+                    style={{ background: 'white', borderColor: '#e4eae7', color: SUB }}
                   >
                     داخستن
                   </button>
@@ -846,17 +844,18 @@ export const UserProfilePage = ({ onNavigate }) => {
                     type="button"
                     onClick={handleSave}
                     disabled={saving}
-                    className="py-2.5 px-6 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-xs font-black shadow-sm flex items-center gap-2 active:scale-95 transition"
+                    className="py-2.5 px-6 rounded-xl text-white text-xs font-black shadow-sm flex items-center gap-2 active:scale-95 transition"
+                    style={{ background: TEAL }}
                   >
                     {saved ? <><CheckCircle2 className="w-4 h-4" /> پاشەکەوتکرا</> : <><Save className="w-4 h-4" /> {saving ? 'خەریکی...' : 'پاشەکەوتکردن'}</>}
                   </button>
                 </div>
 
                 <div className="text-right">
-                  <h3 className="text-xl font-black text-[#111d1a]">
+                  <h3 className="text-xl font-black" style={{ color: TXT }}>
                     {tabs.find(t => t.id === activeSection)?.label}
                   </h3>
-                  <p className="text-xs text-[#7b8e88] font-medium mt-0.5">
+                  <p className="text-xs font-medium mt-0.5" style={{ color: MUTED }}>
                     ئەم بەشە نوێ بکەرەوە و کلیک لە پاشەکەوتکردن بکە.
                   </p>
                 </div>
@@ -864,391 +863,240 @@ export const UserProfilePage = ({ onNavigate }) => {
 
               {/* ── TAB 1: BASIC INFO (FREELANCER) ── */}
               {activeSection === 'basic' && (
-                <div className="space-y-4 animate-fadeIn">
+                <SectionCard className="animate-fadeIn">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5 text-right">
-                      <label className="text-xs font-bold text-[#111d1a]">ناوی تەواو *</label>
-                      <input
-                        value={name}
-                        onChange={e => setName(e.target.value)}
-                        placeholder="هەڵمەت ئازاد"
-                        className="w-full bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none focus:border-[#12796b]"
-                      />
-                    </div>
-                    <div className="space-y-1.5 text-right">
-                      <label className="text-xs font-bold text-[#111d1a]">ناونیشانی پیشەیی</label>
-                      <input
-                        value={profession}
-                        onChange={e => setProfession(e.target.value)}
-                        placeholder="پەرەپێدەری وێب / دیزاینەر"
-                        className="w-full bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none focus:border-[#12796b]"
-                      />
-                    </div>
-                    <div className="space-y-1.5 text-right">
-                      <label className="text-xs font-bold text-[#111d1a]">ژمارەی مۆبایل</label>
-                      <input
-                        value={phone}
-                        onChange={e => setPhone(e.target.value)}
-                        placeholder="+964 770 123 4567"
-                        dir="ltr"
-                        className="w-full bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold font-mono text-right text-[#111d1a] outline-none focus:border-[#12796b]"
-                      />
-                    </div>
-                    <div className="space-y-1.5 text-right">
-                      <label className="text-xs font-bold text-[#111d1a]">ئیمەیڵ</label>
-                      <input
-                        value={email || user?.email || ''}
-                        onChange={e => setEmail(e.target.value)}
-                        placeholder="info@ishkhwaz.iq"
-                        dir="ltr"
-                        className="w-full bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none focus:border-[#12796b]"
-                      />
-                    </div>
+                    <Field label="ناوی تەواو *">
+                      <input value={name} onChange={e => setName(e.target.value)} placeholder="هەڵمەت ئازاد" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                    </Field>
+                    <Field label="ناونیشانی پیشەیی">
+                      <input value={profession} onChange={e => setProfession(e.target.value)} placeholder="پەرەپێدەری وێب / دیزاینەر" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                    </Field>
+                    <Field label="ژمارەی مۆبایل">
+                      <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+964 770 123 4567" dir="ltr" className={`${fieldCls} ${fieldFocus} font-mono text-right`} style={fieldStyle} />
+                    </Field>
+                    <Field label="ئیمەیڵ">
+                      <input value={email || user?.email || ''} onChange={e => setEmail(e.target.value)} placeholder="info@ishkhwaz.iq" dir="ltr" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                    </Field>
                   </div>
 
                   <div className="space-y-1.5 text-right">
-                    <div className="flex items-center justify-between text-xs font-bold text-[#7b8e88]">
+                    <div className="flex items-center justify-between text-xs font-bold" style={{ color: MUTED }}>
                       <span className="font-mono">{(bio || '').length}/600</span>
-                      <label className="text-[#111d1a]">دەربارەی من</label>
+                      <label style={{ color: TXT }}>دەربارەی من</label>
                     </div>
-                    <textarea
-                      rows={4}
-                      value={bio}
-                      onChange={e => setBio(e.target.value)}
-                      placeholder="سێ ساڵ ئەزموون لە بواری کاری ئازاد..."
-                      className="w-full bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl p-4 text-xs font-medium leading-relaxed text-[#111d1a] outline-none focus:border-[#12796b] resize-none"
-                    />
+                    <textarea rows={4} value={bio} onChange={e => setBio(e.target.value)} placeholder="سێ ساڵ ئەزموون لە بواری کاری ئازاد..."
+                      className={`${fieldCls} ${fieldFocus} font-medium leading-relaxed resize-none p-4`} style={fieldStyle} />
                   </div>
-                </div>
+                </SectionCard>
               )}
 
               {/* ── TAB 1: COMPANY INFO (EMPLOYER) ── */}
               {activeSection === 'company_info' && (
-                <div className="space-y-4 animate-fadeIn">
+                <SectionCard className="animate-fadeIn">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5 text-right">
-                      <label className="text-xs font-bold text-[#111d1a]">ناوی فەرمی کۆمپانیا *</label>
-                      <input
-                        value={companyName}
-                        onChange={e => setCompanyName(e.target.value)}
-                        placeholder="کۆمپانیای ئاسۆ"
-                        className="w-full bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none focus:border-[#12796b]"
-                      />
-                    </div>
-                    <div className="space-y-1.5 text-right">
-                      <label className="text-xs font-bold text-[#111d1a]">بواری کار (Industry)</label>
-                      <input
-                        value={industry}
-                        onChange={e => setIndustry(e.target.value)}
-                        placeholder="تەکنەلۆژیا، بیناسازی، پزیشکی..."
-                        className="w-full bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none focus:border-[#12796b]"
-                      />
-                    </div>
-                    <div className="space-y-1.5 text-right">
-                      <label className="text-xs font-bold text-[#111d1a]">ژمارەی تەلەفۆنی فەرمی</label>
-                      <input
-                        value={phone}
-                        onChange={e => setPhone(e.target.value)}
-                        placeholder="+964 770 000 0000"
-                        dir="ltr"
-                        className="w-full bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold font-mono text-right text-[#111d1a] outline-none focus:border-[#12796b]"
-                      />
-                    </div>
-                    <div className="space-y-1.5 text-right">
-                      <label className="text-xs font-bold text-[#111d1a]">ژمارەی تۆماری بازرگانی</label>
-                      <input
-                        value={companyReg}
-                        onChange={e => setCompanyReg(e.target.value)}
-                        placeholder="KR-123456"
-                        dir="ltr"
-                        className="w-full bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none focus:border-[#12796b]"
-                      />
-                    </div>
+                    <Field label="ناوی فەرمی کۆمپانیا *">
+                      <input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="کۆمپانیای ئاسۆ" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                    </Field>
+                    <Field label="بواری کار (Industry)">
+                      <input value={industry} onChange={e => setIndustry(e.target.value)} placeholder="تەکنەلۆژیا، بیناسازی، پزیشکی..." className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                    </Field>
+                    <Field label="ژمارەی تەلەفۆنی فەرمی">
+                      <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+964 770 000 0000" dir="ltr" className={`${fieldCls} ${fieldFocus} font-mono text-right`} style={fieldStyle} />
+                    </Field>
+                    <Field label="ژمارەی تۆماری بازرگانی">
+                      <input value={companyReg} onChange={e => setCompanyReg(e.target.value)} placeholder="KR-123456" dir="ltr" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                    </Field>
                   </div>
 
-                  <div className="space-y-1.5 text-right">
-                    <label className="text-xs font-bold text-[#111d1a]">دەربارەی کۆمپانیا و خزمەتگوزارییەکان</label>
-                    <textarea
-                      rows={4}
-                      value={bio}
-                      onChange={e => setBio(e.target.value)}
-                      placeholder="ناساندنی کورتی کۆمپانیا و بواری سەرەکی کارەکانتان..."
-                      className="w-full bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl p-4 text-xs font-medium leading-relaxed text-[#111d1a] outline-none focus:border-[#12796b] resize-none"
-                    />
-                  </div>
-                </div>
+                  <Field label="دەربارەی کۆمپانیا و خزمەتگوزارییەکان">
+                    <textarea rows={4} value={bio} onChange={e => setBio(e.target.value)} placeholder="ناساندنی کورتی کۆمپانیا و بواری سەرەکی کارەکانتان..."
+                      className={`${fieldCls} ${fieldFocus} font-medium leading-relaxed resize-none p-4`} style={fieldStyle} />
+                  </Field>
+                </SectionCard>
               )}
 
               {/* ── TAB 2: LOCATION ── */}
               {activeSection === 'location' && (
-                <div className="space-y-4 animate-fadeIn text-right">
+                <SectionCard className="animate-fadeIn">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[#111d1a]">پارێزگا</label>
-                      <select
-                        value={govId}
-                        onChange={e => { setGovId(e.target.value); setDistId(''); }}
-                        className="w-full bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none focus:border-[#12796b]"
-                      >
-                        {kurdistanGovernorates.map(g => (
-                          <option key={g.id} value={g.id}>{g.name_ku}</option>
-                        ))}
+                    <Field label="پارێزگا">
+                      <select value={govId} onChange={e => { setGovId(e.target.value); setDistId(''); }} className={`${fieldCls} ${fieldFocus}`} style={fieldStyle}>
+                        {kurdistanGovernorates.map(g => <option key={g.id} value={g.id}>{g.name_ku}</option>)}
                       </select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-[#111d1a]">قەزا / ناوچە</label>
-                      <select
-                        value={distId}
-                        onChange={e => setDistId(e.target.value)}
-                        className="w-full bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none focus:border-[#12796b]"
-                      >
+                    </Field>
+                    <Field label="قەزا / ناوچە">
+                      <select value={distId} onChange={e => setDistId(e.target.value)} className={`${fieldCls} ${fieldFocus}`} style={fieldStyle}>
                         <option value="">هەموو قەزاکان</option>
-                        {dists.map(d => (
-                          <option key={d.id} value={d.id}>{d.name_ku}</option>
-                        ))}
+                        {dists.map(d => <option key={d.id} value={d.id}>{d.name_ku}</option>)}
                       </select>
-                    </div>
+                    </Field>
                   </div>
 
-                  <div className="p-4 rounded-2xl bg-[#f4faf8] border border-[#d4f7ee] text-xs font-bold text-[#12796b]">
-                    📍 شوێنی دیاریکراو: {location}
+                  <div className="p-4 rounded-xl flex items-center gap-2.5 text-xs font-bold" style={{ background: '#e8f7f4', border: '1px solid #c1ede3', color: TEAL_DEEP }}>
+                    <MapPin className="w-4 h-4 shrink-0" />
+                    شوێنی دیاریکراو: {location}
                   </div>
-                </div>
+                </SectionCard>
               )}
 
               {/* ── TAB 3: SKILLS (FREELANCER) ── */}
               {activeSection === 'skills' && (
-                <div className="space-y-5 animate-fadeIn text-right">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-[#111d1a]">زیادکردنی شارەزایی</label>
+                <div className="space-y-4 animate-fadeIn">
+                  <SectionCard title="زیادکردنی شارەزایی">
                     <div className="flex gap-2">
                       <input
                         value={skillInput}
                         onChange={e => setSkillInput(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
                         placeholder="شارەزاییەک بنووسە و ئینتەر دابگرە..."
-                        className="flex-1 bg-[#fbfdfc] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none focus:border-[#12796b]"
+                        className={`${fieldCls} ${fieldFocus} flex-1`} style={fieldStyle}
                       />
-                      <button
-                        type="button"
-                        onClick={() => addSkill()}
-                        className="px-5 py-3 rounded-2xl bg-[#12796b] text-white text-xs font-black hover:bg-[#0d5c50] transition"
-                      >
+                      <button type="button" onClick={() => addSkill()} className="px-5 py-3 rounded-xl text-white text-xs font-black transition shrink-0" style={{ background: TEAL }}>
                         زیادکردن
                       </button>
                     </div>
-                  </div>
+                  </SectionCard>
 
-                  {/* Added skills chips */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-[#7b8e88]">شارەزاییە هەڵبژێردراوەکان ({skills.length}):</label>
-                    <div className="flex flex-wrap gap-2 min-h-[50px] p-3 rounded-2xl bg-[#f8faf9] border border-[#e8eeed]">
+                  <SectionCard title={`شارەزاییە هەڵبژێردراوەکان (${skills.length})`}>
+                    <div className="flex flex-wrap gap-2 min-h-[46px]">
                       {skills.map(s => (
-                        <span key={s} className="px-3 py-1.5 rounded-xl bg-white border border-[#dce5e1] text-xs font-bold text-stone-800 flex items-center gap-1.5 shadow-2xs">
+                        <span key={s} className="px-3 py-1.5 rounded-xl bg-white border text-xs font-bold flex items-center gap-1.5 shadow-2xs" style={{ borderColor: '#dce5e1', color: TXT }}>
                           {s}
                           <button type="button" onClick={() => removeSkill(s)} className="text-stone-400 hover:text-rose-500"><X className="w-3.5 h-3.5" /></button>
                         </span>
                       ))}
-                      {skills.length === 0 && (
-                        <span className="text-xs text-stone-400 my-auto">هیچ شارەزاییەک زیاد نەکراوە.</span>
-                      )}
+                      {skills.length === 0 && <span className="text-xs font-bold my-auto" style={{ color: MUTED }}>هیچ شارەزاییەک زیاد نەکراوە.</span>}
                     </div>
-                  </div>
+                  </SectionCard>
 
-                  {/* Suggestions */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-[#7b8e88]">پێشنیارە باوەکان:</label>
+                  <SectionCard title="پێشنیارە باوەکان">
                     <div className="flex flex-wrap gap-1.5">
                       {SUGGESTED_SKILLS.filter(s => !skills.includes(s)).map(s => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => addSkill(s)}
-                          className="px-3 py-1 rounded-xl bg-white border border-stone-200 text-[11px] font-bold text-stone-600 hover:border-[#12796b] hover:text-[#12796b] transition"
-                        >
+                        <button key={s} type="button" onClick={() => addSkill(s)}
+                          className="px-3 py-1 rounded-xl bg-white border text-[11px] font-bold hover:border-[#12796b] hover:text-[#12796b] transition"
+                          style={{ borderColor: '#e4eae7', color: SUB }}>
                           + {s}
                         </button>
                       ))}
                     </div>
-                  </div>
+                  </SectionCard>
                 </div>
               )}
 
               {/* ── TAB 4: EXPERIENCE (FREELANCER) ── */}
               {activeSection === 'experience' && (
-                <div className="space-y-5 animate-fadeIn text-right">
-                  <div className="p-4 rounded-2xl bg-[#f8faf9] border border-[#e8eeed] space-y-3">
-                    <h4 className="text-xs font-black text-stone-900">زیادکردنی ئەزموونی نوێ</h4>
+                <div className="space-y-4 animate-fadeIn">
+                  <SectionCard title="زیادکردنی ئەزموونی نوێ">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <input
-                        value={expTitle}
-                        onChange={e => setExpTitle(e.target.value)}
-                        placeholder="ناونیشانی کار / پڕۆژە *"
-                        className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold"
-                      />
-                      <input
-                        value={expPeriod}
-                        onChange={e => setExpPeriod(e.target.value)}
-                        placeholder="ماوە (نموونە: 2022 — 2024)"
-                        className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold"
-                      />
+                      <input value={expTitle} onChange={e => setExpTitle(e.target.value)} placeholder="ناونیشانی کار / پڕۆژە *" className={`${fieldCls} ${fieldFocus} py-2.5`} style={fieldStyle} />
+                      <input value={expPeriod} onChange={e => setExpPeriod(e.target.value)} placeholder="ماوە (نموونە: 2022 — 2024)" className={`${fieldCls} ${fieldFocus} py-2.5`} style={fieldStyle} />
                     </div>
-                    <input
-                      value={expLink}
-                      onChange={e => setExpLink(e.target.value)}
-                      placeholder="لینکی پڕۆژە یان پۆرتفۆلیۆ (ئارەزوومەندانە)"
-                      dir="ltr"
-                      className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold"
-                    />
-                    <textarea
-                      rows={2}
-                      value={expDesc}
-                      onChange={e => setExpDesc(e.target.value)}
-                      placeholder="ڕوونکردنەوەی کورت دەربارەی پڕۆژە یان کارەکە..."
-                      className="w-full bg-white border border-stone-200 rounded-xl p-3 text-xs font-medium resize-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={addExperience}
-                      className="w-full py-2.5 rounded-xl bg-[#12796b] text-white text-xs font-black hover:bg-[#0d5c50] transition flex items-center justify-center gap-1.5"
-                    >
+                    <input value={expLink} onChange={e => setExpLink(e.target.value)} placeholder="لینکی پڕۆژە یان پۆرتفۆلیۆ (ئارەزوومەندانە)" dir="ltr" className={`${fieldCls} ${fieldFocus} py-2.5`} style={fieldStyle} />
+                    <textarea rows={2} value={expDesc} onChange={e => setExpDesc(e.target.value)} placeholder="ڕوونکردنەوەی کورت دەربارەی پڕۆژە یان کارەکە..." className={`${fieldCls} ${fieldFocus} font-medium resize-none`} style={fieldStyle} />
+                    <button type="button" onClick={addExperience} className="w-full py-2.5 rounded-xl text-white text-xs font-black transition flex items-center justify-center gap-1.5" style={{ background: TEAL }}>
                       <Plus className="w-4 h-4" /> زیادکردنی ئەزموون
                     </button>
-                  </div>
+                  </SectionCard>
 
-                  {/* List of existing experiences */}
-                  <div className="space-y-3">
-                    <label className="text-xs font-bold text-stone-700">مێژووی تۆمارکراو ({experiences.length})</label>
-                    {experiences.map((exp, idx) => (
-                      <div key={exp.id || idx} className="p-3.5 rounded-2xl bg-white border border-stone-200 flex items-start justify-between gap-3 shadow-2xs">
-                        <button type="button" onClick={() => removeExperience(idx)} className="text-stone-400 hover:text-rose-500 transition p-1">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                  <SectionCard title={`مێژووی تۆمارکراو (${experiences.length})`}>
+                    {experiences.length === 0 ? (
+                      <p className="text-xs font-bold" style={{ color: MUTED }}>هیچ ئەزموونێک زیاد نەکراوە.</p>
+                    ) : experiences.map((exp, idx) => (
+                      <div key={exp.id || idx} className="p-3.5 rounded-xl bg-white border flex items-start justify-between gap-3 shadow-2xs" style={{ borderColor: '#e4eae7' }}>
+                        <button type="button" onClick={() => removeExperience(idx)} className="text-stone-400 hover:text-rose-500 transition p-1"><Trash2 className="w-4 h-4" /></button>
                         <div className="text-right flex-1 min-w-0">
-                          <div className="text-xs font-black text-stone-900">{exp.title}</div>
-                          <div className="text-[11px] text-stone-400 font-mono mt-0.5">{exp.period}</div>
-                          {exp.description && <p className="text-[11px] text-stone-600 mt-1">{exp.description}</p>}
+                          <div className="text-xs font-black" style={{ color: TXT }}>{exp.title}</div>
+                          <div className="text-[11px] font-mono mt-0.5" style={{ color: MUTED }}>{exp.period}</div>
+                          {exp.description && <p className="text-[11px] mt-1" style={{ color: SUB }}>{exp.description}</p>}
                         </div>
                       </div>
                     ))}
-                  </div>
+                  </SectionCard>
                 </div>
               )}
 
               {/* ── TAB: BRANDING (EMPLOYER) ── */}
               {activeSection === 'branding' && (
-                <div className="space-y-5 animate-fadeIn text-right">
-                  <div className="p-4 rounded-2xl bg-[#f8faf9] border border-stone-200 space-y-3">
-                    <label className="text-xs font-bold text-stone-900 block">لۆگۆی کۆمپانیا</label>
+                <div className="space-y-4 animate-fadeIn">
+                  <SectionCard title="لۆگۆی کۆمپانیا">
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-2xl bg-white border border-stone-200 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
-                        {displayAvatar ? (
-                          <img src={displayAvatar} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-xl font-black text-[#12796b]">{initial}</span>
-                        )}
+                      <div className="w-16 h-16 rounded-2xl bg-white border flex items-center justify-center overflow-hidden shrink-0 shadow-xs" style={{ borderColor: '#e4eae7' }}>
+                        {displayAvatar ? <img src={displayAvatar} alt="" className="w-full h-full object-cover" /> : <span className="text-xl font-black" style={{ color: TEAL }}>{initial}</span>}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => avatarRef.current?.click()}
-                        className="px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-xs font-bold text-stone-700 hover:bg-stone-50 transition"
-                      >
+                      <button type="button" onClick={() => avatarRef.current?.click()} className="px-4 py-2.5 rounded-xl bg-white border text-xs font-bold hover:bg-stone-50 transition" style={{ borderColor: '#dce5e1', color: SUB }}>
                         گۆڕینی لۆگۆ
                       </button>
                     </div>
-                  </div>
+                  </SectionCard>
 
-                  <div className="p-4 rounded-2xl bg-[#f8faf9] border border-stone-200 space-y-3">
-                    <label className="text-xs font-bold text-stone-900 block">وێنەی کەڤەری کۆمپانیا</label>
-                    <div className="h-28 w-full rounded-2xl border border-stone-200 overflow-hidden relative" style={{ background: cover ? `url(${cover}) center/cover` : 'linear-gradient(135deg, #12796b, #2db89f)' }}>
-                      <button
-                        type="button"
-                        onClick={() => coverRef.current?.click()}
-                        className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-white/90 text-stone-800 text-xs font-bold shadow-md hover:bg-white transition flex items-center gap-1.5"
-                      >
+                  <SectionCard title="وێنەی کەڤەری کۆمپانیا">
+                    <div className="h-28 w-full rounded-xl overflow-hidden relative" style={{ background: cover ? `url(${cover}) center/cover` : `linear-gradient(135deg, ${TEAL}, #2db89f)` }}>
+                      <button type="button" onClick={() => coverRef.current?.click()} className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-white/90 text-xs font-bold shadow-md hover:bg-white transition flex items-center gap-1.5" style={{ color: TXT }}>
                         <Camera className="w-3.5 h-3.5" /> گۆڕینی کەڤەر
                       </button>
                     </div>
-                  </div>
+                  </SectionCard>
                 </div>
               )}
 
               {/* ── TAB: PHOTOS (FREELANCER) ── */}
               {activeSection === 'photos' && (
-                <div className="space-y-5 animate-fadeIn text-right">
-                  <div className="p-4 rounded-2xl bg-[#f8faf9] border border-stone-200 space-y-3">
-                    <label className="text-xs font-bold text-stone-900 block">وێنەی پرۆفایل</label>
+                <div className="space-y-4 animate-fadeIn">
+                  <SectionCard title="وێنەی پرۆفایل">
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-full bg-white border border-stone-200 flex items-center justify-center overflow-hidden shrink-0 shadow-xs">
-                        {displayAvatar ? (
-                          <img src={displayAvatar} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-xl font-black text-[#12796b]">{initial}</span>
-                        )}
+                      <div className="w-16 h-16 rounded-full bg-white border flex items-center justify-center overflow-hidden shrink-0 shadow-xs" style={{ borderColor: '#e4eae7' }}>
+                        {displayAvatar ? <img src={displayAvatar} alt="" className="w-full h-full object-cover" /> : <span className="text-xl font-black" style={{ color: TEAL }}>{initial}</span>}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => avatarRef.current?.click()}
-                        className="px-4 py-2.5 rounded-xl bg-white border border-stone-300 text-xs font-bold text-stone-700 hover:bg-stone-50 transition"
-                      >
+                      <button type="button" onClick={() => avatarRef.current?.click()} className="px-4 py-2.5 rounded-xl bg-white border text-xs font-bold hover:bg-stone-50 transition" style={{ borderColor: '#dce5e1', color: SUB }}>
                         گۆڕینی وێنە
                       </button>
                     </div>
-                  </div>
+                  </SectionCard>
 
-                  <div className="p-4 rounded-2xl bg-[#f8faf9] border border-stone-200 space-y-3">
-                    <label className="text-xs font-bold text-stone-900 block">وێنەی کەڤەر</label>
-                    <div className="h-28 w-full rounded-2xl border border-stone-200 overflow-hidden relative" style={{ background: cover ? `url(${cover}) center/cover` : 'linear-gradient(135deg, #12796b, #2db89f)' }}>
-                      <button
-                        type="button"
-                        onClick={() => coverRef.current?.click()}
-                        className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-white/90 text-stone-800 text-xs font-bold shadow-md hover:bg-white transition flex items-center gap-1.5"
-                      >
+                  <SectionCard title="وێنەی کەڤەر">
+                    <div className="h-28 w-full rounded-xl overflow-hidden relative" style={{ background: cover ? `url(${cover}) center/cover` : `linear-gradient(135deg, ${TEAL}, #2db89f)` }}>
+                      <button type="button" onClick={() => coverRef.current?.click()} className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-white/90 text-xs font-bold shadow-md hover:bg-white transition flex items-center gap-1.5" style={{ color: TXT }}>
                         <Camera className="w-3.5 h-3.5" /> گۆڕینی کەڤەر
                       </button>
                     </div>
-                  </div>
+                  </SectionCard>
                 </div>
               )}
 
               {/* ── TAB: CV (FREELANCER) ── */}
               {activeSection === 'cv' && (
-                <div className="space-y-4 animate-fadeIn text-right">
-                  <div className="p-5 rounded-2xl bg-[#f4faf8] border border-[#d4f7ee] space-y-2">
-                    <div className="flex items-center gap-2 text-[#12796b] font-black text-sm">
+                <div className="animate-fadeIn">
+                  <SectionCard className="!bg-[#e8f7f4]" title={null}>
+                    <div className="flex items-center gap-2 font-black text-sm" style={{ color: TEAL_DEEP }}>
                       <FileCheck className="w-5 h-5" />
                       <span>کارنامەی کەسی و فەرمی (CV)</span>
                     </div>
-                    <p className="text-xs text-[#3a7c73] leading-relaxed">
+                    <p className="text-xs leading-relaxed" style={{ color: '#3a7c73' }}>
                       دەتوانیت کارنامەی خۆت بە شێوازی ئەدیتۆریال و پرۆفیشناڵ لە بەشی تایبەتی کارنامەکان دروست بکەیت یان فایلی تایبەت باربکەیت.
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => { setShowEdit(false); onNavigate?.('resumes'); }}
-                      className="mt-2 px-5 py-2.5 rounded-xl bg-[#12796b] text-white text-xs font-black hover:bg-[#0d5c50] transition"
-                    >
+                    <button type="button" onClick={() => { setShowEdit(false); onNavigate?.('resumes'); }} className="px-5 py-2.5 rounded-xl text-white text-xs font-black transition" style={{ background: TEAL }}>
                       چوون بۆ بەڕێوەبردنی کارنامەکان →
                     </button>
-                  </div>
+                  </SectionCard>
                 </div>
               )}
 
               {/* ── TAB: SETTINGS ── */}
               {activeSection === 'settings' && (
-                <div className="space-y-4 animate-fadeIn text-right">
-                  <div className="p-4 rounded-2xl bg-[#f8faf9] border border-stone-200 flex items-center justify-between">
-                    <button type="button" onClick={handleTogglePush} disabled={pushBusy}
-                      className="w-12 h-6 rounded-full p-1 flex items-center transition-colors duration-300"
-                      style={{ background: pushEnabled ? TEAL : '#cbd5d3', justifyContent: pushEnabled ? 'flex-end' : 'flex-start' }}>
-                      <span className="w-4 h-4 rounded-full bg-white shadow-sm block" />
-                    </button>
-                    <div>
-                      <div className="text-xs font-bold text-stone-900">ئاگادارکردنەوەکانی نۆتیفیکەیشن</div>
-                      <div className="text-[11px] text-stone-400 mt-0.5">{pushEnabled ? 'چالاککراوە' : 'ناچالاکە'}</div>
+                <div className="animate-fadeIn">
+                  <SectionCard title={null}>
+                    <div className="flex items-center justify-between">
+                      <button type="button" onClick={handleTogglePush} disabled={pushBusy}
+                        className="w-12 h-6 rounded-full p-1 flex items-center transition-colors duration-300"
+                        style={{ background: pushEnabled ? TEAL : '#cbd5d3', justifyContent: pushEnabled ? 'flex-end' : 'flex-start' }}>
+                        <span className="w-4 h-4 rounded-full bg-white shadow-sm block" />
+                      </button>
+                      <div>
+                        <div className="text-xs font-bold" style={{ color: TXT }}>ئاگادارکردنەوەکانی نۆتیفیکەیشن</div>
+                        <div className="text-[11px] mt-0.5" style={{ color: MUTED }}>{pushEnabled ? 'چالاککراوە' : 'ناچالاکە'}</div>
+                      </div>
                     </div>
-                  </div>
-
+                  </SectionCard>
                 </div>
               )}
 
