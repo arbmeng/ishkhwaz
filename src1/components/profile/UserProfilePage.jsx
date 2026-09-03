@@ -829,41 +829,9 @@ export const UserProfilePage = ({ onNavigate }) => {
             {/* ──── LEFT COLUMN: Main Tab Content Area ──── */}
             <div className="lg:col-span-8 p-6 lg:p-8 space-y-5 order-2 lg:order-1">
 
-              {/* Top Form Header with Save & Cancel Buttons */}
-              <div className="flex items-start justify-between gap-4 border-b pb-5" style={{ borderColor: '#f4f7f6' }}>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowEdit(false)}
-                    className="py-2.5 px-4 rounded-xl border text-xs font-bold transition active:scale-95"
-                    style={{ background: 'white', borderColor: '#e4eae7', color: SUB }}
-                  >
-                    داخستن
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="py-2.5 px-6 rounded-xl text-white text-xs font-black shadow-sm flex items-center gap-2 active:scale-95 transition"
-                    style={{ background: TEAL }}
-                  >
-                    {saved ? <><CheckCircle2 className="w-4 h-4" /> پاشەکەوتکرا</> : <><Save className="w-4 h-4" /> {saving ? 'خەریکی...' : 'پاشەکەوتکردن'}</>}
-                  </button>
-                </div>
-
-                <div className="text-right">
-                  <h3 className="text-xl font-black" style={{ color: TXT }}>
-                    {tabs.find(t => t.id === activeSection)?.label}
-                  </h3>
-                  <p className="text-xs font-medium mt-0.5" style={{ color: MUTED }}>
-                    ئەم بەشە نوێ بکەرەوە و کلیک لە پاشەکەوتکردن بکە.
-                  </p>
-                </div>
-              </div>
-
               {/* ── TAB 1: BASIC INFO (FREELANCER) ── */}
               {activeSection === 'basic' && (
-                <SectionCard className="animate-fadeIn">
+                <SectionCard title="زانیاری بنەڕەتی" className="animate-fadeIn">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="ناوی تەواو *">
                       <input value={name} onChange={e => setName(e.target.value)} placeholder="هەڵمەت ئازاد" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
@@ -892,7 +860,7 @@ export const UserProfilePage = ({ onNavigate }) => {
 
               {/* ── TAB 1: COMPANY INFO (EMPLOYER) ── */}
               {activeSection === 'company_info' && (
-                <SectionCard className="animate-fadeIn">
+                <SectionCard title="زانیاری کۆمپانیا" className="animate-fadeIn">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="ناوی فەرمی کۆمپانیا *">
                       <input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="کۆمپانیای ئاسۆ" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
@@ -917,7 +885,7 @@ export const UserProfilePage = ({ onNavigate }) => {
 
               {/* ── TAB 2: LOCATION ── */}
               {activeSection === 'location' && (
-                <SectionCard className="animate-fadeIn">
+                <SectionCard title="شوێن و ناوچە" className="animate-fadeIn">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="پارێزگا">
                       <select value={govId} onChange={e => { setGovId(e.target.value); setDistId(''); }} className={`${fieldCls} ${fieldFocus}`} style={fieldStyle}>
@@ -1084,7 +1052,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               {/* ── TAB: SETTINGS ── */}
               {activeSection === 'settings' && (
                 <div className="animate-fadeIn">
-                  <SectionCard title={null}>
+                  <SectionCard title="ڕێکخستن">
                     <div className="flex items-center justify-between">
                       <button type="button" onClick={handleTogglePush} disabled={pushBusy}
                         className="w-12 h-6 rounded-full p-1 flex items-center transition-colors duration-300"
@@ -1102,6 +1070,39 @@ export const UserProfilePage = ({ onNavigate }) => {
 
             </div>
 
+          </div>
+
+          {/* Sticky footer — save/cancel always reachable, same pattern as the other modals */}
+          <div
+            className="px-6 border-t flex items-center justify-between gap-3 bg-white shrink-0"
+            style={{
+              borderColor: '#eef3f1',
+              paddingTop: '14px',
+              paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 14px))',
+            }}
+          >
+            <span className="text-xs font-bold hidden sm:block" style={{ color: MUTED }}>
+              {tabs.find(t => t.id === activeSection)?.label}
+            </span>
+            <div className="flex items-center gap-2 flex-1 sm:flex-none">
+              <button
+                type="button"
+                onClick={() => setShowEdit(false)}
+                className="flex-1 sm:flex-none py-3 sm:py-2.5 px-4 rounded-xl border text-xs font-bold transition active:scale-95"
+                style={{ background: 'white', borderColor: '#e4eae7', color: SUB }}
+              >
+                داخستن
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 sm:flex-none py-3 sm:py-2.5 px-6 rounded-xl text-white text-xs font-black shadow-sm flex items-center justify-center gap-2 active:scale-95 transition"
+                style={{ background: TEAL }}
+              >
+                {saved ? <><CheckCircle2 className="w-4 h-4" /> پاشەکەوتکرا</> : <><Save className="w-4 h-4" /> {saving ? 'خەریکی...' : 'پاشەکەوتکردن'}</>}
+              </button>
+            </div>
           </div>
 
         </div>
