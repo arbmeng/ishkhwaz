@@ -99,8 +99,17 @@ define('ZERA_PAYMENT_BASE_URL', 'https://pay.zeraworld.com/api/v1');
 // billed key.
 // The full model, not the mini variant — Sorani Kurdish is a lower-resource
 // language and gpt-4o-mini's output for it was noticeably worse (unnatural
-// phrasing, awkward calques from English) than the full model's.
+// phrasing, awkward calques from English) than the full model's. Used for
+// anything that becomes real saved content (CV summaries/experience, job
+// postings, the final Karnama AI CV extraction).
 define('OPENAI_MODEL', 'gpt-4o');
+// Cheaper/faster model for short conversational turns that never get saved
+// as-is (e.g. Karnama AI's back-and-forth interview questions) — real cost
+// reduction where output quality isn't the final product, just the prompts
+// gathering it. Kurdish quality still matters here since the user reads
+// these live, but short single-sentence questions are a much easier task
+// for the mini model than long-form prose generation was.
+define('OPENAI_MODEL_FAST', 'gpt-4o-mini');
 
 // ---- Karnama CV builder integration ----
 // Same shared secret as the OAuth client (config.php), reused here for a
@@ -742,9 +751,14 @@ function callOpenAI(string $systemPrompt, string $userPrompt, int $maxTokens = 4
 // Same as callOpenAI but takes a full multi-turn message array (for a real
 // back-and-forth conversation, not a single system+user pair) and can ask
 // for strict JSON output. Used by the Karnama AI chat/build endpoints.
-function callOpenAIChat(array $messages, int $maxTokens = 500, bool $jsonMode = false): ?string {
+// Optional $model override — the Karnama AI chat turns use the cheaper
+// OPENAI_MODEL_FAST here (short conversational Q&A, not the actual saved
+// CV content), while the final extraction stays on the full OPENAI_MODEL
+// via callOpenAIChatStreaming, since that's what quality actually matters
+// for. Real cost reduction, not a quality cut where it counts.
+function callOpenAIChat(array $messages, int $maxTokens = 500, bool $jsonMode = false, ?string $model = null): ?string {
     $payload = [
-        'model' => OPENAI_MODEL,
+        'model' => $model ?? OPENAI_MODEL,
         'messages' => $messages,
         'temperature' => 0.5,
         'max_tokens' => $maxTokens,
@@ -4205,16 +4219,20 @@ if (preg_match('#/ai-cv/messages$#', $uri) && $method === 'POST') {
 
     $system = "You are Karnama AI, a friendly Kurdish CV-building assistant inside the Ish-khwaz job app, chatting with a VIP user to build their CV through natural conversation. Write in natural, fluent Central Kurdish (Sorani, Arabic-based script), colloquial register (زمانی بازاڕی) — the way a helpful professional actually talks, not stiff formal Kurdish.\n"
         . "Real known facts about this user already on file (use these, don't re-ask for them, don't contradict them):\n{$knownFacts}\n\n"
-        . "Your job: through short, one-question-at-a-time chat turns, gather what's needed for a real CV — job title/profession, a short professional summary of their background, work experience (company, role, dates, what they did), education, skills, languages, and anything else useful (projects, certifications). Ask ONE focused question per turn, keep each message short (1-3 sentences), like a real chat, not an essay or a form.\n"
-        . "CRITICAL — never invent or assume any fact the user hasn't actually told you or that isn't in the known-facts list above. If they give a vague or short answer, accept it as-is and move to the next question rather than padding it with invented specifics. It is completely fine for a section to end up thin or empty if that's genuinely all they have — never fabricate to fill it in.\n"
-        . "Once you've gathered enough real information for at least a basic real CV (job title + at least one of: real experience, real education, or real skills), say a short natural closing line telling them their CV is ready to build, and end your message with the exact literal marker [READY_TO_BUILD] on its own at the very end (this marker is never shown to the user, it's stripped automatically — just always include it once you're genuinely ready, and never include it before then).";
+        . "Your job: gather what's needed for a real CV — job title/profession, work experience (company, role, how long, what they did), education, skills, and languages — in AS FEW TURNS AS POSSIBLE. This is the most important instruction: don't ask one tiny fact at a time. Group naturally-related questions into a single message instead:\n"
+        . "  Turn 1: ask their job title/profession together with their most relevant work experience (company, role, roughly how long, what they actually do).\n"
+        . "  Turn 2: ask their education AND their top skills together in one message.\n"
+        . "  Turn 3 (only if still missing): ask languages, plus anything else worth adding (projects/certifications) — optional, skip straight to ready if this genuinely adds nothing new.\n"
+        . "If the user already answered several of these in one message (people often do), don't re-ask what they already gave you — just move straight to whatever's still missing, and skip a turn/group entirely once it's covered. Keep every message short (1-3 sentences) and conversational, never a form or a numbered list.\n"
+        . "CRITICAL — never invent or assume any fact the user hasn't actually told you or that isn't in the known-facts list above. If they give a vague or short answer, accept it as-is and move on rather than padding it with invented specifics. It is completely fine for a section to end up thin or empty if that's genuinely all they have — never fabricate to fill it in.\n"
+        . "The moment you have at least a job title plus one of (real experience, real education, real skills), stop asking and wrap up — don't chase every remaining field once there's enough for a real CV. Say a short natural closing line telling them their CV is ready to build, and end your message with the exact literal marker [READY_TO_BUILD] on its own at the very end (this marker is never shown to the user, it's stripped automatically — just always include it once you're genuinely ready, and never include it before then).";
 
     $messages = [['role' => 'system', 'content' => $system]];
     foreach ($history as $h) {
         $messages[] = ['role' => $h['role'] === 'assistant' ? 'assistant' : 'user', 'content' => $h['body']];
     }
 
-    $reply = callOpenAIChat($messages, 350);
+    $reply = callOpenAIChat($messages, 220, false, OPENAI_MODEL_FAST);
     if ($reply === null) jsonErr(502, 'AI ئێستا بەردەست نییە. تکایە دواتر هەوڵبدەرەوە.');
 
     $ready = str_contains($reply, '[READY_TO_BUILD]');
