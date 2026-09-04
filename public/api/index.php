@@ -99,17 +99,14 @@ define('ZERA_PAYMENT_BASE_URL', 'https://pay.zeraworld.com/api/v1');
 // billed key.
 // The full model, not the mini variant — Sorani Kurdish is a lower-resource
 // language and gpt-4o-mini's output for it was noticeably worse (unnatural
-// phrasing, awkward calques from English) than the full model's. Used for
-// anything that becomes real saved content (CV summaries/experience, job
-// postings, the final Karnama AI CV extraction).
+// phrasing, awkward calques from English, occasionally genuinely garbled/
+// repetitive text — confirmed live, not just theoretical) than the full
+// model's, for EVERY Kurdish-facing use in this app, including short
+// conversational turns (tried once for Karnama AI's chat questions
+// specifically to cut cost — reverted after real output showed the same
+// weakness). Don't reintroduce a mini-model path for user-facing Kurdish
+// text without re-verifying quality live first.
 define('OPENAI_MODEL', 'gpt-4o');
-// Cheaper/faster model for short conversational turns that never get saved
-// as-is (e.g. Karnama AI's back-and-forth interview questions) — real cost
-// reduction where output quality isn't the final product, just the prompts
-// gathering it. Kurdish quality still matters here since the user reads
-// these live, but short single-sentence questions are a much easier task
-// for the mini model than long-form prose generation was.
-define('OPENAI_MODEL_FAST', 'gpt-4o-mini');
 
 // ---- Karnama CV builder integration ----
 // Same shared secret as the OAuth client (config.php), reused here for a
@@ -750,12 +747,11 @@ function callOpenAI(string $systemPrompt, string $userPrompt, int $maxTokens = 4
 
 // Same as callOpenAI but takes a full multi-turn message array (for a real
 // back-and-forth conversation, not a single system+user pair) and can ask
-// for strict JSON output. Used by the Karnama AI chat/build endpoints.
-// Optional $model override — the Karnama AI chat turns use the cheaper
-// OPENAI_MODEL_FAST here (short conversational Q&A, not the actual saved
-// CV content), while the final extraction stays on the full OPENAI_MODEL
-// via callOpenAIChatStreaming, since that's what quality actually matters
-// for. Real cost reduction, not a quality cut where it counts.
+// for strict JSON output. Used by the Karnama AI chat endpoint. Optional
+// $model override exists for callers with a real reason to pick a
+// different model — defaults to the full OPENAI_MODEL, which is what every
+// current caller uses (see OPENAI_MODEL's own doc comment for why a
+// cheaper model isn't used for Kurdish text here).
 function callOpenAIChat(array $messages, int $maxTokens = 500, bool $jsonMode = false, ?string $model = null): ?string {
     $payload = [
         'model' => $model ?? OPENAI_MODEL,
@@ -4232,7 +4228,13 @@ if (preg_match('#/ai-cv/messages$#', $uri) && $method === 'POST') {
         $messages[] = ['role' => $h['role'] === 'assistant' ? 'assistant' : 'user', 'content' => $h['body']];
     }
 
-    $reply = callOpenAIChat($messages, 220, false, OPENAI_MODEL_FAST);
+    // Tried OPENAI_MODEL_FAST (gpt-4o-mini) here for cost — real user
+    // feedback on live output showed genuinely garbled Kurdish (nonsensical
+    // repeated words, not just less polished), same lower-resource-language
+    // weakness already documented for OPENAI_MODEL's own doc comment.
+    // Reverted to the full model; the turn-count reduction above still cuts
+    // real cost (fewer total calls) without this quality trade-off.
+    $reply = callOpenAIChat($messages, 220);
     if ($reply === null) jsonErr(502, 'AI ئێستا بەردەست نییە. تکایە دواتر هەوڵبدەرەوە.');
 
     $ready = str_contains($reply, '[READY_TO_BUILD]');
