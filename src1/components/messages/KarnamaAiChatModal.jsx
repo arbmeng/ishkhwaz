@@ -272,7 +272,6 @@ export const KarnamaAiChatModal = ({ onClose, onNavigate, onEditResumeStyle }) =
             ref={inputRef}
             value={text}
             onChange={e => setText(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
             placeholder="وەڵام بدەرەوە..."
             disabled={sending}
             className="flex-1 bg-white border border-[#e8eeed] rounded-full px-4 py-3 text-xs sm:text-sm text-[#111d1a] font-bold placeholder-[#9faea9] outline-none focus:border-[#12796b] focus:ring-2 focus:ring-[#12796b]/10 transition-all"
