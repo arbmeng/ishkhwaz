@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { apiService } from '../../services/api';
 import { soundService } from '../../services/soundService';
+import { kurdistanGovernorates } from '../../data/kurdistanLocations';
 import {
   Building2, MapPin, DollarSign, Briefcase, Plus, CheckCircle2,
   AlertCircle, X, Search, ChevronLeft, ChevronDown, Check, Rocket,
@@ -11,14 +12,6 @@ import {
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
 const TEAL = '#12796b';
-
-const GOVS = [
-  { id: 'sulaymaniyah', name: 'سلێمانی', districts: ['بەکرەجۆ', 'تووی مەلیك', 'ڕاپەڕین', 'چوارچرا', 'سەرچنار', 'قڕگە'] },
-  { id: 'erbil',        name: 'هەولێر',  districts: ['عەنکاوە', 'بەختیاری', 'ڕاستی', 'ئیسکان', 'شۆڕش'] },
-  { id: 'duhok',        name: 'دهۆک',    districts: ['شاخکێ', 'ماسیکێ', 'ماڵتا', 'نزارکێ'] },
-  { id: 'kirkuk',       name: 'کەرکووک', districts: ['ڕەحیماوا', 'شۆڕیجە', 'ئیسکان', 'ئازادی'] },
-  { id: 'halabja',      name: 'هەڵەبجە', districts: ['سیروان', 'خورماڵ', 'بەیان'] },
-];
 
 export const PostJobPage = ({ onBack, onSuccess }) => {
   const { user, token } = useAuth();
@@ -32,7 +25,8 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
   const [salaryMin, setSalaryMin] = useState(1200000);
   const [salaryMax, setSalaryMax] = useState(1800000);
   const [selectedGov, setSelectedGov] = useState('sulaymaniyah');
-  const [selectedDistrict, setSelectedDistrict] = useState('بەکرەجۆ');
+  const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [selectedSubDistrict, setSelectedSubDistrict] = useState('');
   const [description, setDescription] = useState('');
   const [skills, setSkills] = useState([]);
   const [skillInput, setSkillInput] = useState('');
@@ -40,7 +34,10 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const currentGovObj = GOVS.find(g => g.id === selectedGov) || GOVS[0];
+  const currentGovObj = kurdistanGovernorates.find(g => g.id === selectedGov) || kurdistanGovernorates[0];
+  const availableDistricts = currentGovObj?.districts || [];
+  const currentDistObj = availableDistricts.find(d => d.id === selectedDistrict) || null;
+  const availableSubDistricts = currentDistObj?.subDistricts || [];
 
   const addSkill = () => {
     const s = skillInput.trim();
@@ -79,7 +76,9 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
         job_type: jobType,
         workplace_type: workplaceType,
         governorate_id: selectedGov,
-        location_detail: selectedDistrict,
+        district_id: selectedDistrict,
+        sub_district_id: selectedSubDistrict,
+        location_detail: [currentDistObj?.name_ku, availableSubDistricts.find(s => s.id === selectedSubDistrict)?.name_ku].filter(Boolean).join('، '),
         salary_min: parseInt(salaryMin) || 500000,
         salary_max: parseInt(salaryMax) || 1200000,
         salary_period: 'monthly',
@@ -96,7 +95,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
       const res = await apiService.createJob(payload, token);
       if (res && res.success) {
         soundService.playSuccess?.();
-        addToast?.({ title: 'پیرۆزە! 🎉', message: 'ئیشەکەت بە سەرکەوتوویی بڵاوکرایەوە', type: 'success' });
+        addToast?.({ title: 'نێردرا', message: 'کارەکەت لە چاوەڕوانی پێداچوونەوەی بەڕێوەبەرە — دوای پەسەندکردن بڵاودەکرێتەوە.', type: 'success' });
         onSuccess?.();
       } else {
         setErrorMsg(res?.message || 'کێشەیەک ڕوویدا.');
@@ -165,7 +164,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
                       {title || 'پەرەپێدەری وێب'}
                     </h4>
                     <p className="text-[11px] text-[#7b8e88] font-bold mt-0.5 truncate">
-                      {companyName} · {currentGovObj.name}، {selectedDistrict}
+                      {companyName} · {[currentGovObj?.name_ku, currentDistObj?.name_ku].filter(Boolean).join('، ')}
                     </p>
                   </div>
                   <div className="w-10 h-10 rounded-2xl bg-[#eaf5f2] border border-[#d2ede5] flex items-center justify-center text-[#12796b] font-black text-sm shrink-0">
@@ -341,41 +340,60 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
               </div>
             </div>
 
-            {/* Governorate & District */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* District */}
+            {/* City / District / Sub-district — real hierarchy, manual selection only */}
+            <div className="grid grid-cols-3 gap-3">
+              {/* City (Governorate) */}
               <div className="space-y-1.5 text-right">
-                <label className="text-xs font-bold text-[#111d1a]">ناحیە</label>
+                <label className="text-xs font-bold text-[#111d1a]">شار</label>
                 <div className="relative">
                   <select
-                    value={selectedDistrict}
-                    onChange={e => setSelectedDistrict(e.target.value)}
+                    value={selectedGov}
+                    onChange={e => {
+                      setSelectedGov(e.target.value);
+                      setSelectedDistrict('');
+                      setSelectedSubDistrict('');
+                    }}
                     className="w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none appearance-none cursor-pointer"
                   >
-                    {currentGovObj.districts.map(d => (
-                      <option key={d} value={d}>{d}</option>
+                    {kurdistanGovernorates.map(g => (
+                      <option key={g.id} value={g.id}>{g.name_ku}</option>
                     ))}
                   </select>
                   <ChevronDown className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9e98] pointer-events-none" />
                 </div>
               </div>
 
-              {/* Governorate */}
+              {/* Qaza (District) */}
               <div className="space-y-1.5 text-right">
-                <label className="text-xs font-bold text-[#111d1a]">پارێزگا</label>
+                <label className="text-xs font-bold text-[#111d1a]">قەزا</label>
                 <div className="relative">
                   <select
-                    value={selectedGov}
-                    onChange={e => {
-                      const g = e.target.value;
-                      setSelectedGov(g);
-                      const obj = GOVS.find(x => x.id === g);
-                      setSelectedDistrict(obj?.districts?.[0] || '');
-                    }}
+                    value={selectedDistrict}
+                    onChange={e => { setSelectedDistrict(e.target.value); setSelectedSubDistrict(''); }}
                     className="w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none appearance-none cursor-pointer"
                   >
-                    {GOVS.map(g => (
-                      <option key={g.id} value={g.id}>{g.name}</option>
+                    <option value="">هەموو قەزاکان</option>
+                    {availableDistricts.map(d => (
+                      <option key={d.id} value={d.id}>{d.name_ku}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9e98] pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Nahiya (Sub-district) */}
+              <div className="space-y-1.5 text-right">
+                <label className="text-xs font-bold text-[#111d1a]">ناحیە</label>
+                <div className="relative">
+                  <select
+                    value={selectedSubDistrict}
+                    onChange={e => setSelectedSubDistrict(e.target.value)}
+                    disabled={availableSubDistricts.length === 0}
+                    className="w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none appearance-none cursor-pointer disabled:opacity-50"
+                  >
+                    <option value="">{availableSubDistricts.length === 0 ? 'ناحیە نییە' : 'هەموو ناحیەکان'}</option>
+                    {availableSubDistricts.map(s => (
+                      <option key={s.id} value={s.id}>{s.name_ku}</option>
                     ))}
                   </select>
                   <ChevronDown className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9e98] pointer-events-none" />

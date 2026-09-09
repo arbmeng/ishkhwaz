@@ -28,7 +28,7 @@ function parseSkills(raw) {
 
 export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNavigate }) => {
   const { user, openAuthModal } = useAuth();
-  const { freelancers = [], jobs = [] } = useStore();
+  const { freelancers = [], jobs = [], categories = [], companies: realCompanies = [] } = useStore();
 
   const [mode, setMode] = useState(initialMode);
   useEffect(() => setMode(initialMode), [initialMode]);
@@ -72,25 +72,35 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
     });
   }, [freelancers, searchTerm, govFilter, categoryFilter, verifiedOnly]);
 
-  // ---- Companies List (real — grouped from active jobs) ----
+  // ---- Companies List (real account data from GET /companies, matched by
+  // company_id — jobs are only used to group/count, never as the source of
+  // truth for the company's own logo/cover/bio/industry anymore) ----
   const companyList = useMemo(() => {
     const map = {};
     (Array.isArray(jobs) ? jobs : []).forEach((job) => {
       const name = job.companyName || job.company_name;
       if (!name) return;
       if (!map[name]) {
+        const compId = job.company_id || job.employer_id || job.user_id;
+        const real = realCompanies.find(c => String(c.id) === String(compId));
         map[name] = {
-          id: job.company_id || job.employer_id || job.user_id,
+          id: compId,
           name,
-          logo: job.companyLogo || job.company_logo,
-          cover: job.company_cover || '',
+          logo: real?.company_logo || job.companyLogo || job.company_logo,
+          cover: real?.company_cover || job.company_cover || '',
           phone: job.company_phone || '',
           email: job.company_email || '',
-          governorate: job.governorate_id || 'sulaymaniyah',
+          governorate: real?.governorate || job.governorate_id || 'sulaymaniyah',
           governorateName: job.governorateName || job.governorate_name || (job.governorate_id === 'erbil' ? 'هەولێر' : (job.governorate_id === 'duhok' ? 'دهۆک' : (job.governorate_id === 'kirkuk' ? 'کەرکووک' : 'سلێمانی'))),
-          industry: job.industry || job.company_industry || 'تەکنەلۆژیا',
-          description: job.company_description || '',
-          verified: Boolean(Number(job.company_verified) === 1 || job.verified),
+          // Prefer the real account's own industry; only fall back to
+          // resolving the job's category (never the raw id — see git log
+          // for the earlier "cat_media_1" leak) when the real record isn't
+          // loaded yet or the account never set one.
+          industry: real?.industry || categories.find(c => c.id === job.category)?.name_ku || '',
+          description: real?.bio || job.company_description || '',
+          regNumber: real?.company_reg || '',
+          member_since: real?.created_at || null,
+          verified: Boolean(real ? Number(real.verified) === 1 : (Number(job.company_verified) === 1 || job.verified)),
           jobs: [],
         };
       }

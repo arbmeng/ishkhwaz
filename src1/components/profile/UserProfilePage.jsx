@@ -13,21 +13,25 @@ import {
   Heart, Trash2, Briefcase, ChevronLeft, LogOut, User,
   Bell, MapPin, Plus, X, Layers, Sparkles, Building2,
   ExternalLink, ShieldCheck, FileCheck,
-  HelpCircle, Info
+  HelpCircle, Info, MailWarning, Loader2
 } from 'lucide-react';
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
-const TEAL   = '#12796b';
-const TEAL_DEEP = '#0d5c50';
-const TEAL2  = '#286d64';
-const MINT   = '#d4f7ee';
-const MINT2  = '#e4fcf6';
-const BORDER = '#beece2';
-const TXT    = '#113d36';
-const SUB    = '#2b6d64';
-const MUTED  = '#4e8e84';
-const CARD   = '#f8faf9';
+// Deliberately muted/neutral — the previous bright mint-pastel palette,
+// heavy corner-rounding and animated shimmer/pulse effects read as too
+// playful for a page employers also use professionally. Kept teal as the
+// single accent color, dropped the candy-mint backgrounds for neutral gray.
+const TEAL   = '#0f6b5f';
+const TEAL_DEEP = '#0a4a41';
+const TEAL2  = '#245e56';
+const MINT   = '#eef1f0';
+const MINT2  = '#f4f5f4';
+const BORDER = '#dde3e0';
+const TXT    = '#161f1c';
+const SUB    = '#425049';
+const MUTED  = '#6b7975';
+const CARD   = '#f6f7f6';
 
 const parseJsonArray = (val) => {
   if (Array.isArray(val)) return val;
@@ -45,12 +49,12 @@ const SUGGESTED_SKILLS = [
 const BentoHead = ({ eyebrow, title, link, onLink }) => (
   <div className="flex items-center justify-between mb-3.5">
     {link && (
-      <button onClick={onLink} className="text-[11.5px] font-black flex items-center gap-1 hover:underline" style={{ color: TEAL }}>
+      <button onClick={onLink} className="text-[11px] font-black flex items-center gap-1 hover:underline" style={{ color: TEAL }}>
         {link} <ChevronLeft className="w-3 h-3 rtl:rotate-180" />
       </button>
     )}
     <div>
-      <span className="text-[10.5px] font-black uppercase tracking-wide block" style={{ color: TEAL }}>{eyebrow}</span>
+      <span className="text-[11px] font-black uppercase tracking-wide block" style={{ color: TEAL }}>{eyebrow}</span>
       <h3 className="text-[15.5px] font-black mt-0.5" style={{ color: TXT }}>{title}</h3>
     </div>
   </div>
@@ -90,6 +94,21 @@ export const UserProfilePage = ({ onNavigate }) => {
   /* ── push ── */
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushBusy,    setPushBusy]    = useState(false);
+
+  /* ── email verification ── */
+  const [resendBusy, setResendBusy] = useState(false);
+  const needsEmailVerification = Boolean(user?.email) && !Number(user?.email_verified);
+  const handleResendVerification = async () => {
+    soundService.playTick?.();
+    setResendBusy(true);
+    const res = await apiService.resendVerificationEmail(token);
+    setResendBusy(false);
+    if (res?.success) {
+      addToast?.({ title: 'نێردرا ✓', message: 'ئیمەیلی دڵنیاکردنەوە نێردرایەوە — سندوقی نامەکانت بپشکنە.', type: 'success' });
+    } else {
+      addToast?.({ title: 'هەڵە', message: res?.message || 'ناردنی ئیمەیل سەرکەوتوو نەبوو.', type: 'warning' });
+    }
+  };
 
   /* ── viewers ── */
   const [viewersState, setViewersState] = useState({ loaded: false, viewers: [] });
@@ -170,7 +189,9 @@ export const UserProfilePage = ({ onNavigate }) => {
   const govObj  = kurdistanGovernorates.find(g => g.id === govId || g.name_ku === govId) || kurdistanGovernorates[0];
   const dists   = govObj?.districts || [];
   const distObj = dists.find(d => d.id === distId || d.name_ku === distId) || dists[0];
-  const location = `${govObj?.name_ku || 'سلێمانی'}، ${distObj?.name_ku || ''}`;
+  const subs    = distObj?.subDistricts || [];
+  const subObj  = subs.find(s => s.id === subId || s.name_ku === subId);
+  const location = [govObj?.name_ku, distObj?.name_ku, subObj?.name_ku].filter(Boolean).join('، ');
 
   /* ── employer jobs & applications ── */
   const employerJobs = useMemo(() => {
@@ -322,6 +343,7 @@ export const UserProfilePage = ({ onNavigate }) => {
       company_cover: cover,
       governorate: govObj?.name_ku,
       district: distObj?.name_ku,
+      sub_district: subObj?.name_ku || '',
       governorateId: govId,
       districtId: distId,
       subDistrictId: subId,
@@ -336,6 +358,7 @@ export const UserProfilePage = ({ onNavigate }) => {
       cover,
       governorate: govObj?.name_ku,
       district: distObj?.name_ku,
+      sub_district: subObj?.name_ku || '',
       governorateId: govId,
       districtId: distId,
       subDistrictId: subId,
@@ -383,20 +406,6 @@ export const UserProfilePage = ({ onNavigate }) => {
         from { opacity: 0; transform: translateY(18px); }
         to   { opacity: 1; transform: translateY(0);    }
       }
-      @keyframes profilePulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(18,121,107,0.35); }
-        50%      { box-shadow: 0 0 0 8px rgba(18,121,107,0);   }
-      }
-      @keyframes shimmerSlide {
-        0%   { background-position: -200% center; }
-        100% { background-position:  200% center; }
-      }
-      .profile-vip-pulse   { animation: profilePulse 2.2s ease-in-out infinite; }
-      .shimmer-btn {
-        background: linear-gradient(90deg, #12796b 0%, #2db89f 45%, #12796b 100%);
-        background-size: 200% auto;
-        animation: shimmerSlide 2.8s linear infinite;
-      }
     `;
     document.head.appendChild(style);
   }, []);
@@ -421,10 +430,29 @@ export const UserProfilePage = ({ onNavigate }) => {
         </h1>
       </div>
 
+      {needsEmailVerification && (
+        <div className="mb-4 px-4 py-3.5 rounded-2xl border flex items-center gap-3 flex-wrap" style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
+          <MailWarning className="w-5 h-5 shrink-0" style={{ color: '#b45309' }} />
+          <div className="flex-1 min-w-[180px]">
+            <p className="text-xs font-black" style={{ color: '#92400e' }}>ئیمەیلەکەت هێشتا دڵنیا نەکراوەتەوە</p>
+            <p className="text-[11px] font-bold mt-0.5" style={{ color: '#b45309' }}>{user?.email}</p>
+          </div>
+          <button
+            onClick={handleResendVerification}
+            disabled={resendBusy}
+            className="shrink-0 px-3.5 py-2 rounded-xl bg-white border text-xs font-black active:scale-95 transition disabled:opacity-60 flex items-center gap-1.5"
+            style={{ borderColor: '#fde68a', color: '#92400e' }}
+          >
+            {resendBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+            {resendBusy ? 'ناردن...' : 'ناردنەوەی ئیمەیل'}
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 items-start">
 
         {/* ══════════ IDENTITY RAIL ══════════ */}
-        <aside className="bg-white rounded-[26px] border border-[#e4eae7] shadow-sm p-6 lg:sticky lg:top-5 relative overflow-hidden">
+        <aside className="bg-white rounded-2xl border border-[#e4eae7] shadow-sm p-6 lg:sticky lg:top-5 relative overflow-hidden">
           {/* subtle kilim-inspired weave, restrained */}
           <div
             className="absolute inset-0 pointer-events-none opacity-[0.05]"
@@ -438,14 +466,14 @@ export const UserProfilePage = ({ onNavigate }) => {
           <div className="flex items-start justify-between gap-2 relative">
             {isVIP && (
               <span
-                className="profile-vip-pulse text-white text-[10.5px] font-black px-2.5 py-1 rounded-full inline-flex items-center gap-1 shrink-0"
+                className="text-white text-[11px] font-black px-2.5 py-1 rounded-full inline-flex items-center gap-1 shrink-0"
                 style={{ background: planAccent }}
               >
-                <span className="text-[10px]">👑</span> VIP
+                <Sparkles className="w-3 h-3" /> VIP
               </span>
             )}
             <span
-              className="text-[10.5px] font-black px-2.5 py-1 rounded-full shrink-0"
+              className="text-[11px] font-black px-2.5 py-1 rounded-full shrink-0"
               style={{ background: CARD, color: TXT, border: '1px solid #e4eae7' }}
             >
               {isEmployer ? 'کۆمپانیا و خاوەنکار' : 'کارخواز'}
@@ -482,7 +510,8 @@ export const UserProfilePage = ({ onNavigate }) => {
 
           <button
             onClick={() => { soundService.playTick?.(); setShowEdit(true); }}
-            className="shimmer-btn w-full py-3.5 rounded-2xl text-white font-black text-sm shadow-md active:scale-[0.98] transition relative mb-2.5"
+            className="w-full py-3.5 rounded-xl text-white font-black text-sm shadow-sm active:scale-[0.98] transition relative mb-2.5"
+            style={{ background: TEAL }}
           >
             {isEmployer ? 'دەستکاری زانیاری کۆمپانیا' : 'دەستکاری پڕۆفایل'}
           </button>
@@ -533,7 +562,7 @@ export const UserProfilePage = ({ onNavigate }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
 
           {/* About */}
-          <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5">
             <BentoHead eyebrow="دەربارە" title={isEmployer ? 'دەربارەی کۆمپانیا' : 'دەربارەی من'} />
             <p className="text-[13.5px] leading-[1.9] font-medium" style={{ color: SUB }}>
               {bio || user?.bio || (
@@ -547,14 +576,14 @@ export const UserProfilePage = ({ onNavigate }) => {
           {isFreelancer ? (
             <>
               {/* Resumes */}
-              <div className="col-span-1 lg:col-span-3 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5 flex flex-col">
+              <div className="col-span-1 lg:col-span-3 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5 flex flex-col">
                 <BentoHead eyebrow="سیڤیەکان" title="کارنامەکانم" link="هەموو" onLink={() => { soundService.playTick?.(); onNavigate?.('resumes'); }} />
                 <button
                   onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }}
                   className="flex-1 rounded-2xl border flex items-center gap-3 p-4 transition hover:border-[#12796b]/40 hover:bg-[#f4faf8]"
                   style={{ background: CARD, borderColor: '#eef3f1' }}
                 >
-                  <div className="w-11 h-12 rounded-xl flex items-center justify-center shrink-0 border" style={{ background: '#e0f3ee', borderColor: '#c1ede3' }}>
+                  <div className="w-11 h-12 rounded-xl flex items-center justify-center shrink-0 border" style={{ background: '#e0f3ee', borderColor: '#dde3e0' }}>
                     <FileText className="w-6 h-6" style={{ color: TEAL }} />
                   </div>
                   <div className="text-right">
@@ -565,7 +594,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               </div>
 
               {/* Location */}
-              <div className="col-span-1 lg:col-span-3 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+              <div className="col-span-1 lg:col-span-3 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5">
                 <BentoHead eyebrow="شوێن" title="ناونیشان" />
                 <div className="flex items-center gap-3.5">
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#e0f3ee', color: TEAL }}>
@@ -579,7 +608,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               </div>
 
               {/* Skills */}
-              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5">
                 <BentoHead eyebrow="شارەزایی" title="کارامەیی و تواناکان" />
                 <div className="flex flex-wrap gap-2">
                   {(skills.length ? skills : parseJsonArray(user?.skills)).map(s => (
@@ -601,7 +630,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               </div>
 
               {/* Experience timeline */}
-              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5">
                 <BentoHead eyebrow="مێژوو" title="ئەزموونی کار" link="زیادکردن" onLink={() => { soundService.playTick?.(); setShowEdit(true); }} />
                 {experiences.length === 0 ? (
                   <p className="text-xs font-bold" style={{ color: MUTED }}>هیچ ئەزموونێک زیاد نەکراوە.</p>
@@ -614,7 +643,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                         )}
                         <span className="absolute -right-[2px] top-1 w-2.5 h-2.5 rounded-full" style={{ background: TEAL }} />
                         <div className="flex items-baseline justify-between gap-3">
-                          <span className="text-[10.5px] font-mono shrink-0" style={{ color: MUTED }}>{exp.period}</span>
+                          <span className="text-[11px] font-mono shrink-0" style={{ color: MUTED }}>{exp.period}</span>
                           <h4 className="text-sm font-black" style={{ color: TXT }}>{exp.title}</h4>
                         </div>
                         {exp.description && <p className="text-xs font-medium mt-1 leading-relaxed" style={{ color: SUB }}>{exp.description}</p>}
@@ -633,10 +662,10 @@ export const UserProfilePage = ({ onNavigate }) => {
             <>
               {/* Verified strip — only when the admin has actually verified this account */}
               {Number(user?.verified) === 1 && (
-                <div className="col-span-1 lg:col-span-3 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5 flex items-center">
-                  <div className="w-full flex items-center gap-2.5 rounded-xl p-3.5" style={{ background: '#e8f7f4', border: '1px solid #c1ede3' }}>
+                <div className="col-span-1 lg:col-span-3 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5 flex items-center">
+                  <div className="w-full flex items-center gap-2.5 rounded-xl p-3.5" style={{ background: '#eef1f0', border: '1px solid #dde3e0' }}>
                     <ShieldCheck className="w-4.5 h-4.5 shrink-0" style={{ color: TEAL_DEEP }} />
-                    <span className="text-[11.5px] font-bold" style={{ color: TEAL_DEEP }}>کۆمپانیای پشتڕاستکراو</span>
+                    <span className="text-[11px] font-bold" style={{ color: TEAL_DEEP }}>کۆمپانیای پشتڕاستکراو</span>
                   </div>
                 </div>
               )}
@@ -645,7 +674,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               <div className={Number(user?.verified) === 1 ? 'col-span-1 lg:col-span-3' : 'col-span-1 sm:col-span-2 lg:col-span-6'}>
                 <button
                   onClick={() => { soundService.playTick?.(); onNavigate?.('post_job'); }}
-                  className="w-full h-full min-h-[76px] rounded-[18px] flex items-center justify-between px-5 text-white font-black text-xs shadow-sm transition active:scale-[0.98]"
+                  className="w-full h-full min-h-[76px] rounded-xl flex items-center justify-between px-5 text-white font-black text-xs shadow-sm transition active:scale-[0.98]"
                   style={{ background: TEAL }}
                 >
                   <Plus className="w-5 h-5" />
@@ -654,7 +683,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               </div>
 
               {/* Jobs list */}
-              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5">
                 <BentoHead eyebrow="چالاک" title={`هەلی کارەکان (${employerJobs.length})`} link="هەموو" onLink={() => { soundService.playTick?.(); onNavigate?.('employer'); }} />
                 {employerJobs.length === 0 ? (
                   <p className="text-xs font-bold" style={{ color: MUTED }}>هێشتا هیچ هەلی کارێکت بڵاونەکردووەتەوە.</p>
@@ -662,7 +691,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                   <div className="space-y-2">
                     {employerJobs.map(job => (
                       <div key={job.id} className="p-3.5 rounded-xl border flex items-center justify-between gap-3 hover:bg-[#f4faf8] transition" style={{ borderColor: '#eef3f1', background: CARD }}>
-                        <button onClick={() => { soundService.playTick?.(); onNavigate?.('employer'); }} className="text-[10.5px] font-bold px-3 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 shrink-0">
+                        <button onClick={() => { soundService.playTick?.(); onNavigate?.('employer'); }} className="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 shrink-0">
                           بەڕێوەبردن
                         </button>
                         <div className="text-right flex-1 min-w-0">
@@ -676,7 +705,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               </div>
 
               {/* Company info table */}
-              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-[18px] border border-[#e4eae7] shadow-sm p-5">
+              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5">
                 <BentoHead eyebrow="زانیاری فەرمی" title="تۆماری کۆمپانیا" />
                 <div className="divide-y" style={{ borderColor: '#eef3f1' }}>
                   {[
@@ -735,7 +764,7 @@ export const UserProfilePage = ({ onNavigate }) => {
       </div>
     );
     const SectionCard = ({ title, children, className = '' }) => (
-      <div className={`rounded-[18px] border p-5 space-y-4 ${className}`} style={{ background: CARD, borderColor: '#eef3f1' }}>
+      <div className={`rounded-xl border p-5 space-y-4 ${className}`} style={{ background: CARD, borderColor: '#eef3f1' }}>
         {title && <h4 className="text-xs font-black" style={{ color: TXT }}>{title}</h4>}
         {children}
       </div>
@@ -745,7 +774,7 @@ export const UserProfilePage = ({ onNavigate }) => {
       <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-0 lg:p-6"
         style={{ animation: 'profileFadeUp 0.25s ease both' }}>
         <div
-          className="w-full max-w-full lg:max-w-5xl bg-white rounded-none lg:rounded-[32px] min-h-screen lg:min-h-0 max-h-screen lg:max-h-[90vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
+          className="w-full max-w-full lg:max-w-5xl bg-white rounded-none lg:rounded-2xl min-h-screen lg:min-h-0 max-h-screen lg:max-h-[90vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
           onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}
         >
           {/* Header Bar */}
@@ -773,7 +802,7 @@ export const UserProfilePage = ({ onNavigate }) => {
 
             {/* ──── RIGHT COLUMN: identity card + tab nav ──── */}
             <div className="lg:col-span-4 p-5 lg:border-l border-[#eef3f1] space-y-4 bg-[#fbfdfc] order-1 lg:order-2">
-              <div className="bg-white rounded-[18px] p-5 border shadow-sm text-center" style={{ borderColor: '#e4eae7' }}>
+              <div className="bg-white rounded-xl p-5 border shadow-sm text-center" style={{ borderColor: '#e4eae7' }}>
                 <div className="relative w-20 h-20 mx-auto mb-3">
                   <CompletionRing pct={completion} size={80} strokeW={3} />
                   <div
@@ -812,7 +841,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                       onClick={() => setActiveSection(tab.id)}
                       className="w-full flex items-center justify-between py-3 px-4 rounded-xl transition-all"
                       style={isActive
-                        ? { background: '#e8f7f4', color: TEAL_DEEP, fontWeight: 900, boxShadow: '0 1px 2px rgba(17,61,54,.04)' }
+                        ? { background: '#eef1f0', color: TEAL_DEEP, fontWeight: 900, boxShadow: '0 1px 2px rgba(17,61,54,.04)' }
                         : { color: SUB }}
                     >
                       <div className="flex items-center gap-2.5">
@@ -886,21 +915,27 @@ export const UserProfilePage = ({ onNavigate }) => {
               {/* ── TAB 2: LOCATION ── */}
               {activeSection === 'location' && (
                 <SectionCard title="شوێن و ناوچە" className="animate-fadeIn">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Field label="پارێزگا">
-                      <select value={govId} onChange={e => { setGovId(e.target.value); setDistId(''); }} className={`${fieldCls} ${fieldFocus}`} style={fieldStyle}>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <Field label="شار">
+                      <select value={govId} onChange={e => { setGovId(e.target.value); setDistId(''); setSubId(''); }} className={`${fieldCls} ${fieldFocus}`} style={fieldStyle}>
                         {kurdistanGovernorates.map(g => <option key={g.id} value={g.id}>{g.name_ku}</option>)}
                       </select>
                     </Field>
-                    <Field label="قەزا / ناوچە">
-                      <select value={distId} onChange={e => setDistId(e.target.value)} className={`${fieldCls} ${fieldFocus}`} style={fieldStyle}>
+                    <Field label="قەزا">
+                      <select value={distId} onChange={e => { setDistId(e.target.value); setSubId(''); }} className={`${fieldCls} ${fieldFocus}`} style={fieldStyle}>
                         <option value="">هەموو قەزاکان</option>
                         {dists.map(d => <option key={d.id} value={d.id}>{d.name_ku}</option>)}
                       </select>
                     </Field>
+                    <Field label="ناحیە">
+                      <select value={subId} onChange={e => setSubId(e.target.value)} disabled={subs.length === 0} className={`${fieldCls} ${fieldFocus}`} style={fieldStyle}>
+                        <option value="">{subs.length === 0 ? 'ناحیە نییە' : 'هەموو ناحیەکان'}</option>
+                        {subs.map(s => <option key={s.id} value={s.id}>{s.name_ku}</option>)}
+                      </select>
+                    </Field>
                   </div>
 
-                  <div className="p-4 rounded-xl flex items-center gap-2.5 text-xs font-bold" style={{ background: '#e8f7f4', border: '1px solid #c1ede3', color: TEAL_DEEP }}>
+                  <div className="p-4 rounded-xl flex items-center gap-2.5 text-xs font-bold" style={{ background: '#eef1f0', border: '1px solid #dde3e0', color: TEAL_DEEP }}>
                     <MapPin className="w-4 h-4 shrink-0" />
                     شوێنی دیاریکراو: {location}
                   </div>
@@ -1034,7 +1069,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               {/* ── TAB: CV (FREELANCER) ── */}
               {activeSection === 'cv' && (
                 <div className="animate-fadeIn">
-                  <SectionCard className="!bg-[#e8f7f4]" title={null}>
+                  <SectionCard className="!bg-[#eef1f0]" title={null}>
                     <div className="flex items-center gap-2 font-black text-sm" style={{ color: TEAL_DEEP }}>
                       <FileCheck className="w-5 h-5" />
                       <span>کارنامەی کەسی و فەرمی (CV)</span>
@@ -1114,7 +1149,7 @@ export const UserProfilePage = ({ onNavigate }) => {
   const SettingsModal = () => (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ animation: 'profileFadeUp 0.25s ease both' }}>
-      <div className="w-full max-w-md bg-white rounded-t-[32px] sm:rounded-[32px] max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
+      <div className="w-full max-w-md bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
         onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
         <div className="p-5 border-b border-[#f0f4f2] flex items-center justify-between bg-[#fbfdfc]">
           <button onClick={() => setShowSettings(false)} className="w-9 h-9 rounded-full bg-[#f0f4f2] flex items-center justify-center transition"><X className="w-5 h-5 text-[#4a5854]" /></button>
@@ -1131,9 +1166,9 @@ export const UserProfilePage = ({ onNavigate }) => {
             <div className="flex items-center gap-3">
               <div>
                 <div className="text-xs font-bold" style={{ color: '#1a2321' }}>ئاگادارکردنەوەکان</div>
-                <div className="text-[11px] mt-0.5" style={{ color: '#7b8e88' }}>{pushEnabled ? 'چالاکە' : 'ناچالاکە'}</div>
+                <div className="text-[11px] mt-0.5" style={{ color: '#6b7975' }}>{pushEnabled ? 'چالاکە' : 'ناچالاکە'}</div>
               </div>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#e8f7f4' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#eef1f0' }}>
                 <Bell className="w-5 h-5" style={{ color: TEAL }} />
               </div>
             </div>
@@ -1141,7 +1176,7 @@ export const UserProfilePage = ({ onNavigate }) => {
           {/* Plans */}
           <div onClick={() => { soundService.playTick?.(); setShowSettings(false); onNavigate?.('plans'); }}
             className="p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:shadow-sm transition"
-            style={{ background: 'linear-gradient(90deg, #dcf8f2, #edfcf8)', border: '1px solid #c1ede3' }}>
+            style={{ background: CARD, border: '1px solid #dde3e0' }}>
             <ChevronLeft className="w-4 h-4" style={{ color: TEAL }} />
             <div className="flex items-center gap-3">
               <div className="text-right">
@@ -1161,9 +1196,9 @@ export const UserProfilePage = ({ onNavigate }) => {
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <div className="text-xs font-black" style={{ color: '#1a2321' }}>چۆنیەتی کارکردنی ئەپ</div>
-                <div className="text-[11px] font-medium mt-0.5" style={{ color: '#7b8e88' }}>چوونەژوورەوە و بەکارهێنانی سیستەم</div>
+                <div className="text-[11px] font-medium mt-0.5" style={{ color: '#6b7975' }}>چوونەژوورەوە و بەکارهێنانی سیستەم</div>
               </div>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#e8f7f4' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#eef1f0' }}>
                 <HelpCircle className="w-5 h-5" style={{ color: TEAL }} />
               </div>
             </div>
@@ -1176,9 +1211,9 @@ export const UserProfilePage = ({ onNavigate }) => {
             <div className="flex items-center gap-3">
               <div className="text-right">
                 <div className="text-xs font-black" style={{ color: '#1a2321' }}>دەربارەی ئیش خواز</div>
-                <div className="text-[11px] font-medium mt-0.5" style={{ color: '#7b8e88' }}>زانیاری و پەیوەندی پشتگیری</div>
+                <div className="text-[11px] font-medium mt-0.5" style={{ color: '#6b7975' }}>زانیاری و پەیوەندی پشتگیری</div>
               </div>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#e8f7f4' }}>
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#eef1f0' }}>
                 <Info className="w-5 h-5" style={{ color: TEAL }} />
               </div>
             </div>
@@ -1195,7 +1230,7 @@ export const UserProfilePage = ({ onNavigate }) => {
   const SavedModal = () => (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ animation: 'profileFadeUp 0.25s ease both' }}>
-      <div className="w-full max-w-lg bg-white rounded-t-[32px] sm:rounded-[32px] max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
+      <div className="w-full max-w-lg bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
         onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
         <div className="p-5 border-b border-[#f0f4f2] flex items-center justify-between bg-[#fbfdfc]">
           <button onClick={() => setShowSaved(false)} className="w-9 h-9 rounded-full bg-[#f0f4f2] flex items-center justify-center transition"><X className="w-5 h-5 text-[#4a5854]" /></button>
@@ -1207,7 +1242,7 @@ export const UserProfilePage = ({ onNavigate }) => {
           {savedList.length === 0 ? (
             <div className="text-center py-12 space-y-3">
               <div className="w-14 h-14 rounded-full bg-[#f0f4f2] mx-auto flex items-center justify-center"><Heart className="w-6 h-6 text-[#8a9b95]" /></div>
-              <p className="text-xs font-bold" style={{ color: '#62736e' }}>هیچ کارێکت پاشەکەوت نەکردووە.</p>
+              <p className="text-xs font-bold" style={{ color: '#6b7975' }}>هیچ کارێکت پاشەکەوت نەکردووە.</p>
               <button onClick={() => { setShowSaved(false); onNavigate?.('search'); }}
                 className="px-4 py-2 rounded-xl text-white text-xs font-bold transition" style={{ background: TEAL }}>
                 گەڕان بەدوای کارەکان →
@@ -1219,9 +1254,9 @@ export const UserProfilePage = ({ onNavigate }) => {
               <button onClick={() => { soundService.playTick?.(); toggleSaveJob(job.id); }} className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 transition shrink-0"><Trash2 className="w-4 h-4" /></button>
               <div className="flex-1 min-w-0 text-right cursor-pointer" onClick={() => { setShowSaved(false); onNavigate?.('home'); }}>
                 <div className="text-xs font-black truncate" style={{ color: '#1a2321' }}>{job.title_ku || job.title}</div>
-                <div className="text-[11px] truncate mt-0.5" style={{ color: '#7b8e88' }}>{job.company_name} · {job.governorate || 'سلێمانی'}</div>
+                <div className="text-[11px] truncate mt-0.5" style={{ color: '#6b7975' }}>{job.company_name} · {job.governorate || 'سلێمانی'}</div>
               </div>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#e8f7f4' }}><Briefcase className="w-4 h-4" style={{ color: TEAL }} /></div>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#eef1f0' }}><Briefcase className="w-4 h-4" style={{ color: TEAL }} /></div>
             </div>
           ))}
         </div>
@@ -1236,24 +1271,24 @@ export const UserProfilePage = ({ onNavigate }) => {
   const ViewersModal = () => (
     <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ animation: 'profileFadeUp 0.25s ease both' }}>
-      <div className="w-full max-w-md bg-white rounded-t-[32px] sm:rounded-[32px] max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
+      <div className="w-full max-w-md bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
         onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
         <div className="p-5 border-b border-[#f0f4f2] flex items-center justify-between bg-[#fbfdfc]">
           <button onClick={() => setShowViewers(false)} className="w-9 h-9 rounded-full bg-[#f0f4f2] flex items-center justify-center transition"><X className="w-5 h-5 text-[#4a5854]" /></button>
           <h3 className="text-lg font-black flex items-center gap-2" style={{ color: '#1a2321' }}><Eye className="w-5 h-5" style={{ color: TEAL }} /> بینەرانی پڕۆفایل</h3>
         </div>
         <div className="p-5 overflow-y-auto space-y-3 flex-1 text-right">
-          <div className="p-3.5 rounded-2xl text-xs font-bold text-center" style={{ background: '#e8f7f4', border: '1px solid #c1ede3', color: '#1e584f' }}>
+          <div className="p-3.5 rounded-2xl text-xs font-bold text-center" style={{ background: '#eef1f0', border: '1px solid #dde3e0', color: '#1e584f' }}>
             پڕۆفایلەکەت بە گشتی <strong>{profileViews}</strong> جار بینراوە.
           </div>
           {viewersState.viewers?.length > 0
             ? viewersState.viewers.map((v, i) => (
               <div key={i} className="p-3 rounded-xl border flex items-center justify-between text-xs" style={{ background: CARD, borderColor: '#e4eae7' }}>
                 <span className="font-bold" style={{ color: '#1a2321' }}>{v.viewer_company_name || v.viewer_name || 'کۆمپانیایەک'}</span>
-                <span dir="ltr" className="font-mono" style={{ fontSize: '10px', color: '#7b8e88' }}>{new Date(v.viewed_at).toLocaleDateString('en-GB')}</span>
+                <span dir="ltr" className="font-mono" style={{ fontSize: '10px', color: '#6b7975' }}>{new Date(v.viewed_at).toLocaleDateString('en-GB')}</span>
               </div>
             ))
-            : <div className="text-center py-8 text-xs font-bold" style={{ color: '#7b8e88' }}>بینەرە نوێیەکان لێرەدا دەردەکەون.</div>}
+            : <div className="text-center py-8 text-xs font-bold" style={{ color: '#6b7975' }}>بینەرە نوێیەکان لێرەدا دەردەکەون.</div>}
         </div>
         <div className="p-4 border-t border-[#f0f4f2] bg-[#fbfdfc]">
           <button onClick={() => setShowViewers(false)} className="w-full py-3 rounded-2xl text-white font-bold text-xs" style={{ background: '#111d1a' }}>داخستن</button>
@@ -1271,7 +1306,7 @@ export const UserProfilePage = ({ onNavigate }) => {
         <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-500 mx-auto flex items-center justify-center"><LogOut className="w-6 h-6" /></div>
         <div>
           <h3 className="text-lg font-black" style={{ color: '#1a2321' }}>چوونەدەرەوە لە ئەژمێر؟</h3>
-          <p className="text-xs font-medium mt-1" style={{ color: '#62736e' }}>ئایا دڵنیایت لە چوونەدەرەوە لە ئەژمێری ئیش خوازەکەت؟</p>
+          <p className="text-xs font-medium mt-1" style={{ color: '#6b7975' }}>ئایا دڵنیایت لە چوونەدەرەوە لە ئەژمێری ئیش خوازەکەت؟</p>
         </div>
         <div className="flex items-center gap-2 pt-2">
           <button onClick={() => setShowLogout(false)}

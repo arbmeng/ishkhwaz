@@ -35,6 +35,11 @@
   # Direct all API requests directly to the PHP REST API
   RewriteRule ^api(/.*)?$ api/index.php [QSA,L]
 
+  # Clean share-link URLs (no /api/v1 prefix) — same crawler-aware
+  # preview + redirect handler in api/index.php, matched by URI suffix
+  # regardless of prefix, see GET /share/job/{id} there.
+  RewriteRule ^share/(job|company)/[^/]+$ api/index.php [QSA,L]
+
   # Frontend Single Page App fallback
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f

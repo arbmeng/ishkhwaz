@@ -73,6 +73,61 @@ export const apiService = {
     }
   },
 
+  async forgotPassword(phoneOrEmail) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneOrEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+
+  async resetPassword(resetToken, password) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: resetToken, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+
+  async verifyEmail(token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-email?token=${encodeURIComponent(token)}`);
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message || 'دڵنیاکردنەوە سەرکەوتوو نەبوو.' };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+
+  async resendVerificationEmail(token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+
   // Google / Facebook / Apple — accessToken is the Supabase session token
   // from supabaseClient's OAuth flow. The backend verifies it itself against
   // Supabase's own signing keys before trusting anything in it.
@@ -207,6 +262,15 @@ export const apiService = {
     }
   },
 
+  async getCompanies() {
+    try {
+      const data = await fetchJsonRetry(`${API_BASE_URL}/companies`);
+      return data.companies || [];
+    } catch (e) {
+      return [];
+    }
+  },
+
   async getNotifications(token) {
     try {
       const data = await fetchJsonRetry(`${API_BASE_URL}/notifications`, {
@@ -336,6 +400,23 @@ export const apiService = {
   async deleteJob(jobId, token) {
     try {
       const res = await fetch(`${API_BASE_URL}/jobs/delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ id: jobId })
+      });
+      if (!res.ok) return { success: false };
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async toggleJobStatus(jobId, token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/jobs/toggle-status`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -775,6 +856,46 @@ export const apiService = {
   async resetAiCvChat(token) {
     try {
       const res = await fetch(`${API_BASE_URL}/ai-cv/messages`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+
+  // App Guide AI — general "how do I use this app" assistant, open to
+  // every logged-in user (no VIP gate, no CV-build step, unlike Karnama AI).
+  async getAppGuideChat(token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/app-guide/messages`, { headers: { 'Authorization': `Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+  async sendAppGuideMessage(message, token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/app-guide/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ message }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+  async resetAppGuideChat(token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/app-guide/messages`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });

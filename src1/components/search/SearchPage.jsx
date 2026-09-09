@@ -62,7 +62,7 @@ const formatSalary = (job) => {
 
 
 export const SearchPage = ({ initialTab = 'companies' }) => {
-  const { jobs = [], freelancers = [], categories: liveCategories = [], planTiers = [], addToast, savedJobIds = [], toggleSaveJob } = useStore();
+  const { jobs = [], freelancers = [], categories: liveCategories = [], companies = [], planTiers = [], addToast, savedJobIds = [], toggleSaveJob } = useStore();
   const safeJobs = Array.isArray(jobs) ? jobs : [];
   const liveFreelancersList = Array.isArray(freelancers) ? freelancers : [];
 
@@ -76,6 +76,11 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
   const [viewingFreelancerProfile, setViewingFreelancerProfile] = useState(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // Captured synchronously on first render — the tab-sync effect below
+  // rewrites the URL to /search/company on mount, which wipes ?company=/&job=
+  // before a useEffect would get a chance to read window.location.search.
+  const [initialSearchParams] = useState(() => (typeof window !== 'undefined' ? window.location.search : ''));
 
   // Keep the URL in sync with the active tab (/search/company, /search/jobs,
   // /search/freelancers) so each tab is a real, shareable, bookmarkable,
@@ -225,15 +230,30 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
     if (!compName) return;
 
     if (!activeCompaniesMap[compName]) {
+      const compId = job.company_id || job.employer_id || job.user_id;
+      // Real account record from GET /companies — the source of truth for
+      // this company's own logo/cover/bio/industry now, not whichever job
+      // happened to be posted (this object previously had no `id` at all,
+      // which silently broke rating/view-tracking on this company too).
+      const real = companies.find(c => String(c.id) === String(compId));
       activeCompaniesMap[compName] = {
+        id: compId,
         name: compName,
-        logo: job.company_logo || job.companyLogo || '',
-        cover: job.company_cover || '',
-        governorateId: job.governorate_id || 'sulaymaniyah',
-        industry: job.company_industry || job.category || '',
+        logo: real?.company_logo || job.company_logo || job.companyLogo || '',
+        cover: real?.company_cover || job.company_cover || '',
+        governorateId: real?.governorate || job.governorate_id || 'sulaymaniyah',
+        // Jobs don't actually carry a `company_industry` field (that never
+        // exists on the jobs table) — prefer the real account's own
+        // industry; only fall back to resolving the job's category to its
+        // real Kurdish name (never the raw id, e.g. "cat_media_1") when the
+        // real record isn't loaded yet or the account never set one.
+        industry: real?.industry || liveCategories.find(c => c.id === job.category)?.name_ku || '',
+        description: real?.bio || '',
         phone: job.company_phone || '',
         email: job.company_email || '',
-        regNumber: job.company_reg || '',
+        regNumber: real?.company_reg || job.company_reg || '',
+        member_since: real?.created_at || null,
+        verified: Boolean(real ? Number(real.verified) === 1 : job.company_verified),
         jobs: []
       };
     }
@@ -245,7 +265,7 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
   // READ URL SEARCH PARAMS ON MOUNT (e.g. /search?company=NAME&job=JOB_ID)
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
+      const params = new URLSearchParams(initialSearchParams);
       const companyQuery = params.get('company');
       const jobQuery = params.get('job');
 

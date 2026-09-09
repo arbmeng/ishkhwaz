@@ -15,7 +15,8 @@ import { StarRatingInput } from '../ui/StarRating';
 import { TrendChart } from '../ui/TrendChart';
 import {
   Plus, Check, X, Crown, Bell, Edit, Trash2, Camera, MessageCircle,
-  FileText, Send, Inbox, Clock, CheckCircle2, XCircle, Undo2, Layers, Palette, Star, Eye
+  FileText, Send, Inbox, Clock, CheckCircle2, XCircle, Undo2, Layers, Palette, Star, Eye,
+  Play, Pause
 } from 'lucide-react';
 
 // Shared light theme — matches DesktopHeaderNav, UserProfilePage, DirectoryPage.
@@ -72,6 +73,7 @@ export const Dashboard = ({ onNavigate }) => {
     updateCompanyApplicantStatus,
     rateApplication,
     deleteJob,
+    toggleJobStatus,
     respondToInvitation,
     syncBackendData,
     addToast,
@@ -159,6 +161,14 @@ export const Dashboard = ({ onNavigate }) => {
   const [jobToDelete, setJobToDelete] = useState(null);
   const [viewingFreelancer, setViewingFreelancer] = useState(null);
   const [showBrandingModal, setShowBrandingModal] = useState(false);
+  const [togglingJobId, setTogglingJobId] = useState(null);
+
+  const handleToggleJobStatus = async (job) => {
+    soundService.playTick?.();
+    setTogglingJobId(job.id);
+    await toggleJobStatus?.(job.id);
+    setTogglingJobId(null);
+  };
 
   const handleApproveApplicant = (appId) => {
     soundService.playSuccess?.();
@@ -504,29 +514,58 @@ export const Dashboard = ({ onNavigate }) => {
                       <p className="text-xs font-bold text-[#7b8e88]">هێشتا هیچ کارێکت بڵاونەکردووەتەوە</p>
                     </div>
                   ) : (
-                    companyJobs.map(job => (
-                      <div
-                        key={job.id}
-                        onClick={() => { soundService.playTick?.(); setViewingJob(job); }}
-                        className="p-4 rounded-2xl bg-white border border-[#e8eeec] hover:border-[#12796b]/40 shadow-2xs flex items-center justify-between gap-3 cursor-pointer transition"
-                      >
-                        <button
-                          onClick={(e) => { e.stopPropagation(); soundService.playTick?.(); setEditingJob(job); }}
-                          className="w-9 h-9 rounded-xl bg-[#f4f7f6] border border-[#e8eeed] text-[#5a6b65] hover:text-[#12796b] flex items-center justify-center shrink-0 transition"
+                    companyJobs.map(job => {
+                      const canToggle = job.status === 'active' || job.status === 'paused';
+                      const statusColor =
+                        job.status === 'pending' ? '#c98a1f' :
+                        job.status === 'rejected' ? '#dc2626' :
+                        job.status === 'closed' ? '#7b8e88' :
+                        job.status === 'paused' ? '#c98a1f' :
+                        '#12796b';
+                      const statusLabel =
+                        job.status === 'pending' ? 'چاوەڕوانی پەسەندکردنی ئەدمین' :
+                        job.status === 'rejected' ? 'ڕەتکراوە' :
+                        job.status === 'closed' ? 'بەسەرچووە (کاتی بڵاوکردنەوە تەواوبووە)' :
+                        job.status === 'paused' ? 'ناچالاککراوە' :
+                        'چالاکە';
+                      const isToggling = togglingJobId === job.id;
+                      return (
+                        <div
+                          key={job.id}
+                          onClick={() => { soundService.playTick?.(); setViewingJob(job); }}
+                          className="p-4 rounded-2xl bg-white border border-[#e8eeec] hover:border-[#12796b]/40 shadow-2xs flex items-center justify-between gap-3 cursor-pointer transition"
                         >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <div className="text-right flex-1 min-w-0">
-                          <div className="text-xs font-black text-[#111d1a] truncate">{job.title_ku || job.title}</div>
-                          <span
-                            className="text-[10px] font-bold"
-                            style={{ color: job.status === 'pending' ? '#c98a1f' : job.status === 'rejected' ? '#dc2626' : '#12796b' }}
-                          >
-                            {job.status === 'pending' ? 'چاوەڕوانی پەسەندکردنی ئەدمین' : job.status === 'rejected' ? 'ڕەتکراوە' : 'چالاکە'}
-                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); soundService.playTick?.(); setEditingJob(job); }}
+                              className="w-9 h-9 rounded-xl bg-[#f4f7f6] border border-[#e8eeed] text-[#5a6b65] hover:text-[#12796b] flex items-center justify-center shrink-0 transition"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            {canToggle && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleToggleJobStatus(job); }}
+                                disabled={isToggling}
+                                title={job.status === 'active' ? 'ناچالاککردنی کارەکە' : 'چالاککردنەوەی کارەکە'}
+                                className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition disabled:opacity-50 ${
+                                  job.status === 'active'
+                                    ? 'bg-[#f4f7f6] border-[#e8eeed] text-[#5a6b65] hover:text-amber-600'
+                                    : 'bg-[#e8f7f4] border-[#c1ede3] text-[#12796b] hover:bg-[#d4f7ee]'
+                                }`}
+                              >
+                                {job.status === 'active' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                              </button>
+                            )}
+                          </div>
+                          <div className="text-right flex-1 min-w-0">
+                            <div className="text-xs font-black text-[#111d1a] truncate">{job.title_ku || job.title}</div>
+                            <span className="text-[10px] font-bold" style={{ color: statusColor }}>
+                              {statusLabel}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
 
                   {companyJobs.length > 0 && (

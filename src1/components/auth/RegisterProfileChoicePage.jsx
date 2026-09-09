@@ -402,7 +402,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
 
             <div className="space-y-3">
               {[
-                { id: 'job_seeker', Icon: User, title: 'کارجۆ / کارخواز', desc: 'بەدوای کار بگەڕێ، داواکاری بنێرە و CV دروست بکە.' },
+                { id: 'job_seeker', Icon: User, title: 'کارخواز', desc: 'بەدوای کار بگەڕێ، داواکاری بنێرە و CV دروست بکە.' },
                 { id: 'recruiter', Icon: Building2, title: 'کۆمپانیا / خاوەنکار', desc: 'کار بڵاوبکەرەوە و داواکارییەکان بەڕێوە ببە.' },
               ].map(({ id, Icon, title, desc }) => {
                 const active = selectedOption === id;

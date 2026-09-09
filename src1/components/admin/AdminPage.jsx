@@ -10,8 +10,25 @@ import { getPlanIcon, getPlanColor, PLAN_ICON_NAMES, PLAN_COLOR_NAMES } from '..
 import { gold } from '../../styles/editorial';
 import {
   ArrowLeft, Users, CreditCard, Briefcase, Search, X, Check, Trash2, ShieldCheck,
-  Ban, Plus, Save, Loader2, ChevronLeft, RadioTower, Star,
+  Ban, Plus, Save, Loader2, ChevronLeft, RadioTower, Star, AlertTriangle,
 } from 'lucide-react';
+
+// A real, conservative "likely fake/spam" signal — not a hard block, just a
+// flag for a human admin to glance at before it matters (a job going live,
+// a CV fee getting paid). All three conditions have to hold at once: no
+// verified email, genuinely zero activity for that account's own role
+// (never posted a job as an employer / never sent an application as a
+// freelancer), and still within its first week — an account that's simply
+// been quiet for a month isn't "suspicious", it's just idle.
+const SPAM_WINDOW_DAYS = 7;
+const isLikelySpam = (u) => {
+  if (Number(u.email_verified) === 1) return false;
+  const activity = u.role === 'employer' ? Number(u.jobs_posted || 0) : Number(u.applications_sent || 0);
+  if (activity > 0) return false;
+  if (!u.created_at) return false;
+  const ageDays = (Date.now() - new Date(u.created_at).getTime()) / 86400000;
+  return ageDays <= SPAM_WINDOW_DAYS;
+};
 
 // "Editorial system v1" tokens — same shape as CompanyDashboard/UserProfilePage.
 const NK = "'Noto Kufi Arabic', system-ui, sans-serif";
@@ -199,6 +216,7 @@ export const AdminPage = ({ onBack }) => {
   const [usersLoading, setUsersLoading] = useState(true);
   const [userSearch, setUserSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+  const [suspiciousOnly, setSuspiciousOnly] = useState(false);
   const [editingUser, setEditingUser] = useState(null); // form object, or null
   const [savingUser, setSavingUser] = useState(false);
   const [deletingUser, setDeletingUser] = useState(null); // user id pending delete confirmation
@@ -250,16 +268,19 @@ export const AdminPage = ({ onBack }) => {
     const q = userSearch.trim().toLowerCase();
     return users.filter(u => {
       if (roleFilter !== 'all' && u.role !== roleFilter) return false;
+      if (suspiciousOnly && !isLikelySpam(u)) return false;
       if (!q) return true;
       return (u.name || '').toLowerCase().includes(q) || (u.phone || '').includes(q) || (u.email || '').toLowerCase().includes(q);
     });
-  }, [users, userSearch, roleFilter]);
+  }, [users, userSearch, roleFilter, suspiciousOnly]);
 
   const roleCounts = useMemo(() => {
     const c = { all: users.length, freelancer: 0, employer: 0, admin: 0, owner: 0 };
     users.forEach(u => { if (c[u.role] !== undefined) c[u.role]++; });
     return c;
   }, [users]);
+
+  const suspiciousCount = useMemo(() => users.filter(isLikelySpam).length, [users]);
 
   // ---------------- User actions ----------------
   const handleSaveUser = async () => {
@@ -444,6 +465,13 @@ export const AdminPage = ({ onBack }) => {
                   {r === 'all' ? 'هەموو' : ROLE_LABELS[r]} ({roleCounts[r] || 0})
                 </Chip>
               ))}
+              {suspiciousCount > 0 && (
+                <Chip active={suspiciousOnly} onClick={() => setSuspiciousOnly(v => !v)}>
+                  <span className="flex items-center gap-1" style={{ color: suspiciousOnly ? undefined : C.roseText }}>
+                    <AlertTriangle className="w-3 h-3" /> گومانلێکراو ({suspiciousCount})
+                  </span>
+                </Chip>
+              )}
             </div>
 
             <div style={{ ...cardStyle, overflow: 'hidden' }}>
@@ -462,6 +490,13 @@ export const AdminPage = ({ onBack }) => {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span style={{ fontSize: 12.5, fontWeight: 700 }} className="truncate">{u.name}</span>
                           {Number(u.verified) === 1 && <ShieldCheck className="w-3.5 h-3.5 shrink-0" style={{ color: C.green }} />}
+                          {isLikelySpam(u) && (
+                            <AlertTriangle
+                              className="w-3.5 h-3.5 shrink-0"
+                              style={{ color: C.roseText }}
+                              title="گومانلێکراو: ئیمەیل دڵنیانەکراوە، هیچ چالاکییەک نییە، لە هەفتەیەکی ڕابردوودا تۆمارکراوە"
+                            />
+                          )}
                         </div>
                         <div dir="ltr" style={{ fontSize: 11, color: C.muted2, marginTop: 2 }}>{u.phone}</div>
                       </div>

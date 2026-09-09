@@ -77,6 +77,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // committed to git — deploy.py still copies it to the server on every
 // deploy exactly like this file, so production behavior is unchanged.
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/PHPMailer/Exception.php';
+require_once __DIR__ . '/PHPMailer/PHPMailer.php';
+require_once __DIR__ . '/PHPMailer/SMTP.php';
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception as PHPMailerException;
 
 // A profile save can legitimately stack up to 4 compressed base64 images at
 // once (avatar + cover + company_logo + company_cover, each capped at 800,000
@@ -303,6 +308,23 @@ function requireAuth(PDO $pdo): array {
         echo json_encode(['success' => false, 'status' => $user['status'], 'message' => 'هەژمارەکەت ڕاگیراوە.']);
         exit(0);
     }
+
+    // Heartbeat for "online now" — throttled to once/minute per user so a
+    // chatty client doesn't turn this into a write on every single request.
+    $lastActive = $user['last_active_at'] ?? null;
+    if (!$lastActive || strtotime($lastActive) < time() - 60) {
+        try {
+            $now = date('Y-m-d H:i:s');
+            $pdo->prepare('UPDATE users SET last_active_at = ? WHERE id = ?')->execute([$now, $user['id']]);
+            $user['last_active_at'] = $now;
+            // Real presence signal, not a poll — fires at most once/minute per
+            // user (same throttle as the write above), so an admin watching
+            // the dashboard sees someone come online the moment it happens
+            // instead of waiting on the next refresh interval.
+            notifyAdmins($pdo, 'user_online', ['id' => $user['id'], 'name' => $user['name'] ?? '', 'role' => $user['role'] ?? '']);
+        } catch (Exception $e) { /* never fatal */ }
+    }
+
     return $user;
 }
 
@@ -348,18 +370,23 @@ function requireAdmin(PDO $pdo): array {
 // triggered it, same reasoning as notifyUser()'s own try/catch below.
 function pusherTrigger(array $channels, string $event, array $data): void {
     try {
+        $appId = getSecret('pusher_app_id', PUSHER_APP_ID);
+        $key = getSecret('pusher_key', PUSHER_KEY);
+        $secret = getSecret('pusher_secret', PUSHER_SECRET);
+        $cluster = getSecret('pusher_cluster', PUSHER_CLUSTER);
+
         $body = json_encode(['name' => $event, 'channels' => $channels, 'data' => json_encode($data, JSON_UNESCAPED_UNICODE)], JSON_UNESCAPED_UNICODE);
-        $path = '/apps/' . PUSHER_APP_ID . '/events';
+        $path = '/apps/' . $appId . '/events';
         $params = [
-            'auth_key' => PUSHER_KEY,
+            'auth_key' => $key,
             'auth_timestamp' => (string)time(),
             'auth_version' => '1.0',
             'body_md5' => md5($body),
         ];
         ksort($params);
         $query = http_build_query($params);
-        $signature = hash_hmac('sha256', "POST\n{$path}\n{$query}", PUSHER_SECRET);
-        $url = 'https://api-' . PUSHER_CLUSTER . '.pusher.com' . $path . '?' . $query . '&auth_signature=' . $signature;
+        $signature = hash_hmac('sha256', "POST\n{$path}\n{$query}", $secret);
+        $url = 'https://api-' . $cluster . '.pusher.com' . $path . '?' . $query . '&auth_signature=' . $signature;
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -382,6 +409,96 @@ function pusherTrigger(array $channels, string $event, array $data): void {
 // refetch its users/plans/jobs list without needing a full page reload.
 function notifyAdmins(PDO $pdo, string $type, array $payload = []): void {
     pusherTrigger(['private-admin-panel'], 'admin-update', array_merge(['type' => $type], $payload));
+}
+
+// Persistent per-user activity trail — real login/account/admin history,
+// distinct from notifyAdmins() above (that's a transient live Pusher ping,
+// nothing is stored). Never allowed to break the request that triggered it:
+// a logging failure is logged itself and swallowed, not surfaced as a 500.
+function logActivity(PDO $pdo, string $userId, string $action, ?string $details = null, string $actor = 'self'): void {
+    try {
+        $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
+        $ip = $ip ? explode(',', $ip)[0] : null;
+        $pdo->prepare('INSERT INTO activity_log (user_id, action, details, actor, ip, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+            ->execute([$userId, $action, $details, $actor, $ip, date('Y-m-d H:i:s')]);
+    } catch (Exception $e) {
+        error_log('logActivity failed: ' . $e->getMessage());
+    }
+}
+
+// ================================================================
+// Transactional email — sent via authenticated Gmail SMTP (PHPMailer),
+// not PHP's raw mail(). Shared-hosting IPs sending unauthenticated mail
+// with no SPF/DKIM/DMARC on this domain get reliably spam-filtered by
+// Gmail/Outlook — a real authenticated SMTP account fixes that. Failures
+// are logged, never fatal to the request that triggered them
+// (registration/resend must still succeed either way).
+// ================================================================
+function sendAppEmail(string $toEmail, string $subject, string $htmlBody, string $altBody): bool {
+    $mail = new PHPMailer(true);
+    try {
+        $smtpUser = getSecret('smtp_user', SMTP_USER);
+        $mail->isSMTP();
+        $mail->Host = getSecret('smtp_host', SMTP_HOST);
+        $mail->SMTPAuth = true;
+        $mail->Username = $smtpUser;
+        $mail->Password = getSecret('smtp_app_password', SMTP_APP_PASSWORD);
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = (int)getSecret('smtp_port', (string)SMTP_PORT);
+        $mail->CharSet = 'UTF-8';
+
+        $mail->setFrom($smtpUser, getSecret('smtp_from_name', SMTP_FROM_NAME));
+        $mail->addAddress($toEmail);
+
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body = $htmlBody;
+        $mail->AltBody = $altBody;
+
+        $mail->send();
+        return true;
+    } catch (PHPMailerException $e) {
+        error_log('[Email] send failed for ' . $toEmail . ': ' . $mail->ErrorInfo);
+        return false;
+    }
+}
+
+function sendVerificationEmail(string $toEmail, string $name, string $token): bool {
+    $link = 'https://ishkhwaz.zeraworld.com/verify-email?token=' . urlencode($token);
+    $subject = 'دڵنیاکردنەوەی ئیمەیل — ئیش خواز';
+    $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+    $body = <<<HTML
+    <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f4f7f6;">
+      <h2 style="color:#111d1a;">سڵاو {$safeName} 👋</h2>
+      <p style="color:#4a5854;line-height:1.8;">بۆ دڵنیابوونەوە لە ئیمەیلەکەت لەسەر ئیش خواز، کرتە لەسەر دوگمەی خوارەوە بکە:</p>
+      <p style="text-align:center;margin:28px 0;">
+        <a href="{$link}" style="background:#12796b;color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;display:inline-block;">دڵنیاکردنەوەی ئیمەیل</a>
+      </p>
+      <p style="color:#9faea9;font-size:12px;">ئەگەر داوات نەکردووە، ئەم ئیمەیلە پشتگوێ بخە.</p>
+    </div>
+    HTML;
+    $alt = "سڵاو {$name}، بۆ دڵنیابوونەوە لە ئیمەیلەکەت، ئەم بەستەرە بکەرەوە:\n{$link}";
+
+    return sendAppEmail($toEmail, $subject, $body, $alt);
+}
+
+function sendPasswordResetEmail(string $toEmail, string $name, string $token): bool {
+    $link = 'https://ishkhwaz.zeraworld.com/reset-password?token=' . urlencode($token);
+    $subject = 'گەڕاندنەوەی وشەی نهێنی — ئیش خواز';
+    $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+    $body = <<<HTML
+    <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f4f7f6;">
+      <h2 style="color:#111d1a;">سڵاو {$safeName} 👋</h2>
+      <p style="color:#4a5854;line-height:1.8;">داواکارییەک کرا بۆ گەڕاندنەوەی وشەی نهێنی هەژمارەکەت لەسەر ئیش خواز. کرتە لەسەر دوگمەی خوارەوە بکە بۆ دانانی وشەی نهێنی نوێ:</p>
+      <p style="text-align:center;margin:28px 0;">
+        <a href="{$link}" style="background:#12796b;color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;display:inline-block;">دانانی وشەی نهێنی نوێ</a>
+      </p>
+      <p style="color:#9faea9;font-size:12px;">ئەم بەستەرە تەنها بۆ ماوەی ١ کاتژمێر کاردەکات. ئەگەر داوات نەکردووە، ئەم ئیمەیلە پشتگوێ بخە — وشەی نهێنیت ناگۆڕدرێت.</p>
+    </div>
+    HTML;
+    $alt = "سڵاو {$name}، بۆ گەڕاندنەوەی وشەی نهێنیت، ئەم بەستەرە بکەرەوە:\n{$link}";
+
+    return sendAppEmail($toEmail, $subject, $body, $alt);
 }
 
 // ================================================================
@@ -732,7 +849,7 @@ function callOpenAI(string $systemPrompt, string $userPrompt, int $maxTokens = 4
             'temperature' => 0.5,
             'max_tokens' => $maxTokens,
         ], JSON_UNESCAPED_UNICODE),
-        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . OPENAI_API_KEY, 'Content-Type: application/json'],
+        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . getSecret('openai_api_key', OPENAI_API_KEY), 'Content-Type: application/json'],
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 25,
     ]);
@@ -764,7 +881,7 @@ function callOpenAIChat(array $messages, int $maxTokens = 500, bool $jsonMode = 
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . OPENAI_API_KEY, 'Content-Type: application/json'],
+        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . getSecret('openai_api_key', OPENAI_API_KEY), 'Content-Type: application/json'],
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 40,
     ]);
@@ -811,7 +928,7 @@ function callOpenAIChatStreaming(array $messages, int $maxTokens = 500, bool $js
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . OPENAI_API_KEY, 'Content-Type: application/json'],
+        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . getSecret('openai_api_key', OPENAI_API_KEY), 'Content-Type: application/json'],
         CURLOPT_TIMEOUT => 55,
         CURLOPT_WRITEFUNCTION => function ($curlHandle, $chunk) use (&$content, &$buffer) {
             $buffer .= $chunk;
@@ -888,7 +1005,7 @@ function createZeraPayment(int $amount, string $externalReference, string $custo
             'customerPhone' => $customerPhone !== '' ? $customerPhone : null,
         ]),
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . ZERA_PAYMENT_API_KEY,
+            'Authorization: Bearer ' . getSecret('zera_payment_api_key', ZERA_PAYMENT_API_KEY),
             'Content-Type: application/json',
         ],
         CURLOPT_RETURNTRANSFER => true,
@@ -920,7 +1037,7 @@ function createZeraPayment(int $amount, string $externalReference, string $custo
 // webhook secret. Constant-time compare so this can't be timing-attacked.
 function verifyZeraWebhookSignature(string $rawBody, ?string $signatureHeader): bool {
     if (empty($signatureHeader)) return false;
-    $expected = 'sha256=' . hash_hmac('sha256', $rawBody, ZERA_PAYMENT_WEBHOOK_SECRET);
+    $expected = 'sha256=' . hash_hmac('sha256', $rawBody, getSecret('zera_payment_webhook_secret', ZERA_PAYMENT_WEBHOOK_SECRET));
     return hash_equals($expected, $signatureHeader);
 }
 
@@ -1139,6 +1256,17 @@ $pdo->exec("
     updated_at VARCHAR(32)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+  -- Owner-only integration secrets (Pusher, OpenAI, SMTP, Zera Payment, Guard).
+  -- Deliberately a SEPARATE table from `settings` above, never the public
+  -- GET /settings endpoint — that endpoint blindly dumps every row in
+  -- `settings` with no auth, which is fine for a CV fee but would leak API
+  -- keys instantly if they lived there too.
+  CREATE TABLE IF NOT EXISTS app_secrets (
+    `key` VARCHAR(100) PRIMARY KEY,
+    value VARCHAR(500),
+    updated_at VARCHAR(32)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
   CREATE TABLE IF NOT EXISTS push_subscriptions (
     id VARCHAR(64) PRIMARY KEY,
     endpoint VARCHAR(1000) NOT NULL,
@@ -1205,6 +1333,19 @@ $pdo->exec("
     created_at VARCHAR(32) NOT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+  -- Real, admin-editable job types (jobs.job_type used to only ever accept
+  -- a hardcoded fullTime/partTime/contract/internship/remote list baked
+  -- into the PHP code — this table replaces that so an owner can add,
+  -- rename, or retire one from the Zera Console without a redeploy.
+  CREATE TABLE IF NOT EXISTS work_types (
+    id VARCHAR(64) PRIMARY KEY,
+    name_ku VARCHAR(100) NOT NULL,
+    name_en VARCHAR(100),
+    sort_order INT DEFAULT 0,
+    is_active TINYINT DEFAULT 1,
+    created_at VARCHAR(32) NOT NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
   CREATE TABLE IF NOT EXISTS plan_tiers (
     id VARCHAR(30) PRIMARY KEY,
     name_ku VARCHAR(50) NOT NULL,
@@ -1230,6 +1371,15 @@ $pdo->exec("
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
   CREATE TABLE IF NOT EXISTS ai_cv_chats (
+    id VARCHAR(40) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    role VARCHAR(10) NOT NULL,
+    body TEXT NOT NULL,
+    created_at VARCHAR(32) NOT NULL,
+    INDEX idx_user (user_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  CREATE TABLE IF NOT EXISTS app_guide_chats (
     id VARCHAR(40) PRIMARY KEY,
     user_id VARCHAR(64) NOT NULL,
     role VARCHAR(10) NOT NULL,
@@ -1342,6 +1492,20 @@ $pdo->exec("
     profile_hash VARCHAR(64),
     generated_at VARCHAR(32) NOT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  -- Per-user activity trail — login/register/password events, self profile
+  -- edits, jobs posted, applications sent, and every admin action taken on
+  -- an account. Powers the admin \"Audit\" view for a single user.
+  CREATE TABLE IF NOT EXISTS activity_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    details TEXT,
+    actor VARCHAR(150) DEFAULT 'self',
+    ip VARCHAR(64),
+    created_at VARCHAR(32) NOT NULL,
+    INDEX idx_activity_user (user_id, id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
 
 // Bring an already-existing plan_tiers table up to the current shape —
@@ -1413,6 +1577,30 @@ foreach ([
     // their personal profile page), company_cover is the business's own
     // background (shown on the company dashboard/public company page).
     "ALTER TABLE users ADD COLUMN company_cover MEDIUMTEXT",
+    // Email verification — see /auth/verify-email and /auth/resend-verification
+    // below. Verified defaults to 0 for every account with an email on file;
+    // an account with no email at all (phone-only signup) is treated as
+    // "nothing to verify" rather than perpetually unverified — see the
+    // frontend's isEmailVerified check.
+    "ALTER TABLE users ADD COLUMN email_verified TINYINT NOT NULL DEFAULT 0",
+    "ALTER TABLE users ADD COLUMN email_verify_token VARCHAR(64) NULL",
+    "ALTER TABLE users ADD COLUMN email_verify_sent_at VARCHAR(32) NULL",
+    // Password reset — see /auth/forgot-password and /auth/reset-password below.
+    "ALTER TABLE users ADD COLUMN password_reset_token VARCHAR(64) NULL",
+    "ALTER TABLE users ADD COLUMN password_reset_expires VARCHAR(32) NULL",
+    // Freelancer's own headline/job title — UserProfilePage.jsx has always
+    // had a real edit field for this ("ناونیشانی پیشەیی") and POSTed it to
+    // /auth/me, but with no column to land in it was silently discarded on
+    // every save. Public profiles (FreelancerProfileModal) fell back to
+    // showing an arbitrary favorite_categories[0] as if it were the
+    // person's real title instead — often unrelated to their actual
+    // skills/bio, which is exactly the mismatch this column fixes.
+    "ALTER TABLE users ADD COLUMN profession VARCHAR(150) NULL",
+    // Real "online now" tracking for the admin dashboard — bumped on every
+    // authenticated request (see requireAuth()), so it needs zero changes
+    // to any client app to stay accurate. "Online" = active within the last
+    // few minutes, same definition virtually every product uses.
+    "ALTER TABLE users ADD COLUMN last_active_at VARCHAR(32) NULL",
 ] as $migration) {
     try { $pdo->exec($migration); } catch (Exception $e) { /* already applied */ }
 }
@@ -1423,6 +1611,10 @@ foreach ([
 foreach ([
     "UPDATE jobs SET governorate_id = 'sulaymaniyah' WHERE governorate_id IN ('garmian','garmyan','germiyan')",
     "UPDATE users SET governorate = 'sulaymaniyah' WHERE governorate IN ('garmian','garmyan','germiyan','گەرمیان')",
+    // Backfill for every social account created before email_verified existed
+    // (or before /auth/social itself set it) — Google/Facebook/Apple already
+    // verified these emails themselves, nothing for this app to re-confirm.
+    "UPDATE users SET email_verified = 1 WHERE supabase_user_id IS NOT NULL AND email_verified = 0",
 ] as $fix) {
     try { $pdo->exec($fix); } catch (Exception $e) { /* ignore */ }
 }
@@ -1560,6 +1752,50 @@ if (!$hasNewCategoryScheme) {
     }
 }
 
+// One-time trim: the original 21-category / ~70-subcategory list was too
+// exhaustive for real usage (a handful of real job postings at the time this
+// ran) — cuts down to the categories that actually matter for a general
+// Kurdistan jobs marketplace, and caps every remaining category at its 2
+// most essential roles instead of 3-4. Gated on cat_legal still existing so
+// this runs exactly once; a user who'd already favorited a category dropped
+// here just has one stale id in their list, same as a deleted plan tier —
+// never crashes, just no longer resolves to a name.
+$hasUntrimmedCategories = (int)$pdo->query("SELECT COUNT(*) c FROM categories WHERE id = 'cat_legal'")->fetch()['c'];
+if ($hasUntrimmedCategories) {
+    $dropMains = ['cat_legal', 'cat_hr', 'cat_quality', 'cat_beauty', 'cat_sports'];
+    $placeholders = implode(',', array_fill(0, count($dropMains), '?'));
+    $pdo->prepare("DELETE FROM categories WHERE parent_id IN ($placeholders)")->execute($dropMains);
+    $pdo->prepare("DELETE FROM categories WHERE id IN ($placeholders)")->execute($dropMains);
+    // Every remaining main category keeps only its 2 top (lowest sort_order) subcategories.
+    $pdo->exec("DELETE FROM categories WHERE parent_id IS NOT NULL AND sort_order > 2");
+}
+
+// Seed the real work_types table once from the values every existing job
+// already stores — same ids, so nothing already posted changes meaning.
+$hasWorkTypes = (int)$pdo->query("SELECT COUNT(*) c FROM work_types")->fetch()['c'];
+if (!$hasWorkTypes) {
+    $now = date('Y-m-d H:i:s');
+    $defaultWorkTypes = [
+        ['fullTime',   'کاتی تەواو',  'Full-time',  1],
+        ['partTime',   'کاتی بەشی',   'Part-time',  2],
+        ['contract',   'پڕۆژەیی',     'Contract',   3],
+        ['internship', 'کارئامۆزی',   'Internship', 4],
+        ['remote',     'دوورەکاری',   'Remote',     5],
+    ];
+    $insWt = $pdo->prepare('INSERT INTO work_types (id, name_ku, name_en, sort_order, is_active, created_at) VALUES (?, ?, ?, ?, 1, ?)');
+    foreach ($defaultWorkTypes as $w) $insWt->execute([$w[0], $w[1], $w[2], $w[3], $now]);
+}
+
+// Any active work_types id is acceptable now, not just the original five —
+// falls back to the job's/default's existing value if the given id isn't a
+// real, active work type.
+function isValidWorkType(PDO $pdo, string $id): bool {
+    if ($id === '') return false;
+    $stmt = $pdo->prepare('SELECT 1 FROM work_types WHERE id = ? AND is_active = 1');
+    $stmt->execute([$id]);
+    return (bool)$stmt->fetch();
+}
+
 // ---- Platform-wide settings — real, admin-editable values that were previously
 // hardcoded (the CV fee, the FastPay collection number, whether registration is
 // open) and could only ever be changed by editing code and redeploying. ----
@@ -1592,6 +1828,56 @@ function getSetting(PDO $pdo, string $key, string $default = ''): string {
     return $row ? $row['value'] : $default;
 }
 
+// Reads an owner-editable integration secret from `app_secrets`, falling back
+// to $default (the hardcoded config.php constant) when nothing's been saved
+// yet — so every integration keeps working exactly as before until an owner
+// actually changes it in the Settings page. Cached per-request since some of
+// these (Pusher especially) get read on almost every request.
+function getSecret(string $key, string $default = ''): string {
+    global $pdo;
+    static $cache = [];
+    if (array_key_exists($key, $cache)) return $cache[$key];
+    $val = $default;
+    try {
+        $stmt = $pdo->prepare('SELECT value FROM app_secrets WHERE `key` = ?');
+        $stmt->execute([$key]);
+        $row = $stmt->fetch();
+        if ($row && $row['value'] !== null && $row['value'] !== '') $val = $row['value'];
+    } catch (Throwable $e) { /* fall back to $default */ }
+    $cache[$key] = $val;
+    return $val;
+}
+
+// Whitelist of secrets the Settings page is allowed to show/edit. Anything not
+// in this list (DB creds, TOKEN_SECRET, VAPID key) is never exposed — those
+// aren't "integration API keys", they're this app's own foundations, and a
+// typo in one locks out every user, not just one integration.
+// 'editable' => false entries (the Zera Console SSO/stats tokens) are shown
+// read-only with a copy button: those exact values are ALSO hardcoded as a
+// second copy inside Zera-World's own auth-api, so editing one side here
+// would silently break the admin console's own login bridge until the other
+// copy is updated too — too easy to self-lock-out by accident, so editing
+// them is a manual two-file code change instead of a UI button.
+function integrationSecretDefs(): array {
+    return [
+        ['key' => 'pusher_app_id',             'label' => 'Pusher App ID',               'category' => 'pusher',  'default_const' => 'PUSHER_APP_ID',             'masked' => false, 'editable' => true],
+        ['key' => 'pusher_key',                'label' => 'Pusher Key',                  'category' => 'pusher',  'default_const' => 'PUSHER_KEY',                'masked' => false, 'editable' => true],
+        ['key' => 'pusher_secret',             'label' => 'Pusher Secret',               'category' => 'pusher',  'default_const' => 'PUSHER_SECRET',             'masked' => true,  'editable' => true],
+        ['key' => 'pusher_cluster',            'label' => 'Pusher Cluster',              'category' => 'pusher',  'default_const' => 'PUSHER_CLUSTER',            'masked' => false, 'editable' => true],
+        ['key' => 'openai_api_key',            'label' => 'OpenAI API Key',              'category' => 'openai',  'default_const' => 'OPENAI_API_KEY',            'masked' => true,  'editable' => true],
+        ['key' => 'smtp_host',                 'label' => 'SMTP Host',                   'category' => 'smtp',    'default_const' => 'SMTP_HOST',                 'masked' => false, 'editable' => true],
+        ['key' => 'smtp_port',                 'label' => 'SMTP Port',                   'category' => 'smtp',    'default_const' => 'SMTP_PORT',                 'masked' => false, 'editable' => true],
+        ['key' => 'smtp_user',                 'label' => 'SMTP User (Gmail)',           'category' => 'smtp',    'default_const' => 'SMTP_USER',                 'masked' => false, 'editable' => true],
+        ['key' => 'smtp_app_password',         'label' => 'SMTP App Password',           'category' => 'smtp',    'default_const' => 'SMTP_APP_PASSWORD',         'masked' => true,  'editable' => true],
+        ['key' => 'smtp_from_name',            'label' => 'SMTP From Name',              'category' => 'smtp',    'default_const' => 'SMTP_FROM_NAME',            'masked' => false, 'editable' => true],
+        ['key' => 'zera_payment_api_key',      'label' => 'Zera Payment API Key',        'category' => 'payment', 'default_const' => 'ZERA_PAYMENT_API_KEY',      'masked' => true,  'editable' => true],
+        ['key' => 'zera_payment_webhook_secret','label' => 'Zera Payment Webhook Secret','category' => 'payment', 'default_const' => 'ZERA_PAYMENT_WEBHOOK_SECRET','masked' => true,  'editable' => true],
+        ['key' => 'guard_status_url',          'label' => 'Guard Status URL',            'category' => 'guard',   'default_const' => 'GUARD_STATUS_URL',          'masked' => false, 'editable' => true],
+        ['key' => 'console_stats_token',       'label' => 'Console Stats Token',         'category' => 'console', 'default_const' => 'CONSOLE_STATS_TOKEN',       'masked' => true,  'editable' => false],
+        ['key' => 'console_admin_mint_secret', 'label' => 'Console Admin Mint Secret',   'category' => 'console', 'default_const' => 'CONSOLE_ADMIN_MINT_SECRET', 'masked' => true,  'editable' => false],
+    ];
+}
+
 // ---- Indexes on the columns every hot query actually filters/sorts by. Each
 // one is wrapped in try/catch and re-run on every request — MySQL/MariaDB's
 // `CREATE INDEX IF NOT EXISTS` makes the try/catch a belt-and-braces no-op
@@ -1612,6 +1898,7 @@ foreach ([
     'CREATE INDEX IF NOT EXISTS idx_messages_application ON messages(application_id)',
     'CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id)',
     'CREATE INDEX IF NOT EXISTS idx_profile_views_log_profile ON profile_views_log(profile_id, viewed_at)',
+    'CREATE INDEX IF NOT EXISTS idx_users_last_active ON users(last_active_at)',
 ] as $indexSql) {
     try { $pdo->exec($indexSql); } catch (Exception $e) { /* already exists */ }
 }
@@ -1707,6 +1994,12 @@ if (preg_match('#/auth/register$#', $uri) && $method === 'POST') {
     // plan-less until they buy one, same as before employer plans existed.
     $primaryFree = getPrimaryFreePlan($pdo, $role);
 
+    // Only an account with a real email on file has anything to verify —
+    // generate + send the token in that case, leave both columns null
+    // otherwise (frontend treats "no email" as not-applicable, not unverified).
+    $emailVerifyToken = $email !== '' ? bin2hex(random_bytes(32)) : null;
+    $emailVerifySentAt = $emailVerifyToken ? date('Y-m-d H:i:s') : null;
+
     $createdAt = date('Y-m-d H:i:s');
     $pdo->prepare('
         INSERT INTO users (
@@ -1714,8 +2007,9 @@ if (preg_match('#/auth/register$#', $uri) && $method === 'POST') {
             governorate, district, sub_district, bio, avatar, favorite_categories, skills,
             company_name, company_reg, company_phone, company_email, industry,
             company_size, company_type, hiring_preferences, company_logo, company_cover,
-            wallet_balance, ref_code, referred_by, status, plan, plan_credits, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            wallet_balance, ref_code, referred_by, status, plan, plan_credits,
+            email_verify_token, email_verify_sent_at, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ')->execute([
         $userId, $name, $phone, $email, $hashedPw, $role, $gender,
         $governorate, $district, $subDistrict, $bio, $avatar, $favoriteCategories, $signupSkillsJson,
@@ -1723,16 +2017,20 @@ if (preg_match('#/auth/register$#', $uri) && $method === 'POST') {
         $companySize, $companyType, $hiringPrefs, $companyLogo, $companyCover,
         $balance, $refCode, $referredBy, 'active',
         $primaryFree['id'] ?? null, (int)($primaryFree['credits'] ?? 0),
+        $emailVerifyToken, $emailVerifySentAt,
         $createdAt
     ]);
 
+    if ($emailVerifyToken) sendVerificationEmail($email, $name, $emailVerifyToken);
+
     notifyAdmins($pdo, 'user_registered', ['id' => $userId, 'name' => $name, 'role' => $role]);
+    logActivity($pdo, $userId, 'register', $role);
 
     echo json_encode([
         'success' => true,
         'token'   => generateToken($userId, $phone),
         'user'    => [
-            'id' => $userId, 'name' => $name, 'phone' => $phone, 'email' => $email,
+            'id' => $userId, 'name' => $name, 'profession' => '', 'phone' => $phone, 'email' => $email,
             'role' => $role, 'gender' => $gender, 'governorate' => $governorate,
             'district' => $district, 'sub_district' => $subDistrict, 'bio' => $bio, 'avatar' => $avatar,
             'company_name' => $companyName, 'company_reg' => $companyReg,
@@ -1743,9 +2041,132 @@ if (preg_match('#/auth/register$#', $uri) && $method === 'POST') {
             'favorite_categories' => $favoriteCategories, 'saved_jobs' => '[]', 'experience' => '[]', 'skills' => $signupSkillsJson,
             'status' => 'active', 'wallet_balance' => $balance, 'ref_code' => $refCode,
             'plan' => $primaryFree['id'] ?? null, 'plan_credits' => (int)($primaryFree['credits'] ?? 0),
+            'email_verified' => 0,
             'created_at' => $createdAt,
         ]
     ]);
+    exit(0);
+}
+
+// ================================================================
+// 2b. Auth: Verify Email  GET /auth/verify-email?token=...  (public — this
+//     is what the link inside the email itself hits, no session needed)
+// ================================================================
+if (preg_match('#/auth/verify-email$#', $uri) && $method === 'GET') {
+    $token = sanitize($_GET['token'] ?? '', 64);
+    if ($token === '') jsonErr(400, 'تۆکنی دڵنیاکردنەوە پێویستە.');
+
+    $stmt = $pdo->prepare('SELECT id, email_verified FROM users WHERE email_verify_token = ?');
+    $stmt->execute([$token]);
+    $row = $stmt->fetch();
+    if (!$row) jsonErr(400, 'ئەم بەستەرە بەسەرچووە یان پێشتر بەکارهاتووە.');
+
+    // Deliberately idempotent — the token is never cleared, only ever
+    // checked. A one-time-use token that nulls itself out sounds more
+    // "secure" but breaks the very first real visit here: this PWA's own
+    // service worker can silently reload the page once right after a fresh
+    // deploy takes control (see main.jsx), which re-fires this exact
+    // request a second time before the user's ever seen the result of the
+    // first. Re-verifying an already-verified account is harmless (it
+    // doesn't expose anything, doesn't let you touch another account,
+    // just re-confirms the same one), so there's nothing worth protecting
+    // by burning the link after one use.
+    if ((int)($row['email_verified'] ?? 0) === 0) {
+        $pdo->prepare('UPDATE users SET email_verified = 1 WHERE id = ?')->execute([$row['id']]);
+    }
+    echo json_encode(['success' => true, 'message' => 'ئیمەیلەکەت بە سەرکەوتوویی دڵنیاکرایەوە.']);
+    exit(0);
+}
+
+// ================================================================
+// 2c. Auth: Resend Verification Email  POST /auth/resend-verification
+//     (requires the account's own session — only you can re-trigger your
+//     own verification email, never an arbitrary email address)
+// ================================================================
+if (preg_match('#/auth/resend-verification$#', $uri) && $method === 'POST') {
+    if (!rateLimitCheck($pdo, $clientIp, 'resend_verification')) jsonErr(429, 'زۆر جار داواتکرد. کەمێک چاوەڕوان بە.');
+    $authUser = requireAuth($pdo);
+
+    if (empty($authUser['email'])) jsonErr(400, 'هیچ ئیمەیلێک لەسەر هەژمارەکەت تۆمار نەکراوە.');
+    if ((int)($authUser['email_verified'] ?? 0) === 1) jsonErr(400, 'ئیمەیلەکەت پێشتر دڵنیاکراوەتەوە.');
+
+    // A fresh token each time — the old one (if the user still has an old
+    // email open somewhere) stops working, same as most real verification
+    // flows only ever honoring the latest link sent.
+    $newToken = bin2hex(random_bytes(32));
+    $pdo->prepare('UPDATE users SET email_verify_token = ?, email_verify_sent_at = ? WHERE id = ?')
+        ->execute([$newToken, date('Y-m-d H:i:s'), $authUser['id']]);
+
+    $sent = sendVerificationEmail($authUser['email'], $authUser['name'], $newToken);
+    echo json_encode(['success' => true, 'sent' => $sent, 'message' => 'ئیمەیلی دڵنیاکردنەوە نێردرایەوە.']);
+    exit(0);
+}
+
+// ================================================================
+// 2d. Auth: Forgot Password  POST /auth/forgot-password  { phone }
+//     (public — looks up by the same primary identifier as login; can only
+//     ever deliver by email, the one real send channel this app has, so an
+//     account with no email on file is told to contact support instead)
+// ================================================================
+if (preg_match('#/auth/forgot-password$#', $uri) && $method === 'POST') {
+    if (!rateLimitCheck($pdo, $clientIp, 'forgot_password')) jsonErr(429, 'زۆر جار داواتکرد. کەمێک چاوەڕوان بە.');
+
+    $input = safeJson();
+    $phoneOrEmail = sanitize($input['phone'] ?? $input['phone_or_email'] ?? '', 100);
+    if ($phoneOrEmail === '') jsonErr(400, 'ژمارەی مۆبایل یان ئیمەیل پێویستە.');
+
+    $normalizedPhone = normalizePhone($phoneOrEmail);
+    $stmt = $pdo->prepare('SELECT * FROM users WHERE phone = ? OR phone = ? OR email = ?');
+    $stmt->execute([$normalizedPhone, '0' . $normalizedPhone, $phoneOrEmail]);
+    $user = $stmt->fetch();
+
+    if (!$user) jsonErr(404, 'هیچ ئەژمێرێک بەم زانیارییە تۆمار نەکراوە.');
+    if (empty($user['email'])) {
+        jsonErr(400, 'ئەم هەژمارە هیچ ئیمەیلێکی تۆمارکراوی نییە. تکایە پەیوەندی بە پشتیوانی بکە.');
+    }
+
+    $token = bin2hex(random_bytes(32));
+    $expires = date('Y-m-d H:i:s', time() + 3600); // 1 hour
+    $pdo->prepare('UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?')
+        ->execute([$token, $expires, $user['id']]);
+
+    sendPasswordResetEmail($user['email'], $user['name'], $token);
+    logActivity($pdo, $user['id'], 'password_reset_requested');
+    echo json_encode(['success' => true, 'message' => 'بەستەری گەڕاندنەوەی وشەی نهێنیمان بۆ ئیمەیلەکەت نارد.']);
+    exit(0);
+}
+
+// ================================================================
+// 2e. Auth: Reset Password  POST /auth/reset-password  { token, password }
+//     (public — hit by the frontend page the email link lands on, once the
+//     user actually submits a new password; a real one-time token, since
+//     unlike email verification a leaked/reused reset link is a real risk —
+//     but safe to make single-use here because nothing auto-fires this on
+//     page load, only an explicit form submit)
+// ================================================================
+if (preg_match('#/auth/reset-password$#', $uri) && $method === 'POST') {
+    if (!rateLimitCheck($pdo, $clientIp, 'reset_password')) jsonErr(429, 'زۆر جار داواتکرد. کەمێک چاوەڕوان بە.');
+
+    $input = safeJson();
+    $token = sanitize($input['token'] ?? '', 64);
+    $newPassword = trim($input['password'] ?? '');
+    if ($token === '') jsonErr(400, 'تۆکن پێویستە.');
+    if (strlen($newPassword) < 8) jsonErr(400, 'وشەی نهێنی دەبێت لانیکم ٨ پیت بێت.');
+
+    $stmt = $pdo->prepare('SELECT id, password_reset_expires FROM users WHERE password_reset_token = ?');
+    $stmt->execute([$token]);
+    $row = $stmt->fetch();
+    if (!$row) jsonErr(400, 'ئەم بەستەرە بەسەرچووە یان پێشتر بەکارهاتووە.');
+    if (empty($row['password_reset_expires']) || strtotime($row['password_reset_expires']) < time()) {
+        jsonErr(400, 'کاتی ئەم بەستەرە بەسەرچووە. تکایە داوایەکی نوێ بکە.');
+    }
+
+    $hashed = hashPassword($newPassword);
+    $pdo->prepare('UPDATE users SET password = ?, password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?')
+        ->execute([$hashed, $row['id']]);
+
+    logActivity($pdo, $row['id'], 'password_reset_completed');
+    echo json_encode(['success' => true, 'message' => 'وشەی نهێنیت بە سەرکەوتوویی گۆڕدرا. ئێستا دەتوانیت بچیتە ژوورەوە.']);
     exit(0);
 }
 
@@ -1775,19 +2196,23 @@ if (preg_match('#/auth/login$#', $uri) && $method === 'POST') {
         jsonErr(401, 'ئەم هەژمارە بە گووگڵ/فەیسبووک/ئەپڵ چوویتە ژوورەوە — تکایە بەو ڕێگەیە بچۆرە ژوورەوە.');
     }
     if (!verifyPassword($password, $user['password'])) {
+        logActivity($pdo, $user['id'], 'login_failed', 'bad_password');
         jsonErr(401, 'وشەی نهێنی هەڵەیە.');
     }
 
     if (($user['status'] ?? 'active') === 'blocked' || ($user['status'] ?? 'active') === 'frozen') {
+        logActivity($pdo, $user['id'], 'login_blocked', $user['status']);
         jsonErr(403, 'هەژمارەکەت ڕاگیراوە (بلۆككراوە).');
     }
 
+    logActivity($pdo, $user['id'], 'login');
     echo json_encode([
         'success' => true,
         'token'   => generateToken($user['id'], $user['phone']),
         'user'    => [
             'id'             => $user['id'],
             'name'           => $user['name'],
+            'profession'     => $user['profession'] ?? '',
             'phone'          => $user['phone'],
             'email'          => $user['email'],
             'role'           => $user['role'],
@@ -1816,6 +2241,7 @@ if (preg_match('#/auth/login$#', $uri) && $method === 'POST') {
             'wallet_balance' => (int)$user['wallet_balance'],
             'ref_code'         => $user['ref_code'] ?? null,
             'verified'         => (int)($user['verified'] ?? 0),
+            'email_verified'   => (int)($user['email_verified'] ?? 0),
             'plan'             => $user['plan'] ?? 'free',
             'plan_credits'     => (int)($user['plan_credits'] ?? 0),
             'plan_boost_until' => $user['plan_boost_until'] ?? null,
@@ -1870,7 +2296,10 @@ if (preg_match('#/auth/social$#', $uri) && $method === 'POST') {
         $stmt->execute([$email]);
         $existing = $stmt->fetch();
         if ($existing) {
-            $pdo->prepare('UPDATE users SET supabase_user_id = ?, auth_provider = ? WHERE id = ?')
+            // Google/Facebook/Apple just proved ownership of this exact email
+            // (that's what the match above is keyed on) — real signal to mark
+            // it verified even if the phone-based account itself never was.
+            $pdo->prepare('UPDATE users SET supabase_user_id = ?, auth_provider = ?, email_verified = 1 WHERE id = ?')
                 ->execute([$supabaseUserId, $provider, $existing['id']]);
             $stmt = $pdo->prepare('SELECT * FROM users WHERE id = ?');
             $stmt->execute([$existing['id']]);
@@ -1892,12 +2321,17 @@ if (preg_match('#/auth/social$#', $uri) && $method === 'POST') {
         $pdo->prepare('
             INSERT INTO users (
                 id, name, phone, email, password, role, avatar,
-                wallet_balance, ref_code, status, supabase_user_id, auth_provider, plan, plan_credits, created_at
-            ) VALUES (?, ?, NULL, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                wallet_balance, ref_code, status, supabase_user_id, auth_provider, plan, plan_credits,
+                email_verified, created_at
+            ) VALUES (?, ?, NULL, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ')->execute([
             $userId, $name, $email !== '' ? $email : null, 'freelancer', $avatar,
             25000, $refCode, 'active', $supabaseUserId, $provider,
             $primaryFree['id'] ?? null, (int)($primaryFree['credits'] ?? 0),
+            // Google/Facebook/Apple already own and verify this email address
+            // themselves — verifySupabaseJwt above only trusts claims backed
+            // by a real signature check, so there's nothing left to confirm.
+            1,
             date('Y-m-d H:i:s'),
         ]);
 
@@ -1916,6 +2350,7 @@ if (preg_match('#/auth/social$#', $uri) && $method === 'POST') {
         'user'    => [
             'id'             => $user['id'],
             'name'           => $user['name'],
+            'profession'     => $user['profession'] ?? '',
             'phone'          => $user['phone'],
             'email'          => $user['email'],
             'role'           => $user['role'],
@@ -1944,6 +2379,7 @@ if (preg_match('#/auth/social$#', $uri) && $method === 'POST') {
             'wallet_balance' => (int)$user['wallet_balance'],
             'ref_code'         => $user['ref_code'] ?? null,
             'verified'         => (int)($user['verified'] ?? 0),
+            'email_verified'   => (int)($user['email_verified'] ?? 0),
             'plan'             => $user['plan'] ?? 'free',
             'plan_credits'     => (int)($user['plan_credits'] ?? 0),
             'plan_boost_until' => $user['plan_boost_until'] ?? null,
@@ -2232,6 +2668,7 @@ if (preg_match('#/auth/me$#', $uri) && $method === 'GET') {
         'user'    => [
             'id'             => $authUser['id'],
             'name'           => $authUser['name'],
+            'profession'     => $authUser['profession'] ?? '',
             'phone'          => $authUser['phone'],
             'email'          => $authUser['email'],
             'role'           => $authUser['role'],
@@ -2260,6 +2697,7 @@ if (preg_match('#/auth/me$#', $uri) && $method === 'GET') {
             'wallet_balance' => (int)$authUser['wallet_balance'],
             'ref_code'       => $authUser['ref_code'] ?? null,
             'verified'       => (int)($authUser['verified'] ?? 0),
+            'email_verified' => (int)($authUser['email_verified'] ?? 0),
             'profile_views'  => (int)($authUser['profile_views'] ?? 0),
             'plan'             => $authUser['plan'] ?? 'free',
             'plan_credits'     => (int)($authUser['plan_credits'] ?? 0),
@@ -2280,6 +2718,7 @@ if (preg_match('#/auth/me$#', $uri) && $method === 'POST') {
     $input    = safeJson();
 
     $name        = sanitize($input['name']        ?? $authUser['name'],        100);
+    $profession  = sanitize($input['profession']  ?? $authUser['profession'] ?? '', 150);
     $email       = sanitize($input['email']       ?? $authUser['email'] ?? '', 150);
     $governorate = sanitize($input['governorate'] ?? $authUser['governorate'], 100);
     $district    = sanitize($input['district']    ?? $authUser['district'],    100);
@@ -2333,14 +2772,14 @@ if (preg_match('#/auth/me$#', $uri) && $method === 'POST') {
 
     $pdo->prepare('
         UPDATE users SET
-            name = ?, email = ?, governorate = ?, district = ?, sub_district = ?,
+            name = ?, profession = ?, email = ?, governorate = ?, district = ?, sub_district = ?,
             bio = ?, avatar = ?, cover = ?, gender = ?, skills = ?,
             favorite_categories = ?, saved_jobs = ?, experience = ?, role = ?,
             company_name = ?, company_reg = ?, company_phone = ?, company_email = ?, industry = ?,
             company_size = ?, company_type = ?, hiring_preferences = ?, company_logo = ?, company_cover = ?
         WHERE id = ?
     ')->execute([
-        $name, $email, $governorate, $district, $subDistrict, $bio, $avatar, $cover, $gender, $skills,
+        $name, $profession, $email, $governorate, $district, $subDistrict, $bio, $avatar, $cover, $gender, $skills,
         $favCats, $savedJobs, $experience, $role,
         $companyName, $companyReg, $companyPhone, $companyEmail, $industry,
         $companySize, $companyType, $hiringPrefs, $companyLogo, $companyCover,
@@ -2366,9 +2805,10 @@ if (preg_match('#/auth/me$#', $uri) && $method === 'POST') {
         }
     }
 
-    $updated = $pdo->prepare('SELECT id, name, phone, email, role, gender, governorate, district, sub_district, bio, avatar, cover, status, wallet_balance, skills, favorite_categories, saved_jobs, experience, company_name, company_reg, company_phone, company_email, industry, company_size, company_type, hiring_preferences, company_logo, company_cover, created_at FROM users WHERE id = ?');
+    $updated = $pdo->prepare('SELECT id, name, profession, phone, email, role, gender, governorate, district, sub_district, bio, avatar, cover, status, wallet_balance, skills, favorite_categories, saved_jobs, experience, company_name, company_reg, company_phone, company_email, industry, company_size, company_type, hiring_preferences, company_logo, company_cover, created_at FROM users WHERE id = ?');
     $updated->execute([$authUser['id']]);
 
+    logActivity($pdo, $authUser['id'], 'profile_updated');
     echo json_encode(['success' => true, 'message' => 'پرۆفایلەکەت نوێکرایەوە.', 'user' => $updated->fetch()]);
     exit(0);
 }
@@ -2527,7 +2967,7 @@ if (preg_match('#/jobs$#', $uri) && $method === 'POST') {
         INSERT INTO jobs (
             id, company_id, company_name, company_logo, company_cover, company_phone, company_email,
             title_ku, category, job_type, workplace_type,
-            governorate_id, location_detail, location_name, lat, lng,
+            governorate_id, district_id, sub_district_id, location_detail, location_name, lat, lng,
             salary_min, salary_max, salary_period,
             description, required_skills, fee_amount, deadline,
             company_reg, company_industry,
@@ -2535,7 +2975,7 @@ if (preg_match('#/jobs$#', $uri) && $method === 'POST') {
         ) VALUES (
             ?, ?, ?, ?, ?, ?, ?,
             ?, ?, ?, ?,
-            ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?,
             ?, ?, ?,
             ?, ?, ?, ?,
             ?, ?,
@@ -2551,9 +2991,11 @@ if (preg_match('#/jobs$#', $uri) && $method === 'POST') {
         sanitize($input['company_email'] ?? $authUser['email'] ?? '', 150),
         sanitize($input['title_ku'] ?? $input['title'] ?? 'کاری نوێ', 200),
         sanitize($input['category'] ?? 'cat_other', 50),
-        in_array($input['job_type'] ?? '', ['fullTime','partTime','contract','internship','remote'], true) ? $input['job_type'] : 'fullTime',
+        isValidWorkType($pdo, $input['job_type'] ?? '') ? $input['job_type'] : 'fullTime',
         in_array($input['workplace_type'] ?? '', ['onSite','remote','hybrid'], true) ? $input['workplace_type'] : 'onSite',
         sanitize($input['governorate_id'] ?? 'sulaymaniyah', 50),
+        sanitize($input['district_id'] ?? '', 50),
+        sanitize($input['sub_district_id'] ?? '', 50),
         sanitize($input['location_detail'] ?? '', 300),
         sanitize($input['location_name'] ?? '', 300),
         isset($input['lat']) && is_numeric($input['lat']) ? (float)$input['lat'] : null,
@@ -2580,13 +3022,14 @@ if (preg_match('#/jobs$#', $uri) && $method === 'POST') {
     } else {
         notifyAdmins($pdo, 'job_pending_review', ['id' => $jobId, 'company_id' => $authUser['id']]);
     }
+    logActivity($pdo, $authUser['id'], 'job_posted', $jobId);
 
     // Real alert fan-out — only to freelancers/saved-searches that actually match.
     $newJobForAlerts = [
         'title_ku' => $input['title_ku'] ?? $input['title'] ?? 'کاری نوێ',
         'company_name' => $input['company_name'] ?? $authUser['company_name'] ?? $authUser['name'],
         'category' => $input['category'] ?? 'cat_other',
-        'job_type' => in_array($input['job_type'] ?? '', ['fullTime','partTime','contract','internship','remote'], true) ? $input['job_type'] : 'fullTime',
+        'job_type' => isValidWorkType($pdo, $input['job_type'] ?? '') ? $input['job_type'] : 'fullTime',
         'governorate_id' => $input['governorate_id'] ?? 'sulaymaniyah',
         'salary_min' => (int)($input['salary_min'] ?? 500000),
         'required_skills' => $skills,
@@ -2631,7 +3074,7 @@ if (preg_match('#(?<!admin)/jobs/update$#', $uri) && $method === 'POST') {
     $pdo->prepare('
         UPDATE jobs SET
             title_ku = ?, company_logo = ?, company_cover = ?, category = ?, job_type = ?, workplace_type = ?,
-            governorate_id = ?, location_detail = ?, lat = ?, lng = ?, location_name = ?,
+            governorate_id = ?, district_id = ?, sub_district_id = ?, location_detail = ?, lat = ?, lng = ?, location_name = ?,
             salary_min = ?, salary_max = ?,
             description = ?, required_skills = ?, deadline = ?
         WHERE id = ?
@@ -2640,9 +3083,11 @@ if (preg_match('#(?<!admin)/jobs/update$#', $uri) && $method === 'POST') {
         sanitize($input['company_logo'] ?? $input['photo'] ?? $existing['company_logo'] ?? '', 800000),
         sanitize($input['company_cover'] ?? $existing['company_cover'] ?? '', 800000),
         sanitize($input['category'] ?? $existing['category'], 50),
-        in_array($input['job_type'] ?? '', ['fullTime','partTime','contract','internship','remote'], true) ? $input['job_type'] : $existing['job_type'],
+        isValidWorkType($pdo, $input['job_type'] ?? '') ? $input['job_type'] : $existing['job_type'],
         in_array($input['workplace_type'] ?? '', ['onSite','remote','hybrid'], true) ? $input['workplace_type'] : $existing['workplace_type'],
         sanitize($input['governorate_id'] ?? $existing['governorate_id'], 50),
+        sanitize($input['district_id'] ?? $existing['district_id'] ?? '', 50),
+        sanitize($input['sub_district_id'] ?? $existing['sub_district_id'] ?? '', 50),
         sanitize($input['location_detail'] ?? $existing['location_detail'] ?? '', 300),
         $lat,
         $lng,
@@ -2686,6 +3131,46 @@ if (preg_match('#(?<!admin)/jobs/delete$#', $uri) && $method === 'POST') {
     $pdo->prepare('DELETE FROM jobs WHERE id = ?')->execute([$jobId]);
     if ($isAdmin) notifyAdmins($pdo, 'job_deleted', ['id' => $jobId]);
     echo json_encode(['success' => true, 'message' => 'کارەکە سڕایەوە.']);
+    exit(0);
+}
+
+// ================================================================
+// 6d. Jobs: Toggle active/paused  POST /jobs/toggle-status  (owner employer, or admin/owner)
+// Lets an employer take their own posted job off the public listing
+// temporarily (position filled elsewhere, hiring paused, etc.) without
+// deleting it, and bring it back later. Only ever flips between the two
+// employer-controlled states 'active' <-> 'paused' — a job still awaiting
+// admin moderation ('pending'), rejected, or auto-expired past its deadline
+// ('closed', set by the lazy sweep in GET /jobs above) can't be toggled
+// here; those need the admin queue or an edited deadline instead.
+// ================================================================
+if (preg_match('#(?<!admin)/jobs/toggle-status$#', $uri) && $method === 'POST') {
+    $authUser = requireAuth($pdo);
+    $input = safeJson();
+    $jobId = sanitize($input['id'] ?? $input['job_id'] ?? '', 50);
+    if (empty($jobId)) jsonErr(400, 'Job ID required.');
+
+    $existing = $pdo->prepare('SELECT * FROM jobs WHERE id = ?');
+    $existing->execute([$jobId]);
+    $existing = $existing->fetch();
+    if (!$existing) jsonErr(404, 'ئیشەکە نەدۆزرایەوە.');
+
+    $isOwner = $existing['company_id'] === $authUser['id'];
+    $isAdmin = in_array($authUser['role'] ?? '', ['admin', 'owner'], true);
+    if (!$isOwner && !$isAdmin) jsonErr(403, 'تەنها کۆمپانیاکە دەتوانێت ئەم کارە بگۆڕێت.');
+
+    if (!in_array($existing['status'], ['active', 'paused'], true)) {
+        jsonErr(400, 'ناتوانرێت دۆخی ئەم کارە بگۆڕدرێت لە ئێستادا.');
+    }
+
+    $newStatus = $existing['status'] === 'active' ? 'paused' : 'active';
+    $pdo->prepare('UPDATE jobs SET status = ? WHERE id = ?')->execute([$newStatus, $jobId]);
+
+    echo json_encode([
+        'success' => true,
+        'status' => $newStatus,
+        'message' => $newStatus === 'active' ? 'کارەکە چالاککرایەوە.' : 'کارەکە ناچالاککرا.',
+    ]);
     exit(0);
 }
 
@@ -2739,12 +3224,31 @@ if (preg_match('#/jobs/boost$#', $uri) && $method === 'POST') {
 if (preg_match('#/freelancers$#', $uri) && $method === 'GET') {
     // Only expose safe public fields — never expose phone/email raw
     $stmt = $pdo->query("
-        SELECT id, name, role, gender, governorate, district, sub_district, skills, bio, avatar, cover, status, profile_views, plan, plan_boost_until, created_at, experience, favorite_categories, verified
+        SELECT id, name, profession, role, gender, governorate, district, sub_district, skills, bio, avatar, cover, status, profile_views, plan, plan_boost_until, created_at, experience, favorite_categories, verified
         FROM users WHERE role = 'freelancer' AND status = 'active'
         ORDER BY (plan_boost_until IS NOT NULL AND plan_boost_until > NOW()) DESC, created_at DESC
     ");
     $freelancers = $stmt->fetchAll();
     echo json_encode(['success' => true, 'count' => count($freelancers), 'freelancers' => $freelancers]);
+    exit(0);
+}
+
+// ================================================================
+// 7a. Companies: List  GET /companies  (phone/email hidden — same shape
+//     as GET /freelancers above, so DirectoryPage/SearchPage can build a
+//     real company profile from the actual account instead of guessing
+//     fields off whichever job happened to be posted last).
+// ================================================================
+if (preg_match('#/companies$#', $uri) && $method === 'GET') {
+    $stmt = $pdo->query("
+        SELECT id, name, company_name, industry, bio, company_logo, company_cover,
+               governorate, company_reg, company_size, company_type, verified,
+               profile_views, plan, created_at
+        FROM users WHERE role = 'employer' AND status = 'active'
+        ORDER BY created_at DESC
+    ");
+    $companies = $stmt->fetchAll();
+    echo json_encode(['success' => true, 'count' => count($companies), 'companies' => $companies]);
     exit(0);
 }
 
@@ -2792,12 +3296,98 @@ if (preg_match('#/categories$#', $uri) && $method === 'GET') {
 }
 
 // ================================================================
+// Work Types: Public list  GET /work-types  — only active ones, for the
+// job-post form's own dropdown.
+// ================================================================
+if (preg_match('#/work-types$#', $uri) && $method === 'GET') {
+    $types = $pdo->query('SELECT * FROM work_types WHERE is_active = 1 ORDER BY sort_order ASC, name_ku ASC')->fetchAll();
+    echo json_encode(['success' => true, 'workTypes' => $types]);
+    exit(0);
+}
+
+// Work Types: Admin list (incl. inactive)  GET /admin/work-types
+if (preg_match('#/admin/work-types$#', $uri) && $method === 'GET') {
+    requireAdmin($pdo);
+    $types = $pdo->query('SELECT * FROM work_types ORDER BY sort_order ASC, name_ku ASC')->fetchAll();
+    echo json_encode(['success' => true, 'workTypes' => $types]);
+    exit(0);
+}
+
+// Work Types: Add  POST /admin/work-types/add
+if (preg_match('#/admin/work-types/add$#', $uri) && $method === 'POST') {
+    requireAdmin($pdo);
+    $input = safeJson();
+    $id = sanitize($input['id'] ?? '', 64);
+    $nameKu = trim(sanitize($input['name_ku'] ?? '', 100));
+    if ($id === '' || $nameKu === '') jsonErr(400, 'Id and Kurdish name required.');
+    if (!preg_match('#^[a-zA-Z0-9_-]+$#', $id)) jsonErr(400, 'Id may only contain letters, numbers, - and _.');
+
+    $exists = $pdo->prepare('SELECT 1 FROM work_types WHERE id = ?');
+    $exists->execute([$id]);
+    if ($exists->fetch()) jsonErr(409, 'ئەم ناسنامەیە پێشتر بوونی هەیە.');
+
+    $maxOrder = (int)($pdo->query('SELECT COALESCE(MAX(sort_order), 0) m FROM work_types')->fetch()['m']);
+    $pdo->prepare('INSERT INTO work_types (id, name_ku, name_en, sort_order, is_active, created_at) VALUES (?, ?, ?, ?, 1, ?)')
+        ->execute([$id, $nameKu, sanitize($input['name_en'] ?? '', 100), $maxOrder + 1, date('Y-m-d H:i:s')]);
+
+    echo json_encode(['success' => true, 'id' => $id]);
+    exit(0);
+}
+
+// Work Types: Update  POST /admin/work-types/update
+if (preg_match('#/admin/work-types/update$#', $uri) && $method === 'POST') {
+    requireAdmin($pdo);
+    $input = safeJson();
+    $id = sanitize($input['id'] ?? '', 64);
+    if ($id === '') jsonErr(400, 'Id required.');
+
+    $existing = $pdo->prepare('SELECT * FROM work_types WHERE id = ?');
+    $existing->execute([$id]);
+    $existing = $existing->fetch();
+    if (!$existing) jsonErr(404, 'Work type not found.');
+
+    $pdo->prepare('UPDATE work_types SET name_ku = ?, name_en = ?, sort_order = ?, is_active = ? WHERE id = ?')
+        ->execute([
+            trim(sanitize($input['name_ku'] ?? $existing['name_ku'], 100)),
+            sanitize($input['name_en'] ?? $existing['name_en'] ?? '', 100),
+            isset($input['sort_order']) && is_numeric($input['sort_order']) ? (int)$input['sort_order'] : (int)$existing['sort_order'],
+            array_key_exists('is_active', $input) ? (int)(bool)$input['is_active'] : (int)$existing['is_active'],
+            $id,
+        ]);
+
+    echo json_encode(['success' => true, 'id' => $id]);
+    exit(0);
+}
+
+// Work Types: Delete  POST /admin/work-types/delete  (owner only — jobs
+// already posted with this type just keep the old id/label, same graceful
+// fallback as a deleted plan or category).
+if (preg_match('#/admin/work-types/delete$#', $uri) && $method === 'POST') {
+    $admin = requireAdmin($pdo);
+    if (($admin['role'] ?? '') !== 'owner') jsonErr(403, 'Owner only.');
+    $input = safeJson();
+    $id = sanitize($input['id'] ?? '', 64);
+    if ($id === '') jsonErr(400, 'Id required.');
+
+    $pdo->prepare('DELETE FROM work_types WHERE id = ?')->execute([$id]);
+
+    echo json_encode(['success' => true]);
+    exit(0);
+}
+
+// ================================================================
 // 7b2. Plan Tiers: List  GET /plans  (public — the Pro/VIP cards shown on
 //      the Plans page; admin-managed via /admin/plans/add|update|delete
 //      below. Not to be confused with /admin/plans, which lists PURCHASES
 //      of these tiers, not the tiers themselves.)
 // ================================================================
-if (preg_match('#/plans$#', $uri) && $method === 'GET') {
+// Anchored with a negative lookbehind so this never also matches
+// /admin/plans — both end in "/plans", and without this guard this public,
+// unauthenticated route was silently swallowing every request meant for the
+// admin purchases list below (first matching route wins), making the admin
+// panel's plan-purchases tab always look empty no matter how much real data
+// existed.
+if (preg_match('#(?<!admin)/plans$#', $uri) && $method === 'GET') {
     $tiers = $pdo->query('SELECT * FROM plan_tiers WHERE is_active = 1 ORDER BY sort_order ASC, price ASC')->fetchAll();
     echo json_encode(['success' => true, 'plans' => $tiers]);
     exit(0);
@@ -2841,6 +3431,70 @@ if (preg_match('#/admin/settings/update$#', $uri) && $method === 'POST') {
         ->execute([$key, $value, date('Y-m-d H:i:s')]);
 
     echo json_encode(['success' => true, 'key' => $key, 'value' => $value]);
+    exit(0);
+}
+
+// ================================================================
+// 7e. Integrations: List  GET /admin/integrations  (owner only)
+// Real integration API keys/tokens (Pusher, OpenAI, SMTP, Zera Payment,
+// Guard) — separate from the public /settings above. Never exposes DB
+// creds, TOKEN_SECRET or the VAPID key; those aren't listed in
+// integrationSecretDefs() at all.
+// ================================================================
+if (preg_match('#/admin/integrations$#', $uri) && $method === 'GET') {
+    $authUser = requireAdmin($pdo);
+    if (($authUser['role'] ?? '') !== 'owner') jsonErr(403, 'Owner only.');
+
+    $rows = $pdo->query('SELECT `key`, value, updated_at FROM app_secrets')->fetchAll();
+    $overrides = [];
+    foreach ($rows as $r) $overrides[$r['key']] = $r;
+
+    $out = [];
+    foreach (integrationSecretDefs() as $def) {
+        $default = defined($def['default_const']) ? (string)constant($def['default_const']) : '';
+        $override = $overrides[$def['key']] ?? null;
+        $out[] = [
+            'key'        => $def['key'],
+            'label'      => $def['label'],
+            'category'   => $def['category'],
+            'masked'     => $def['masked'],
+            'editable'   => $def['editable'],
+            'value'      => $override ? $override['value'] : $default,
+            'is_custom'  => $override !== null,
+            'updated_at' => $override['updated_at'] ?? null,
+        ];
+    }
+    echo json_encode(['success' => true, 'integrations' => $out]);
+    exit(0);
+}
+
+// ================================================================
+// 7f. Integrations: Update  POST /admin/integrations/update  (owner only)
+// Only accepts keys present in integrationSecretDefs() with editable=true —
+// this is a fixed whitelist, not a free-form key/value store, precisely so
+// this endpoint can never be used to plant an arbitrary settings row.
+// ================================================================
+if (preg_match('#/admin/integrations/update$#', $uri) && $method === 'POST') {
+    $authUser = requireAdmin($pdo);
+    if (($authUser['role'] ?? '') !== 'owner') jsonErr(403, 'Owner only.');
+
+    $input = safeJson();
+    $key   = sanitize($input['key'] ?? '', 100);
+    $value = sanitize($input['value'] ?? '', 500);
+    if (empty($key)) jsonErr(400, 'Setting key required.');
+
+    $def = null;
+    foreach (integrationSecretDefs() as $d) if ($d['key'] === $key) { $def = $d; break; }
+    if (!$def) jsonErr(404, 'Unknown integration key.');
+    if (!$def['editable']) jsonErr(403, 'This value is read-only — it must be changed in code on both Ishkhwaz and Zera-World together, or the admin console login bridge breaks.');
+
+    $pdo->prepare('INSERT INTO app_secrets (`key`, value, updated_at) VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = VALUES(updated_at)')
+        ->execute([$key, $value, date('Y-m-d H:i:s')]);
+
+    logActivity($pdo, $authUser['id'], 'integration_updated', $def['label'], 'admin');
+
+    echo json_encode(['success' => true, 'key' => $key]);
     exit(0);
 }
 
@@ -2968,6 +3622,7 @@ if (preg_match('#/applications$#', $uri) && $method === 'POST') {
     // Else: intentionally NOT notifying the company yet — the CV sits with
     // admin for payment verification first, same as before plans existed.
 
+    logActivity($pdo, $authUser['id'], 'application_submitted', $jobId);
     echo json_encode(['success' => true, 'application_id' => $appId, 'used_plan_credit' => $hasCredit]);
     exit(0);
 }
@@ -3021,6 +3676,8 @@ if (preg_match('#/applications/.*?/verify$#', $uri) && $method === 'POST') {
         notifyUser($pdo, $app['freelancer_id'], 'پارەدانەکەت پەسەند نەکرا',
             "پارەدانی سیڤیت بۆ \"{$app['job_title']}\" پەسەند نەکرا — تکایە پەیوەندی بە پشتیوانی بکە", '/cvs');
     }
+
+    notifyAdmins($pdo, 'application_' . $status, ['id' => $appId, 'company_id' => $app['company_id']]);
 
     echo json_encode(['success' => true, 'application_id' => $appId, 'status' => $status]);
     exit(0);
@@ -3143,6 +3800,7 @@ if (preg_match('#/disputes/([^/]+)/messages$#', $uri, $m) && $method === 'POST')
     } else {
         $ownerId = ishkhwazOwnerId($pdo);
         if ($ownerId) notifyUser($pdo, $ownerId, 'پەیامی نوێ لە شکایەتێک', "{$authUser['name']} وەڵامی دایەوە", '/cvs');
+        notifyAdmins($pdo, 'dispute_message', ['id' => $disputeId]);
     }
 
     echo json_encode(['success' => true, 'messages' => disputeMessages($pdo, $disputeId)]);
@@ -3193,6 +3851,7 @@ if (preg_match('#/disputes/([^/]+)/resolve$#', $uri, $m) && $method === 'POST') 
     $pdo->prepare('INSERT INTO dispute_messages (id, dispute_id, sender_id, sender_role, body, created_at) VALUES (?, ?, ?, ?, ?, ?)')
         ->execute(['dmsg_' . time() . rand(100, 999), $disputeId, $admin['id'], 'admin', $note !== '' ? $note : $outcomeLabel, $now]);
     notifyUser($pdo, $dispute['user_id'], 'ئەنجامی شکایەتەکەت', $outcomeLabel, '/cvs');
+    notifyAdmins($pdo, 'dispute_' . $status, ['id' => $disputeId]);
 
     echo json_encode(['success' => true, 'dispute' => ['id' => $disputeId, 'status' => $status, 'messages' => disputeMessages($pdo, $disputeId)]]);
     exit(0);
@@ -3680,6 +4339,44 @@ if (preg_match('#/messages/threads$#', $uri) && $method === 'GET') {
     exit(0);
 }
 
+// Admin: every real conversation on the platform, for support/moderation —
+// Ishkhwaz has no admin UI of its own, this is that view, from the Zera
+// Console. Read-only: viewing here never marks a real user's message read
+// on their behalf (that would hide it from them before they've seen it).
+if (preg_match('#/admin/messages/threads$#', $uri) && $method === 'GET') {
+    requireAdmin($pdo);
+    $stmt = $pdo->query("
+        SELECT a.id AS application_id, a.job_title, a.company_name, a.freelancer_name,
+               a.freelancer_id, a.company_id,
+               uf.avatar AS freelancer_avatar,
+               uc.avatar AS company_avatar,
+               (SELECT body FROM messages m WHERE m.application_id = a.id ORDER BY m.created_at DESC LIMIT 1) AS last_message,
+               (SELECT created_at FROM messages m WHERE m.application_id = a.id ORDER BY m.created_at DESC LIMIT 1) AS last_message_at,
+               (SELECT COUNT(*) FROM messages m WHERE m.application_id = a.id) AS message_count
+        FROM applications a
+        LEFT JOIN users uf ON uf.id = a.freelancer_id
+        LEFT JOIN users uc ON uc.id = a.company_id
+        WHERE EXISTS (SELECT 1 FROM messages m WHERE m.application_id = a.id)
+        ORDER BY last_message_at DESC
+        LIMIT 300
+    ");
+    echo json_encode(['success' => true, 'threads' => $stmt->fetchAll()]);
+    exit(0);
+}
+
+// Admin: full message history for one thread — same data as the real
+// participant-only /messages/thread, minus the read_at side effect.
+if (preg_match('#/admin/messages/thread$#', $uri) && $method === 'GET') {
+    requireAdmin($pdo);
+    $appId = sanitize($_GET['application_id'] ?? '', 50);
+    if (empty($appId)) jsonErr(400, 'Application ID required.');
+
+    $stmt = $pdo->prepare('SELECT * FROM messages WHERE application_id = ? ORDER BY created_at ASC');
+    $stmt->execute([$appId]);
+    echo json_encode(['success' => true, 'messages' => $stmt->fetchAll()]);
+    exit(0);
+}
+
 // ================================================================
 // 11c. Saved Searches: a persisted filter combo that alerts its owner when a
 // newly posted job matches (see notifyMatchingSavedSearches above).
@@ -3807,7 +4504,9 @@ if (preg_match('#/plans/my-purchases$#', $uri) && $method === 'GET') {
 if (preg_match('#/admin/plans$#', $uri) && $method === 'GET') {
     requireAdmin($pdo);
     $stmt = $pdo->query("
-        SELECT p.*, u.name AS user_name, u.phone AS user_phone
+        SELECT p.*, u.name AS user_name, u.phone AS user_phone, u.email AS user_email,
+               u.avatar AS user_avatar, u.role AS user_role, u.company_name AS user_company_name,
+               u.wallet_balance AS user_wallet_balance
         FROM plan_purchases p JOIN users u ON u.id = p.user_id
         ORDER BY p.created_at DESC
     ");
@@ -3954,7 +4653,8 @@ if (preg_match('#/admin/plans/update$#', $uri) && $method === 'POST') {
         UPDATE plan_tiers SET
             name_ku = ?, name_en = ?, tagline = ?, icon = ?, color = ?,
             price = ?, credits = ?, boost_days = ?, features = ?, featured = ?, is_primary_free = ?,
-            can_message = ?, can_receive_invitations = ?, can_see_profile_viewers = ?, audience = ?, max_cvs = ?, is_active = ?
+            can_message = ?, can_receive_invitations = ?, can_see_profile_viewers = ?, audience = ?, max_cvs = ?, is_active = ?,
+            sort_order = ?, has_ai_cv_assistant = ?
         WHERE id = ?
     ')->execute([
             sanitize($input['name_ku'] ?? $existing['name_ku'], 50),
@@ -3974,6 +4674,8 @@ if (preg_match('#/admin/plans/update$#', $uri) && $method === 'POST') {
             $audience,
             isset($input['max_cvs']) ? max(0, (int)$input['max_cvs']) : $existing['max_cvs'],
             array_key_exists('is_active', $input) ? (!empty($input['is_active']) ? 1 : 0) : $existing['is_active'],
+            isset($input['sort_order']) ? (int)$input['sort_order'] : $existing['sort_order'],
+            array_key_exists('has_ai_cv_assistant', $input) ? (!empty($input['has_ai_cv_assistant']) ? 1 : 0) : $existing['has_ai_cv_assistant'],
             $id,
         ]);
 
@@ -4211,7 +4913,8 @@ if (preg_match('#/ai-cv/messages$#', $uri) && $method === 'POST') {
         . "\nPhone: " . ($authUser['phone'] ?? '(unknown)')
         . "\nEmail: " . ($authUser['email'] ?? '(unknown)')
         . "\nCurrent profession on file: " . ($authUser['profession'] ?? '(unknown)')
-        . "\nGovernorate: " . ($authUser['governorate'] ?? '(unknown)');
+        . "\nGovernorate: " . ($authUser['governorate'] ?? '(unknown)')
+        . "\nHas a profile photo on their account: " . (!empty($authUser['avatar']) ? 'yes' : 'no');
 
     $system = "You are Karnama AI, a warm, friendly Kurdish CV-building assistant inside the Ish-khwaz job app, chatting with a VIP user to build their real CV through a genuine, personable conversation — like a helpful friend, never a form or an interrogation.\n\n"
         . "LANGUAGE — natural, fluent Central Kurdish (Sorani, Arabic-based script), colloquial register (زمانی بازاڕی), exactly as an educated native speaker from Slemani or Hewlêr would actually talk to a friend:\n"
@@ -4222,14 +4925,15 @@ if (preg_match('#/ai-cv/messages$#', $uri) && $method === 'POST') {
         . "  BAD (unnatural, crammed): \"ئایا ئەتوانی بڵێی ناوی پۆستەکەت چییە و لە کوێ کار دەکەیت و بۆ چەند ماوەیەک؟\"\n"
         . "  GOOD (natural, warm): \"زۆر باشە! دەی پێم بڵێ، ئێستا لە چ بوارێکدا کار دەکەیت؟ هەروەها لە کوێ و بۆ چەند ماوەیەک ئەم کارە دەکەیت؟\"\n\n"
         . "TONE — build real rapport, don't just extract data. Before your next question, react briefly and genuinely to what they just told you (a short varied warm phrase — نموونە: 'خۆشە!', 'واو، جێگای سەرنجە', 'زۆر باشە' — never the exact same phrase every single turn). Never sound like a checklist.\n\n"
-        . "Real known facts about this user already on file (use these, don't re-ask for them, don't contradict them):\n{$knownFacts}\n\n"
+        . "Real known facts about this user already on file (use these, don't re-ask for the underlying values, don't contradict them):\n{$knownFacts}\n\n"
         . "YOUR JOB — gather what's needed for a real CV (job title/profession, work experience: company/role/how long/what they did, education, skills, languages) in as few turns as possible, grouped naturally:\n"
         . "  Turn 1: their job title/profession + their most relevant work experience.\n"
         . "  Turn 2: their education + top skills.\n"
-        . "  Turn 3 (only if still missing): languages, plus anything else worth adding — skip straight to ready if this genuinely adds nothing new.\n"
+        . "  Turn 3 — CONTACT & PHOTO CHECK (always ask this once you have enough for a real CV, before finishing): tell them you'll put the phone number and email already on their account onto the CV by default (name them), and ask in one short warm line whether that's fine or whether they'd rather use a different phone/email just for this CV. In the same message, also ask whether to include their account profile photo on the CV (if they have one on file) or leave the CV without a photo — either way, mention they can always change the photo and design afterward when picking the CV's style. Wait for their answer before finishing.\n"
+        . "  Turn 4 (only if still missing): languages, plus anything else worth adding — skip straight to ready if this genuinely adds nothing new.\n"
         . "If they already answered several of these in one message (people often do), don't re-ask what they gave you — move straight to whatever's still missing. Keep every message short (2-3 short sentences max) and warm.\n\n"
         . "CRITICAL — never invent or assume any fact the user hasn't actually told you or that isn't in the known-facts list above. If they give a vague or short answer, accept it as-is and move on rather than padding it with invented specifics. A thin CV beats a fabricated one.\n\n"
-        . "The moment you have at least a job title plus one of (real experience, real education, real skills), stop asking and wrap up warmly — don't chase every remaining field once there's enough for a real CV. End your message with the exact literal marker [READY_TO_BUILD] on its own at the very end once genuinely ready (this marker is never shown to the user, it's stripped automatically — never include it before you're actually ready).";
+        . "Only mark ready once you have at least a job title plus one of (real experience, real education, real skills) AND you've done the contact & photo check in Turn 3 above and gotten their answer. End your message with the exact literal marker [READY_TO_BUILD] on its own at the very end once genuinely ready (this marker is never shown to the user, it's stripped automatically — never include it before you're actually ready).";
 
     $messages = [['role' => 'system', 'content' => $system]];
     foreach ($history as $h) {
@@ -4302,7 +5006,8 @@ if (preg_match('#/ai-cv/build$#', $uri) && $method === 'POST') {
         . '"references":[]},'
         . '"sectionOrder":["experience","education","skills","languages","certifications","projects","references"],'
         . '"visibleSections":{"experience":true,"education":true,"skills":true,"languages":true,"certifications":true,"projects":true,"references":true}}'
-        . "\n\nCRITICAL: use ONLY facts explicitly present in the transcript. Never invent a company name, date, number, skill, or achievement that wasn't actually said. If a whole section has no real information in the transcript, output it as an empty array [] — do not fabricate placeholder entries to fill it. summary must be 2-4 honest sentences built only from what was said, natural colloquial Sorani (زمانی بازاڕی), no invented outcomes/claims.";
+        . "\n\nCRITICAL: use ONLY facts explicitly present in the transcript. Never invent a company name, date, number, skill, or achievement that wasn't actually said. If a whole section has no real information in the transcript, output it as an empty array [] — do not fabricate placeholder entries to fill it. summary must be 2-4 honest sentences built only from what was said, natural colloquial Sorani (زمانی بازاڕی), no invented outcomes/claims.\n\n"
+        . "For personalInfo.photo specifically: you can never see or produce an actual image from chat text, so only ever output one of two things — the literal string \"NONE\" if the user explicitly said they do NOT want a photo on the CV, or an empty string \"\" in every other case (including if they said yes to a photo, or never addressed it) — the app fills in their real account photo automatically whenever this isn't \"NONE\". For personalInfo.phone and personalInfo.email: if the user explicitly stated a specific phone number or email to use for this CV (different from what's already on their account, or simply confirming the account one out loud), put that exact value here; otherwise leave it empty — the app fills in the real account phone/email automatically.";
 
     // A generous max_tokens here (this used to be 1600) let real requests run
     // long enough to hit the host's upstream proxy timeout before curl's own
@@ -4329,11 +5034,31 @@ if (preg_match('#/ai-cv/build$#', $uri) && $method === 'POST') {
     if (empty($data['personalInfo']['fullName'])) {
         $data['personalInfo']['fullName'] = $authUser['name'] ?? '';
     }
+    // Same idea for phone/email/photo — the chat explicitly asks the user
+    // to confirm or override these before finishing (see Turn 3 in the
+    // system prompt above), but if they just said "fine" without restating
+    // the actual values, the transcript never spells them out for the
+    // extraction model to pull out. Fall back to the real account data,
+    // which is exactly what was just confirmed. A plain image is never
+    // something the extraction model can pull out of chat text either way,
+    // so the account avatar is the only real source for it. Never
+    // fabricated, and all three stay editable afterward in the CV editor.
+    if (empty($data['personalInfo']['phone'])) $data['personalInfo']['phone'] = $authUser['phone'] ?? '';
+    if (empty($data['personalInfo']['email'])) $data['personalInfo']['email'] = $authUser['email'] ?? '';
+    // "NONE" is the extraction model's explicit signal that the user said
+    // they don't want a photo — respect that instead of defaulting it back
+    // in. Any other empty value means "never addressed" / "said yes", so
+    // the real account photo is the right default there.
+    if (($data['personalInfo']['photo'] ?? '') === 'NONE') {
+        $data['personalInfo']['photo'] = '';
+    } elseif (empty($data['personalInfo']['photo'])) {
+        $data['personalInfo']['photo'] = $authUser['avatar'] ?? '';
+    }
 
     // Defensive defaults — never let a missing key break a template render.
     $data['personalInfo'] = array_merge([
-        'fullName' => '', 'jobTitle' => '', 'photo' => '', 'email' => $authUser['email'] ?? '',
-        'phone' => $authUser['phone'] ?? '', 'city' => '', 'country' => 'کوردستان', 'website' => '', 'linkedin' => '', 'summary' => '',
+        'fullName' => '', 'jobTitle' => '', 'photo' => '', 'email' => '',
+        'phone' => '', 'city' => '', 'country' => 'کوردستان', 'website' => '', 'linkedin' => '', 'summary' => '',
     ], $data['personalInfo']);
     $data['sections'] = array_merge([
         'experience' => [], 'education' => [], 'skills' => [], 'languages' => [], 'certifications' => [], 'projects' => [], 'references' => [],
@@ -4354,6 +5079,97 @@ if (preg_match('#/ai-cv/build$#', $uri) && $method === 'POST') {
     $pdo->prepare('DELETE FROM ai_cv_chats WHERE user_id = ?')->execute([$authUser['id']]);
 
     echo json_encode(['success' => true, 'resume_id' => $id]);
+    exit(0);
+}
+
+// ================================================================
+// App Guide AI — a general-purpose assistant that explains how to use
+// Ish-khwaz itself and answers questions about it, open to every logged-in
+// user regardless of plan (unlike the VIP-only Karnama AI above). No CV
+// building, no "ready" state — just a conversational FAQ/guide.
+//   GET    /app-guide/messages         — chat history
+//   POST   /app-guide/messages {message} — send one chat turn, get the reply
+//   DELETE /app-guide/messages         — clear the conversation, start over
+// ================================================================
+
+if (preg_match('#/app-guide/messages$#', $uri) && $method === 'GET') {
+    $authUser = requireAuth($pdo);
+    $stmt = $pdo->prepare('SELECT id, role, body, created_at FROM app_guide_chats WHERE user_id = ? ORDER BY created_at ASC');
+    $stmt->execute([$authUser['id']]);
+    echo json_encode(['success' => true, 'messages' => $stmt->fetchAll()]);
+    exit(0);
+}
+
+if (preg_match('#/app-guide/messages$#', $uri) && $method === 'DELETE') {
+    $authUser = requireAuth($pdo);
+    $pdo->prepare('DELETE FROM app_guide_chats WHERE user_id = ?')->execute([$authUser['id']]);
+    echo json_encode(['success' => true]);
+    exit(0);
+}
+
+if (preg_match('#/app-guide/messages$#', $uri) && $method === 'POST') {
+    $authUser = requireAuth($pdo);
+    if (!rateLimitCheck($pdo, $clientIp, 'app_guide_chat')) jsonErr(429, 'زۆر جار داواتکرد. کەمێک چاوەڕوان بە.');
+
+    $input = safeJson();
+    $userText = trim(sanitize($input['message'] ?? '', 1000));
+    if ($userText === '') jsonErr(400, 'پەیامەکە بەتاڵە.');
+
+    $now = date('Y-m-d H:i:s');
+    $pdo->prepare('INSERT INTO app_guide_chats (id, user_id, role, body, created_at) VALUES (?, ?, ?, ?, ?)')
+        ->execute(['agc_' . time() . rand(100, 999), $authUser['id'], 'user', $userText, $now]);
+
+    // Keep only the most recent turns as context — a FAQ assistant never
+    // needs the whole history to answer the next question well, and this
+    // keeps the prompt (and cost) small even in a very long-lived chat.
+    $histStmt = $pdo->prepare('SELECT role, body FROM app_guide_chats WHERE user_id = ? ORDER BY created_at DESC LIMIT 20');
+    $histStmt->execute([$authUser['id']]);
+    $history = array_reverse($histStmt->fetchAll());
+
+    $isEmployer = in_array($authUser['role'] ?? '', ['employer', 'owner', 'admin'], true);
+    $knownFacts = "Name: " . ($authUser['name'] ?? '(unknown)')
+        . "\nRole on this account: " . ($isEmployer ? 'employer (company account)' : 'freelancer (jobseeker account)')
+        . "\nPlan: " . ($authUser['plan'] ?? 'free');
+
+    $system = "You are the Ish-khwaz App Guide — a friendly, knowledgeable Kurdish-speaking assistant built into the Ish-khwaz job marketplace app (not Karnama AI, which is a separate VIP CV-building chat). Your only job is to help this user understand and use the Ish-khwaz app itself: answer questions, explain features, and point them to exactly where in the app to go.\n\n"
+        . "LANGUAGE — natural, fluent Central Kurdish (Sorani, Arabic script), colloquial register (زمانی بازاڕی), like a helpful support person, not a formal manual. Keep answers short and scannable (use short paragraphs or a short bullet list with '•' when listing steps), never a huge wall of text.\n\n"
+        . "Who you're talking to right now:\n{$knownFacts}\n\nTailor your answers to this account type — a freelancer asking 'how do I post a job' should be gently told that's for company accounts, and vice versa.\n\n"
+        . "REAL FEATURES OF ISH-KHWAZ (never invent anything beyond this list — if genuinely unsure, say so and suggest contacting support instead of guessing):\n\n"
+        . "For freelancers (jobseekers):\n"
+        . "• گەڕان بۆ کار: بەشی سەرەکی/گەڕان — پیشاندانی هەلی کارەکان بەپێی پیشە، شار و جۆری کار (کاتی تەواو/بەشی/ڕیموت).\n"
+        . "• ئەپلایکردن: کردنەوەی وردەکاری هەلی کار و کرتەکردن لەسەر 'ئەپلایکردن' — پێویستە مامەڵەیەکی بچووکی پشکنینی سیڤی بدرێت (بە FastPay)، دواتر ئەدمین بەڵگەی پارەدانەکە پشکدەکات، پاشان کۆمپانیاکە داواکارییەکە دەبینێت و پەسەندی یان ڕەتی دەکاتەوە.\n"
+        . "• دۆخی داواکاری: لە بەشی 'داواکارییەکان' (Dashboard) دەبینرێت — لە پشکنینی پارەدایە (ئەدمین) ← لای کۆمپانیایە ← پەسەندکراو/ڕەتکراوە.\n"
+        . "• دروستکردنی CV: بە دەستی لە بەشی 'سیڤیەکانم'، یان بە یاریدەی 'کارنامە AI' (چاتێکی تایبەت کە تەنها بۆ ئەندامانی پلانی VIP بەردەستە، لە سەرەوەی بەشی پەیامەکان).\n"
+        . "• پەیامەکان: پاش ئەوەی داواکارییەک بگاتە قۆناغی 'لای کۆمپانیایە' یان پەسەندکرا، دەتوانیت پەیام بنێریت بۆ کۆمپانیاکە لە بەشی پەیامەکان.\n"
+        . "• گفتوگۆ لەسەر ڕەتکردنەوە: ئەگەر پارەدانەکەت ڕەتکرایەوە و بێباوەڕیت، دەتوانیت گفتوگۆیەک (Dispute) بکەیتەوە لەسەر ئەو داواکارییە.\n"
+        . "• ئۆفەرەکان: کۆمپانیاکان دەتوانن ڕاستەوخۆ داوات لێبکەن — ئۆفەرەکان لە بەشی 'ئۆفەرە وەرگیراوەکان' (Dashboard) دەردەکەون، دەتوانیت قبووڵی یان ڕەتی بکەیتەوە.\n"
+        . "• هەڵسەنگاندن: پاش پەسەندبوونی داواکارییەک، دەتوانیت کۆمپانیاکە هەڵسەنگێنیت.\n"
+        . "• پلانەکان: بەشی 'پلانەکان' چەند پلانی جیاواز نیشان دەدات — پلانی VIP کارنامە AI و تایبەتمەندییەکانی تر دەکاتەوە.\n\n"
+        . "For employers (company accounts):\n"
+        . "• بڵاوکردنەوەی کار: دوگمەی 'بڵاوکردنەوەی کار' لە سەرەوەی داشبۆرد یان لە مێنیو — کارەکە دەچێتە ڕیزی چاوەڕوانی پەسەندکردنی ئەدمین پێش ئەوەی بگاتە بەشی گشتی.\n"
+        . "• بەڕێوەبردنی کارەکان: لە داشبۆرد، خشتەی 'کارەکان' — دەتوانیت کارێک دەستکاری بکەیت (Edit)، یان بە دوگمەی چالاک/ناچالاککردن (▶/⏸) کارێک بۆ ماوەیەک لە لیستی گشتی بشاریتەوە بەبێ سڕینەوەی، و کاتی خۆت دووبارە چالاکی بکەیتەوە.\n"
+        . "• داواکارییەکان: لە خشتەی 'داواکارییەکان' هەموو کاندیدەکان دەبینیت، دەتوانیت سیڤیەکانیان ببینیت و پەسەندیان بکەیت یان ڕەتیان بکەیتەوە.\n"
+        . "• شیکاری: خشتەی 'شیکاری' بینینی پرۆفایل و ژمارەی داواکارییەکان بۆ ١٤ ڕۆژی ڕابردوو نیشان دەدات.\n"
+        . "• براندی کۆمپانیا: دوگمەی 'نوێکردنەوەی براندی هەموو کارەکان' لۆگۆ/وێنەی سەرەوەی هەموو کارە بڵاوکراوەکانت بەیەکجار نوێ دەکاتەوە.\n"
+        . "• دۆزینەوەی کاندید: بەشی 'فریلانسەرەکان' لیستی هەموو کاندیدەکان نیشان دەدات — دەتوانیت پرۆفایلیان ببینیت و ڕاستەوخۆ بانگهێشتیان بکەیت بۆ کارێک.\n"
+        . "• پلانەکان: هەروەها بۆ کۆمپانیاش بەردەستە، هەندێک تایبەتمەندی وەک بینینی 'کێ سەیری پرۆفایلت کردووە' دەکاتەوە.\n\n"
+        . "General (both):\n"
+        . "• پرۆفایل و ڕێکخستنەکان: گۆڕینی زانیاری هەژمار، وێنە، وشەی نهێنی هتد لە بەشی پرۆفایل.\n"
+        . "• پشتیوانی ڕاستەقینە: ئەگەر پرسیارەکەت لە دەرەوەی ئەم ڕێنماییانەیە یان کێشەیەکی تایبەتیت هەیە (وەک پارەدانێکی هەڵە)، ڕایبگەیەنە کە دەتوانن پەیوەندی بە پشتیوانی بکەن لە بەشی پەیامەکان.\n\n"
+        . "If asked something entirely unrelated to Ish-khwaz (general chit-chat, unrelated topics), gently redirect back to app-related help. Never discuss pricing/business decisions you're not certain of (e.g. exact fee amounts change over time) — point them to where the real, current number is shown in-app instead of stating one yourself.";
+
+    $messages = [['role' => 'system', 'content' => $system]];
+    foreach ($history as $h) {
+        $messages[] = ['role' => $h['role'] === 'assistant' ? 'assistant' : 'user', 'content' => $h['body']];
+    }
+
+    $reply = callOpenAIChat($messages, 320);
+    if ($reply === null) jsonErr(502, 'AI ئێستا بەردەست نییە. تکایە دواتر هەوڵبدەرەوە.');
+
+    $pdo->prepare('INSERT INTO app_guide_chats (id, user_id, role, body, created_at) VALUES (?, ?, ?, ?, ?)')
+        ->execute(['agc_' . time() . rand(100, 999), $authUser['id'], 'assistant', $reply, date('Y-m-d H:i:s')]);
+
+    echo json_encode(['success' => true, 'reply' => $reply]);
     exit(0);
 }
 
@@ -4641,8 +5457,8 @@ if (preg_match('#/pusher/auth$#', $uri) && $method === 'POST') {
     $isAdminChannel = $channelName === 'private-admin-panel' && in_array($authUser['role'] ?? '', ['admin', 'owner'], true);
     if (!$isOwnChannel && !$isAdminChannel) jsonErr(403, 'Forbidden channel.');
 
-    $signature = hash_hmac('sha256', $socketId . ':' . $channelName, PUSHER_SECRET);
-    echo json_encode(['auth' => PUSHER_KEY . ':' . $signature]);
+    $signature = hash_hmac('sha256', $socketId . ':' . $channelName, getSecret('pusher_secret', PUSHER_SECRET));
+    echo json_encode(['auth' => getSecret('pusher_key', PUSHER_KEY) . ':' . $signature]);
     exit(0);
 }
 
@@ -4737,7 +5553,7 @@ if (preg_match('#/invitations/.*?/respond$#', $uri) && $method === 'POST') {
 if (preg_match('#/admin/security/live$#', $uri) && $method === 'GET') {
     requireAdmin($pdo);
 
-    $ch = curl_init(GUARD_STATUS_URL);
+    $ch = curl_init(getSecret('guard_status_url', GUARD_STATUS_URL));
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 6,
@@ -4762,14 +5578,63 @@ if (preg_match('#/admin/security/live$#', $uri) && $method === 'GET') {
 // jobs marketplace, not a scale where a few thousand rows is a real problem.
 if (preg_match('#/admin/users$#', $uri) && $method === 'GET') {
     requireAdmin($pdo);
+    // The two extra counts here (never present before) are what powers the
+    // admin panel's real "likely fake/spam account" flag — see
+    // AdminPage.jsx's isLikelySpam: unverified email + a signup with zero
+    // real activity yet (no applications sent as a freelancer, no jobs
+    // posted as an employer) + still within its first week.
     $users = $pdo->query('
-        SELECT id, name, phone, email, role, gender, governorate, district, sub_district, bio, avatar, cover,
-               status, wallet_balance, ref_code, verified, skills, favorite_categories,
-               company_name, company_reg, company_phone, company_email, industry, company_size, company_type,
-               company_logo, company_cover, hiring_preferences, plan, plan_credits, plan_boost_until, created_at
-        FROM users ORDER BY created_at DESC
+        SELECT u.id, u.name, u.phone, u.email, u.role, u.gender, u.governorate, u.district, u.sub_district, u.bio, u.avatar, u.cover,
+               u.status, u.wallet_balance, u.ref_code, u.verified, u.email_verified, u.skills, u.favorite_categories,
+               u.company_name, u.company_reg, u.company_phone, u.company_email, u.industry, u.company_size, u.company_type,
+               u.company_logo, u.company_cover, u.hiring_preferences, u.plan, u.plan_credits, u.plan_boost_until, u.created_at,
+               (SELECT COUNT(*) FROM applications a WHERE a.freelancer_id = u.id) AS applications_sent,
+               (SELECT COUNT(*) FROM jobs j WHERE j.company_id = u.id) AS jobs_posted
+        FROM users u ORDER BY u.created_at DESC
     ')->fetchAll();
     echo json_encode(['success' => true, 'users' => $users]);
+    exit(0);
+}
+
+// Admin: Online-Now Users  GET /admin/online-users?minutes=5
+// Real presence, not a fabricated number — "online" = made an authenticated
+// request within the window (last_active_at is bumped in requireAuth()).
+if (preg_match('#/admin/online-users$#', $uri) && $method === 'GET') {
+    requireAdmin($pdo);
+    $minutes = min(60, max(1, (int)($_GET['minutes'] ?? 5)));
+
+    $stmt = $pdo->prepare("
+        SELECT id, name, role, avatar, company_logo, last_active_at
+        FROM users
+        WHERE last_active_at IS NOT NULL AND last_active_at >= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+        ORDER BY last_active_at DESC
+        LIMIT 100
+    ");
+    $stmt->bindValue(1, $minutes, PDO::PARAM_INT);
+    $stmt->execute();
+    $online = $stmt->fetchAll();
+
+    $freelancers = 0;
+    $employers = 0;
+    $staff = 0;
+    foreach ($online as $u) {
+        if ($u['role'] === 'freelancer') $freelancers++;
+        elseif ($u['role'] === 'employer') $employers++;
+        // admin/owner — usually the real owner account, kept "online" by the
+        // Zera Console's own SSO-bridged session making authenticated calls
+        // on their behalf, not necessarily them personally using the app.
+        else $staff++;
+    }
+
+    echo json_encode([
+        'success' => true,
+        'windowMinutes' => $minutes,
+        'onlineCount' => count($online),
+        'freelancersOnline' => $freelancers,
+        'employersOnline' => $employers,
+        'staffOnline' => $staff,
+        'users' => $online,
+    ]);
     exit(0);
 }
 
@@ -4822,7 +5687,7 @@ if (preg_match('#/admin/users/add$#', $uri) && $method === 'POST') {
 
 // Admin: Update User  POST /admin/users/update
 if (preg_match('#/admin/users/update$#', $uri) && $method === 'POST') {
-    requireAdmin($pdo);
+    $adminUser = requireAdmin($pdo);
     $input = safeJson();
     $id    = sanitize($input['id'] ?? '', 50);
     if (empty($id)) jsonErr(400, 'User ID required.');
@@ -4918,6 +5783,16 @@ if (preg_match('#/admin/users/update$#', $uri) && $method === 'POST') {
 
     notifyAdmins($pdo, 'user_updated', ['id' => $id]);
 
+    // Only note the fields that actually changed, and only the ones worth
+    // seeing at a glance in an audit trail — not a full before/after diff
+    // of a 20+ column update.
+    $changedFields = [];
+    foreach (['name' => $name, 'email' => $email, 'role' => $role, 'wallet_balance' => $wallet, 'plan' => $plan, 'status' => $status, 'verified' => $verified] as $field => $newVal) {
+        if ((string)($target[$field] ?? '') !== (string)$newVal) $changedFields[] = $field;
+    }
+    $adminActor = trim(($adminUser['name'] ?? 'admin') . ' (' . ($adminUser['email'] ?: $adminUser['phone'] ?: $adminUser['id']) . ')');
+    logActivity($pdo, $id, 'admin_updated', $changedFields ? implode(', ', $changedFields) : null, $adminActor);
+
     $updated = $pdo->prepare('SELECT id, name, phone, email, role, gender, governorate, district, sub_district, bio, avatar, cover, status, wallet_balance, ref_code, verified, skills, favorite_categories, company_name, company_reg, company_phone, company_email, industry, company_size, company_type, company_logo, company_cover, hiring_preferences, plan, plan_credits, plan_boost_until, created_at FROM users WHERE id = ?');
     $updated->execute([$id]);
     echo json_encode(['success' => true, 'user' => $updated->fetch()]);
@@ -4926,7 +5801,7 @@ if (preg_match('#/admin/users/update$#', $uri) && $method === 'POST') {
 
 // Admin: Block/Unblock User  POST /admin/users/block
 if (preg_match('#/admin/users/block$#', $uri) && $method === 'POST') {
-    requireAdmin($pdo);
+    $adminUser = requireAdmin($pdo);
     $input  = safeJson();
     $id     = sanitize($input['id'] ?? $_GET['id'] ?? '', 50);
     $status = in_array($input['status'] ?? '', ['active', 'blocked', 'frozen'], true) ? $input['status'] : 'blocked';
@@ -4940,13 +5815,15 @@ if (preg_match('#/admin/users/block$#', $uri) && $method === 'POST') {
 
     $pdo->prepare('UPDATE users SET status = ? WHERE id = ?')->execute([$status, $id]);
     notifyAdmins($pdo, 'user_blocked', ['id' => $id, 'status' => $status]);
+    $adminActor = trim(($adminUser['name'] ?? 'admin') . ' (' . ($adminUser['email'] ?: $adminUser['phone'] ?: $adminUser['id']) . ')');
+    logActivity($pdo, $id, $status === 'active' ? 'admin_unblocked' : 'admin_blocked', $status, $adminActor);
     echo json_encode(['success' => true, 'id' => $id, 'status' => $status]);
     exit(0);
 }
 
 // Admin: Verify/Unverify a company  POST /admin/users/verify
 if (preg_match('#/admin/users/verify$#', $uri) && $method === 'POST') {
-    requireAdmin($pdo);
+    $adminUser = requireAdmin($pdo);
     $input    = safeJson();
     $id       = sanitize($input['id'] ?? '', 50);
     $verified = !empty($input['verified']) ? 1 : 0;
@@ -4954,6 +5831,8 @@ if (preg_match('#/admin/users/verify$#', $uri) && $method === 'POST') {
 
     $pdo->prepare('UPDATE users SET verified = ? WHERE id = ?')->execute([$verified, $id]);
     notifyAdmins($pdo, 'user_verified', ['id' => $id, 'verified' => $verified]);
+    $adminActor = trim(($adminUser['name'] ?? 'admin') . ' (' . ($adminUser['email'] ?: $adminUser['phone'] ?: $adminUser['id']) . ')');
+    logActivity($pdo, $id, $verified ? 'admin_verified' : 'admin_unverified', null, $adminActor);
     echo json_encode(['success' => true, 'id' => $id, 'verified' => $verified]);
     exit(0);
 }
@@ -4963,7 +5842,7 @@ if (preg_match('#/admin/users/verify$#', $uri) && $method === 'POST') {
 // applications submitted against those jobs, so no orphaned listings remain.
 // Owner accounts can never be deleted through this endpoint.
 if (preg_match('#/admin/users/delete$#', $uri) && $method === 'POST') {
-    requireAdmin($pdo);
+    $adminUser = requireAdmin($pdo);
     $input = safeJson();
     $id    = sanitize($input['id'] ?? '', 50);
     if (empty($id)) jsonErr(400, 'User ID required.');
@@ -4983,9 +5862,56 @@ if (preg_match('#/admin/users/delete$#', $uri) && $method === 'POST') {
         $pdo->prepare('DELETE FROM jobs WHERE company_id = ?')->execute([$id]);
     }
 
+    $adminActor = trim(($adminUser['name'] ?? 'admin') . ' (' . ($adminUser['email'] ?: $adminUser['phone'] ?: $adminUser['id']) . ')');
+    logActivity($pdo, $id, 'admin_deleted', null, $adminActor);
+
     $pdo->prepare('DELETE FROM users WHERE id = ?')->execute([$id]);
     notifyAdmins($pdo, 'user_deleted', ['id' => $id]);
     echo json_encode(['success' => true, 'jobs_deleted' => count($jobIds)]);
+    exit(0);
+}
+
+// Admin: Send Password Reset Link  POST /admin/users/send-reset-link  { id }
+// Admin-triggered variant of /auth/forgot-password — same token/expiry/email
+// mechanics, but staff can trigger it for a user directly instead of the
+// user having to request it themselves.
+if (preg_match('#/admin/users/send-reset-link$#', $uri) && $method === 'POST') {
+    $adminUser = requireAdmin($pdo);
+    if (!rateLimitCheck($pdo, $clientIp, 'admin_send_reset_link')) jsonErr(429, 'زۆر جار داواتکرد. کەمێک چاوەڕوان بە.');
+    $input = safeJson();
+    $id = sanitize($input['id'] ?? '', 50);
+    if (empty($id)) jsonErr(400, 'User ID required.');
+
+    $target = $pdo->prepare('SELECT id, name, email FROM users WHERE id = ?');
+    $target->execute([$id]);
+    $target = $target->fetch();
+    if (!$target) jsonErr(404, 'User not found.');
+    if (empty($target['email'])) jsonErr(400, 'ئەم هەژمارە هیچ ئیمەیلێکی تۆمارکراوی نییە.');
+
+    $token = bin2hex(random_bytes(32));
+    $expires = date('Y-m-d H:i:s', time() + 3600);
+    $pdo->prepare('UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?')
+        ->execute([$token, $expires, $id]);
+
+    $sent = sendPasswordResetEmail($target['email'], $target['name'], $token);
+    $adminActor = trim(($adminUser['name'] ?? 'admin') . ' (' . ($adminUser['email'] ?: $adminUser['phone'] ?: $adminUser['id']) . ')');
+    logActivity($pdo, $id, 'admin_reset_link_sent', null, $adminActor);
+    echo json_encode(['success' => true, 'sent' => $sent]);
+    exit(0);
+}
+
+// Admin: Single-User Activity Log  GET /admin/users/audit?id=...
+if (preg_match('#/admin/users/audit$#', $uri) && $method === 'GET') {
+    requireAdmin($pdo);
+    $id = sanitize($_GET['id'] ?? '', 50);
+    if (empty($id)) jsonErr(400, 'User ID required.');
+
+    $limit = min(500, max(1, (int)($_GET['limit'] ?? 200)));
+    $stmt = $pdo->prepare('SELECT id, action, details, actor, ip, created_at FROM activity_log WHERE user_id = ? ORDER BY id DESC LIMIT ?');
+    $stmt->bindValue(1, $id, PDO::PARAM_STR);
+    $stmt->bindValue(2, $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    echo json_encode(['success' => true, 'entries' => $stmt->fetchAll()]);
     exit(0);
 }
 
@@ -5065,7 +5991,7 @@ if (preg_match('#/admin/jobs/update$#', $uri) && $method === 'POST') {
 
     $pdo->prepare('
         UPDATE jobs SET
-            title_ku = ?, category = ?, job_type = ?, workplace_type = ?, governorate_id = ?,
+            title_ku = ?, category = ?, job_type = ?, workplace_type = ?, governorate_id = ?, district_id = ?, sub_district_id = ?,
             location_detail = ?, location_name = ?, salary_min = ?, salary_max = ?,
             description = ?, required_skills = ?, deadline = ?, status = ?,
             company_name = ?, company_phone = ?, company_email = ?
@@ -5073,9 +5999,11 @@ if (preg_match('#/admin/jobs/update$#', $uri) && $method === 'POST') {
     ')->execute([
         sanitize($input['title_ku'] ?? $input['title'] ?? $existing['title_ku'], 200),
         sanitize($input['category'] ?? $existing['category'], 50),
-        in_array($input['job_type'] ?? '', ['fullTime', 'partTime', 'contract', 'internship', 'remote'], true) ? $input['job_type'] : $existing['job_type'],
+        isValidWorkType($pdo, $input['job_type'] ?? '') ? $input['job_type'] : $existing['job_type'],
         in_array($input['workplace_type'] ?? '', ['onSite', 'remote', 'hybrid'], true) ? $input['workplace_type'] : $existing['workplace_type'],
         sanitize($input['governorate_id'] ?? $existing['governorate_id'], 50),
+        sanitize($input['district_id'] ?? $existing['district_id'] ?? '', 50),
+        sanitize($input['sub_district_id'] ?? $existing['sub_district_id'] ?? '', 50),
         sanitize($input['location_detail'] ?? $existing['location_detail'] ?? '', 300),
         sanitize($input['location_name'] ?? $existing['location_name'] ?? '', 300),
         isset($input['salary_min']) ? (int)$input['salary_min'] : $existing['salary_min'],

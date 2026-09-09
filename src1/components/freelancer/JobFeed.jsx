@@ -562,9 +562,12 @@ export const JobFeed = ({ onNavigate }) => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-7">
 
         {/* ── Greeting header — avatar grouped with the name on the right
-              (reading-start in RTL), notification bell alone on the left ── */}
+              (reading-start in RTL), notification bell alone on the left.
+              Mobile-only: DesktopHeaderNav (App.jsx) already shows the same
+              avatar/chat/bell on lg+ screens, so this must stay hidden there
+              or both render stacked on top of each other. ── */}
         <Reveal>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 lg:hidden">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => onNavigate?.('profile')}

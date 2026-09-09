@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { readFileAsDataUri } from '../../utils/file';
-import { apiService, API_BASE_URL } from '../../services/api';
+import { apiService } from '../../services/api';
 import {
   ArrowRight, Heart, Bookmark, Share2, BadgeCheck, Check, CheckCircle2,
   Send, Copy, IdCard, Upload, FileText, Loader2, AlertCircle, Zap, Crown,
@@ -109,17 +109,30 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
     return () => { cancelled = true; };
   }, [isOpen, user, token]);
 
+  // Same lock technique as KarnamaAiChatModal/MessageThreadModal — pinning
+  // body via position:fixed instead of merely toggling overflow:hidden.
+  // The overflow-only approach (this file's previous fix) has a known
+  // WebKit quirk: toggling overflow on html/body *after* first paint can
+  // leave an already-mounted position:fixed descendant using a stale,
+  // miscalculated viewport rect until the next reflow — a real, if
+  // intermittent, cause of a transient horizontal misalignment on real iOS
+  // Safari (not reproducible in desktop Chromium). Setting body itself to
+  // position:fixed removes it from the flow entirely, sidestepping the
+  // quirk rather than racing it.
   useEffect(() => {
     if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    const scrollY = window.scrollY;
+    const { style } = document.body;
+    const prev = { position: style.position, top: style.top, width: style.width, overflow: style.overflow };
+    style.position = 'fixed'; style.top = `-${scrollY}px`; style.width = '100%'; style.overflow = 'hidden';
+    return () => { Object.assign(style, prev); window.scrollTo(0, scrollY); };
   }, [isOpen]);
 
   if (!job || isOpen === false) return null;
 
   const isSaved = savedJobIds.includes(job.id);
   const companyName = job.company_name || job.companyName || 'کۆمپانیا';
+  const companyLogo = job.company_logo || job.companyLogo || '';
   const initial = companyName.trim().charAt(0) || 'ت';
   const title = job.title_ku || job.title || 'هەلی کار';
   const gov = GOV_LABELS[job.governorate_id] || job.governorate || 'سلێمانی';
@@ -236,7 +249,7 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
     soundService.playTick?.();
     // Crawler-aware share preview (real per-job title/image for
     // WhatsApp/Telegram/etc.) — see GET /share/job/{id} in public/api/index.php.
-    const url = `${API_BASE_URL}/share/job/${job.id}`;
+    const url = `${window.location.origin}/share/job/${job.id}`;
     if (navigator.share) {
       navigator.share({ title: `${title} — ${companyName}`, url }).catch(() => {});
     } else {
@@ -322,9 +335,17 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
                     </div>
                   </div>
 
-                  <div className="w-13 h-13 rounded-2xl bg-[#d4f7ee] border border-[#beece2] flex items-center justify-center text-[#12796b] font-black text-xl shadow-xs shrink-0">
-                    {initial}
-                  </div>
+                  {companyLogo ? (
+                    <img
+                      src={companyLogo}
+                      alt={companyName}
+                      className="w-13 h-13 rounded-2xl object-cover border border-[#beece2] shadow-xs shrink-0 bg-white"
+                    />
+                  ) : (
+                    <div className="w-13 h-13 rounded-2xl bg-[#d4f7ee] border border-[#beece2] flex items-center justify-center text-[#12796b] font-black text-xl shadow-xs shrink-0">
+                      {initial}
+                    </div>
+                  )}
                 </div>
 
                 <h1 className="text-xl sm:text-2xl font-black text-[#111d1a] tracking-tight leading-snug">
