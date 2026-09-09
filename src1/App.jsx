@@ -28,6 +28,10 @@ import { MessagesInboxPage } from './components/messages/MessagesInboxPage';
 import { AdminPage } from './components/admin/AdminPage';
 import { HowItWorksPage } from './components/layout/HowItWorksPage';
 import { NotificationsPage } from './components/layout/NotificationsPage';
+import { VerifyEmailPage } from './components/auth/VerifyEmailPage';
+import { ForgotPasswordPage } from './components/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from './components/auth/ResetPasswordPage';
+import { PullToRefresh } from './components/layout/PullToRefresh';
 
 function MainAppContent() {
   const { user, token, openAuthModal, needsProfileCompletion, clearNeedsProfileCompletion } = useAuth();
@@ -97,6 +101,9 @@ function MainAppContent() {
       if (target === 'admin') return 'admin';
       if (target === 'how-it-works' || target === 'how_it_works' || target === 'guide') return 'how_it_works';
       if (target === 'notifications' || target === 'alerts') return 'notifications';
+      if (target === 'verify-email' || target === 'verify_email') return 'verify_email';
+      if (target === 'forgot-password' || target === 'forgot_password') return 'forgot_password';
+      if (target === 'reset-password' || target === 'reset_password') return 'reset_password';
 
       // A fresh app open with no specific path/hash — exactly what the
       // installed PWA's start_url always hits — always lands on Home (or,
@@ -131,6 +138,16 @@ function MainAppContent() {
 
   const [activeTab, setActiveTabState] = useState(getInitialTab);
 
+  // Captured synchronously on first render, before SearchPage's own effect
+  // rewrites the URL to /search/company — reading window.location.search
+  // later, inside a useEffect, races that rewrite and loses every time.
+  const [initialShareLinkQuery] = useState(() => {
+    if (typeof window === 'undefined') return null;
+    if (window.location.pathname.replace(/\/$/, '') !== '/search') return null;
+    const params = new URLSearchParams(window.location.search);
+    return (params.get('company') || params.get('job')) ? window.location.search : null;
+  });
+
   const setActiveTab = (tabId) => {
     setActiveTabState(tabId);
     if (typeof window !== 'undefined') {
@@ -155,6 +172,9 @@ function MainAppContent() {
       else if (tabId === 'admin') path = '/admin';
       else if (tabId === 'how_it_works') path = '/how-it-works';
       else if (tabId === 'notifications') path = '/notifications';
+      else if (tabId === 'verify_email') path = '/verify-email';
+      else if (tabId === 'forgot_password') path = '/forgot-password';
+      else if (tabId === 'reset_password') path = '/reset-password';
 
       try {
         window.history.pushState({ tabId }, '', path);
@@ -163,21 +183,27 @@ function MainAppContent() {
   };
 
   // AUTH GUARD: If user is not logged in, force navigation to /login or /register
-  // for anything account-specific. Jobs, companies, and a shared job/company
-  // link (home, search — which also handles /search?company=X&job=Y deep
-  // links — and the companies directory) stay open to guests so a shared
-  // link never bounces someone straight to a login wall; actually applying,
-  // messaging, or saving still prompts login at the point of that action
-  // (see JobDetailModal's handleStartApply for the existing pattern).
-  // /install is public too — a link people share before they even have an account.
-  const PUBLIC_TABS = ['register', 'login', 'install_app', 'connect', 'home', 'search', 'companies'];
+  // for anything account-specific. Plain browsing of jobs/companies (home,
+  // search, the companies directory) stays open to guests — but a shared
+  // job/company link specifically (search with a ?company=/&job= deep link)
+  // now requires login to view, so it's excluded below even though 'search'
+  // itself is public. /install is public too — a link people share before
+  // they even have an account.
+  const PUBLIC_TABS = ['register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'verify_email', 'forgot_password', 'reset_password'];
   useEffect(() => {
     if (!user) {
+      if (activeTab === 'search' && initialShareLinkQuery) {
+        // Remember exactly which shared link they opened so, once they log
+        // in, they land back on the same job/company instead of just home.
+        try { sessionStorage.setItem('ishkhwaz_pending_share_link', initialShareLinkQuery); } catch (e) { }
+        setActiveTab('login');
+        return;
+      }
       if (!PUBLIC_TABS.includes(activeTab)) {
         setActiveTab('login');
       }
     }
-  }, [user, activeTab]);
+  }, [user, activeTab, initialShareLinkQuery]);
 
   // Subscribe this device for real push notifications (lock screen, app closed) —
   // safe to call every load: no-op if already granted/subscribed, silent if the
@@ -188,6 +214,22 @@ function MainAppContent() {
     }
   }, [user?.id]);
 
+  // Where to land right after a successful login: back on the exact shared
+  // job/company link that sent them to /login (see the AUTH GUARD above),
+  // or home if they didn't come from one. Returns true if it navigated.
+  const goToPendingShareLinkOrHome = () => {
+    let pendingShareLink = null;
+    try { pendingShareLink = sessionStorage.getItem('ishkhwaz_pending_share_link'); } catch (e) { }
+    if (pendingShareLink) {
+      try { sessionStorage.removeItem('ishkhwaz_pending_share_link'); } catch (e) { }
+      setActiveTabState('search');
+      try { window.history.pushState({ tabId: 'search' }, '', '/search' + pendingShareLink); } catch (e) { }
+      return true;
+    }
+    setActiveTab('home');
+    return true;
+  };
+
   // POST-LOGIN NAVIGATION: normal phone login already navigates itself via
   // LoginPage's onLoginSuccess callback, called synchronously right after
   // login() resolves — but a social sign-in completes asynchronously inside
@@ -195,10 +237,15 @@ function MainAppContent() {
   // that callback. Without this, `user` gets set but activeTab just stays on
   // whatever it already was ('login'), so the screen never moves anywhere.
   // A brand-new social account goes to finish its profile; a returning one
-  // goes straight home, same as a returning phone login would.
+  // goes straight home (or back to their shared link), same as a returning
+  // phone login would.
   useEffect(() => {
     if (user && activeTab === 'login') {
-      setActiveTab(needsProfileCompletion ? 'register' : 'home');
+      if (needsProfileCompletion) {
+        setActiveTab('register');
+      } else {
+        goToPendingShareLinkOrHome();
+      }
     }
   }, [user, needsProfileCompletion, activeTab]);
 
@@ -206,7 +253,7 @@ function MainAppContent() {
   useEffect(() => {
     const handlePopState = () => {
       const initial = getInitialTab();
-      const allowedLoggedOut = ['register', 'login', 'install_app', 'connect', 'home', 'search', 'companies'];
+      const allowedLoggedOut = ['register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'verify_email', 'forgot_password', 'reset_password'];
       if (!user && !allowedLoggedOut.includes(initial)) {
         setActiveTabState('login');
       } else {
@@ -218,15 +265,24 @@ function MainAppContent() {
   }, [user]);
 
   const handleCompleteSplash = () => {
+    // The 3-slide onboarding carousel only ever plays once, on a brand-new
+    // guest's very first visit (see getInitialTab above) — when it does,
+    // finishing it should always move forward into Register, the same
+    // direction the carousel's own copy and "دەستپێکردن" (Get Started)
+    // button promise. Never the reverse (Register isn't what triggers this
+    // carousel — it's just what happened to be mounted, inert, underneath
+    // it the whole time to dodge a native autofill-prompt bug).
+    const isFirstEverVisit = localStorage.getItem('ishkhwaz_splash_seen') !== 'true';
     localStorage.setItem('ishkhwaz_splash_seen', 'true');
     setShowSplash(false);
+    if (!user && isFirstEverVisit) setActiveTab('register');
   };
 
   // Guests browsing a public tab (home/search/companies) still get the
   // normal header/bottom-nav chrome — only the auth pages themselves, and a
   // logged-out user on anything else (which the guard above already redirects
   // to /login before this even renders), hide it.
-  const isAuthOrRegisterPage = activeTab === 'register' || activeTab === 'login' || activeTab === 'install_app' || activeTab === 'connect' || (!user && !PUBLIC_TABS.includes(activeTab));
+  const isAuthOrRegisterPage = activeTab === 'register' || activeTab === 'login' || activeTab === 'install_app' || activeTab === 'connect' || activeTab === 'verify_email' || activeTab === 'forgot_password' || activeTab === 'reset_password' || (!user && !PUBLIC_TABS.includes(activeTab));
 
   // Determine active view by selected tab (Register, Login, Home, Search, Requests, Map, Profile)
   const renderTabContent = () => {
@@ -238,7 +294,7 @@ function MainAppContent() {
           onBack={() => setActiveTab(isCompletingSocialProfile ? 'home' : 'login')}
           onRegistrationComplete={() => {
             clearNeedsProfileCompletion();
-            setActiveTab('home');
+            goToPendingShareLinkOrHome();
           }}
         />
       );
@@ -249,7 +305,8 @@ function MainAppContent() {
         <LoginPage
           onBack={() => setActiveTab('login')}
           onNavigateRegister={() => setActiveTab('register')}
-          onLoginSuccess={() => setActiveTab('home')}
+          onLoginSuccess={() => goToPendingShareLinkOrHome()}
+          onForgotPassword={() => setActiveTab('forgot_password')}
         />
       );
     }
@@ -345,6 +402,18 @@ function MainAppContent() {
       return <NotificationsPage onBack={() => setActiveTab('home')} />;
     }
 
+    if (activeTab === 'verify_email') {
+      return <VerifyEmailPage onDone={() => setActiveTab(user ? 'home' : 'login')} />;
+    }
+
+    if (activeTab === 'forgot_password') {
+      return <ForgotPasswordPage onBack={() => setActiveTab('login')} />;
+    }
+
+    if (activeTab === 'reset_password') {
+      return <ResetPasswordPage onDone={() => setActiveTab('login')} />;
+    }
+
     // Default: Home. JobFeed is itself role-branched now — an employer's
     // own home shows freelancers as the primary feed instead of jobs.
     return <JobFeed onNavigate={setActiveTab} />;
@@ -372,7 +441,12 @@ function MainAppContent() {
               className={isMapTab ? 'flex-1 min-h-0 overflow-hidden' : 'pb-24 lg:pb-12'}
               style={{ paddingTop: 'env(safe-area-inset-top)' }}
             >
-              {renderTabContent()}
+              {/* Map owns its own touch panning/zooming and never scrolls
+                  the window, so the shared pull-gesture would only conflict
+                  with it there — skip wrapping that one tab. */}
+              {isMapTab ? renderTabContent() : (
+                <PullToRefresh>{renderTabContent()}</PullToRefresh>
+              )}
             </main>
           </>
         )}

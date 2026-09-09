@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import { soundService } from '../../services/soundService';
-import { ArrowRight, ArrowLeft, Sparkles, CheckCircle2, RotateCcw } from 'lucide-react';
+import { ArrowRight, ArrowLeft, HelpCircle, RotateCcw } from 'lucide-react';
 import { ConfirmationModal } from '../ui/ConfirmationModal';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
@@ -17,44 +17,54 @@ const formatClock = (isoOrText) => {
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 };
 
-// Chat with Karnama AI — a VIP-only assistant that interviews the user
-// conversationally, then builds a real saved resume from what was actually
-// said (see /ai-cv/* in the backend). Same visual language as the real
-// MessageThreadModal, but its own independent data flow — no application
-// thread, no milestones/dispute, just a chat plus a "build my CV" moment.
-export const KarnamaAiChatModal = ({ onClose, onNavigate, onEditResumeStyle }) => {
-  const { token } = useAuth();
+const FREELANCER_SUGGESTIONS = [
+  'چۆن بۆ کارێک ئەپلای بکەم؟',
+  'چۆن CV دروست بکەم؟',
+  'کارنامە AI چییە؟',
+  'چۆن پەیوەندی بە کۆمپانیا بکەم؟',
+  'چۆن ئۆفەرێک قبووڵ بکەم؟',
+  'پلانەکان چین؟',
+];
+
+const EMPLOYER_SUGGESTIONS = [
+  'چۆن کارێک بڵاو بکەمەوە؟',
+  'چۆن کارێک چالاک/ناچالاک بکەم؟',
+  'چۆن کاندیدێک پەسەند بکەم؟',
+  'چۆن براندی کارەکانم نوێ بکەمەوە؟',
+  'چۆن فریلانسەرێک بانگهێشت بکەم؟',
+  'پلانەکان چین؟',
+];
+
+// General-purpose "how do I use this app" assistant — open to every logged-in
+// user (no VIP gate, no CV-build flow, unlike KarnamaAiChatModal). Same
+// visual language and layout as that modal, plus a row of tappable
+// suggestion chips since this one's whole purpose is answering FAQs.
+export const AppGuideChatModal = ({ onClose }) => {
+  const { user, token } = useAuth();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [ready, setReady] = useState(false);
-  const [builtResumeId, setBuiltResumeId] = useState(null);
-  const [building, setBuilding] = useState(false);
-  const [built, setBuilt] = useState(false);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
+  const isEmployer = user?.role === 'employer' || user?.role === 'owner' || user?.role === 'admin';
+  const suggestions = isEmployer ? EMPLOYER_SUGGESTIONS : FREELANCER_SUGGESTIONS;
+
   const load = async () => {
     setLoading(true);
-    const res = await apiService.getAiCvChat(token);
-    if (res?.success) {
-      setMessages(res.messages || []);
-      const last = (res.messages || [])[res.messages.length - 1];
-      // Ready state doesn't persist server-side — re-derive it defensively
-      // only from a freshly-sent reply, not from history on reload.
-      setReady(false);
-    }
+    const res = await apiService.getAppGuideChat(token);
+    if (res?.success) setMessages(res.messages || []);
     setLoading(false);
   };
 
   useEffect(() => { load(); }, [token]);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length, building]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length, sending]);
 
   // Lock background scroll + pin above the on-screen keyboard, same
-  // technique as the real MessageThreadModal.
+  // technique as KarnamaAiChatModal/MessageThreadModal.
   useEffect(() => {
     const scrollY = window.scrollY;
     const { style } = document.body;
@@ -78,52 +88,35 @@ export const KarnamaAiChatModal = ({ onClose, onNavigate, onEditResumeStyle }) =
     return () => { vv.removeEventListener('resize', applyViewport); vv.removeEventListener('scroll', applyViewport); };
   }, []);
 
-  const handleSend = async () => {
-    const body = text.trim();
+  const sendMessage = async (body) => {
     if (!body || sending) return;
     soundService.playTick?.();
     setSending(true);
     setText('');
     setMessages(prev => [...prev, { id: `temp-${Date.now()}`, role: 'user', body, created_at: new Date().toISOString() }]);
 
-    const res = await apiService.sendAiCvMessage(body, token);
+    const res = await apiService.sendAppGuideMessage(body, token);
     setSending(false);
     if (res?.success) {
       setMessages(prev => [...prev, { id: `reply-${Date.now()}`, role: 'assistant', body: res.reply, created_at: new Date().toISOString() }]);
-      setReady(Boolean(res.ready));
-      if (res.ready) soundService.playSuccess?.();
     } else {
       setMessages(prev => [...prev, { id: `err-${Date.now()}`, role: 'assistant', body: res?.message || 'هەڵەیەک ڕوویدا، تکایە دووبارە هەوڵبدەرەوە.', created_at: new Date().toISOString() }]);
     }
     inputRef.current?.focus();
   };
 
-  const handleBuild = async () => {
-    soundService.playTick?.();
-    setBuilding(true);
-    const res = await apiService.buildAiCvResume(token);
-    setBuilding(false);
-    if (res?.success) {
-      soundService.playSuccess?.();
-      setBuiltResumeId(res.resume_id || null);
-      setBuilt(true);
-    } else {
-      setMessages(prev => [...prev, { id: `builderr-${Date.now()}`, role: 'assistant', body: res?.message || 'دروستکردنی سیڤی سەرکەوتوو نەبوو.', created_at: new Date().toISOString() }]);
-    }
-  };
+  const handleSend = () => sendMessage(text.trim());
+  const handleSuggestion = (q) => sendMessage(q);
 
   const handleRestart = async () => {
     soundService.playTick?.();
-    await apiService.resetAiCvChat(token);
+    await apiService.resetAppGuideChat(token);
     setMessages([]);
-    setReady(false);
-    setBuilt(false);
   };
 
   const hasText = text.trim().length > 0;
 
-  // Auto-grow the message box as the user types past one line, instead of
-  // letting long text just scroll sideways inside a fixed-height pill.
+  // Auto-grow the message box as the user types past one line.
   useEffect(() => {
     const el = inputRef.current;
     if (!el) return;
@@ -148,11 +141,11 @@ export const KarnamaAiChatModal = ({ onClose, onNavigate, onEditResumeStyle }) =
             <ArrowRight className="w-5 h-5 text-[#111d1a]" />
           </button>
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}>
-            <Sparkles className="w-5 h-5" />
+            <HelpCircle className="w-5 h-5" />
           </div>
           <div className="text-right min-w-0">
-            <h3 className="text-sm font-black text-[#111d1a] truncate leading-tight">کارنامە AI</h3>
-            <p className="text-[10.5px] font-bold truncate" style={{ color: TEAL }}>یاریدەدەری دروستکردنی سیڤی</p>
+            <h3 className="text-sm font-black text-[#111d1a] truncate leading-tight">ڕێبەری ئەپ</h3>
+            <p className="text-[10.5px] font-bold truncate" style={{ color: TEAL }}>یاریدەدەری بەکارهێنانی ئیش خواز</p>
           </div>
         </div>
 
@@ -166,7 +159,7 @@ export const KarnamaAiChatModal = ({ onClose, onNavigate, onEditResumeStyle }) =
       <ConfirmationModal
         isOpen={showRestartConfirm}
         title="دەستپێکردنەوەی گفتوگۆ؟"
-        message="هەموو گفتوگۆکەت لەگەڵ کارنامە AI بۆ هەتاهەتایە دەسڕدرێتەوە و ناتوانرێت بگەڕێندرێتەوە."
+        message="هەموو گفتوگۆکەت لەگەڵ ڕێبەری ئەپ دەسڕدرێتەوە."
         confirmText="بەڵێ، بیسڕەوە"
         cancelText="پاشگەزبوونەوە"
         isDangerous
@@ -181,14 +174,14 @@ export const KarnamaAiChatModal = ({ onClose, onNavigate, onEditResumeStyle }) =
             <div className="w-6 h-6 border-2 border-[#12796b] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-center gap-3">
+          <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
             <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: '#e7f4f1' }}>
-              <Sparkles className="w-6 h-6" style={{ color: TEAL }} />
+              <HelpCircle className="w-6 h-6" style={{ color: TEAL }} />
             </div>
-            <div className="max-w-[280px] space-y-1">
-              <p className="text-sm font-black" style={{ color: '#111d1a' }}>سڵاو! من کارنامە AI ـم</p>
+            <div className="max-w-[300px] space-y-1">
+              <p className="text-sm font-black" style={{ color: '#111d1a' }}>سڵاو! من ڕێبەری ئەپی ئیش خوازم</p>
               <p className="text-xs font-bold" style={{ color: '#8a9e98' }}>
-لەگەڵم قسە بکە دەربارەی خۆت — من سیڤیەکی ڕاستەقینەت بۆ دروست دەکەم بە کەمترین پرسیار. دەتوانیت لە یەک پەیامدا چەند شتێک پێکەوە بڵێیت، بۆ نموونە: «من گەشەپێدەری وێبم، ٣ ساڵە لە کۆمپانیای X کار دەکەم، بەکالۆریۆسم لە زانستی کۆمپیوتەرە».
+                هەر پرسیارێکت هەبێت دەربارەی چۆنیەتی بەکارهێنانی ئەپەکە، لێرە پرسیار بکە — یان یەکێک لەم پرسیارە ئامادەکراوانە هەڵبژێرە.
               </p>
             </div>
           </div>
@@ -225,83 +218,68 @@ export const KarnamaAiChatModal = ({ onClose, onNavigate, onEditResumeStyle }) =
           </div>
         )}
 
-        {/* ── Ready-to-build CTA ── */}
-        {ready && !built && (
-          <div className="w-full rounded-2xl p-4 space-y-2.5 shadow-sm" style={{ background: '#e8f7f4', border: '1px solid #c1ede3' }}>
-            <div className="flex items-center gap-2 font-black text-sm" style={{ color: TEAL_DEEP }}>
-              <Sparkles className="w-4.5 h-4.5" />
-              سیڤیەکەت ئامادەیە بۆ دروستکردن
-            </div>
-            <button
-              onClick={handleBuild}
-              disabled={building}
-              className="w-full py-3 rounded-xl text-white text-xs font-black shadow-sm transition active:scale-95 flex items-center justify-center gap-2"
-              style={{ background: TEAL }}
-            >
-              {building ? 'خەریکی دروستکردن...' : 'دروستکردنی سیڤی ئێستا'}
-            </button>
-          </div>
-        )}
-
-        {/* ── Built success ── */}
-        {built && (
-          <div className="w-full rounded-2xl p-4 space-y-3 shadow-sm text-center" style={{ background: '#e8f7f4', border: '1px solid #c1ede3' }}>
-            <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center" style={{ background: TEAL }}>
-              <CheckCircle2 className="w-6 h-6 text-white" />
-            </div>
-            <p className="text-sm font-black" style={{ color: TEAL_DEEP }}>سیڤیەکەت بە سەرکەوتوویی دروستکرا!</p>
-            <p className="text-xs font-bold" style={{ color: '#3a7c73' }}>ئێستا دەتوانیت شێوازی دیزاینی بۆ هەڵبژێریت و بیکەیت بە ئامادە بۆ ناردن.</p>
-            {builtResumeId && (
+        {/* ── Suggestion chips: full grid on the empty state ── */}
+        {!loading && messages.length === 0 && (
+          <div className="flex flex-wrap gap-2 justify-center pt-2">
+            {suggestions.map((q) => (
               <button
-                onClick={() => { soundService.playTick?.(); onClose?.(); onEditResumeStyle?.(builtResumeId); }}
-                className="w-full py-3 rounded-xl text-white text-xs font-black shadow-sm transition active:scale-95 flex items-center justify-center gap-2"
-                style={{ background: TEAL }}
+                key={q}
+                onClick={() => handleSuggestion(q)}
+                disabled={sending}
+                className="px-3.5 py-2 rounded-2xl bg-white border border-[#c1ede3] text-[#0d5c50] text-xs font-bold shadow-2xs hover:bg-[#e8f7f4] active:scale-95 transition disabled:opacity-50"
               >
-                <Sparkles className="w-4 h-4" />
-                هەڵبژاردنی شێوازی سیڤی
+                {q}
               </button>
-            )}
-            <button
-              onClick={() => { soundService.playTick?.(); onClose?.(); onNavigate?.('resumes'); }}
-              className="w-full py-3 rounded-xl text-xs font-black shadow-sm transition active:scale-95 border"
-              style={{ background: 'white', borderColor: '#c1ede3', color: TEAL_DEEP }}
-            >
-              چوون بۆ سیڤیەکانم ←
-            </button>
+            ))}
           </div>
         )}
 
         <div ref={bottomRef} className="h-1" />
       </div>
 
-      {/* ── Input bar ── */}
-      {!built && (
-        <div
-          className="shrink-0 bg-white border-t border-[#eef2f0] px-3.5 py-2.5 flex items-end gap-2.5 shadow-sm"
-          style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}
-        >
-          <button
-            onClick={handleSend}
-            disabled={!hasText || sending}
-            className={`w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 transition-all active:scale-90 shadow-sm ${
-              hasText && !sending ? 'bg-[#1a6b62] hover:bg-[#12796b] shadow-[0_4px_12px_rgba(26,107,98,0.3)]' : 'bg-[#1a6b62] opacity-70'
-            }`}
-            aria-label="ناردن"
-          >
-            <ArrowLeft className="w-5 h-5 text-white" />
-          </button>
-          <textarea
-            ref={inputRef}
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder="وەڵام بدەرەوە..."
-            disabled={sending}
-            rows={1}
-            className="flex-1 bg-white border border-[#e8eeed] rounded-3xl px-4 py-3 text-xs sm:text-sm text-[#111d1a] font-bold placeholder-[#9faea9] outline-none focus:border-[#12796b] focus:ring-2 focus:ring-[#12796b]/10 transition-all resize-none leading-relaxed"
-            style={{ fontFamily: NK, maxHeight: '120px' }}
-          />
+      {/* ── Persistent suggestion strip (once the chat has started) ── */}
+      {!loading && messages.length > 0 && (
+        <div className="shrink-0 bg-white border-t border-[#eef2f0] px-3.5 pt-2.5 flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          {suggestions.map((q) => (
+            <button
+              key={q}
+              onClick={() => handleSuggestion(q)}
+              disabled={sending}
+              className="shrink-0 px-3.5 py-2 rounded-2xl bg-[#f4f7f6] border border-[#e8eeed] text-[#4a5854] text-[11px] font-bold hover:bg-[#e8f7f4] hover:border-[#c1ede3] hover:text-[#0d5c50] active:scale-95 transition disabled:opacity-50 whitespace-nowrap"
+            >
+              {q}
+            </button>
+          ))}
         </div>
       )}
+
+      {/* ── Input bar ── */}
+      <div
+        className="shrink-0 bg-white border-t border-[#eef2f0] px-3.5 py-2.5 flex items-end gap-2.5 shadow-sm"
+        style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}
+      >
+        <button
+          onClick={handleSend}
+          disabled={!hasText || sending}
+          className={`w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 transition-all active:scale-90 shadow-sm ${
+            hasText && !sending ? 'bg-[#1a6b62] hover:bg-[#12796b] shadow-[0_4px_12px_rgba(26,107,98,0.3)]' : 'bg-[#1a6b62] opacity-70'
+          }`}
+          aria-label="ناردن"
+        >
+          <ArrowLeft className="w-5 h-5 text-white" />
+        </button>
+        <textarea
+          ref={inputRef}
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+          placeholder="پرسیارت بنووسە..."
+          disabled={sending}
+          rows={1}
+          className="flex-1 bg-white border border-[#e8eeed] rounded-3xl px-4 py-3 text-xs sm:text-sm text-[#111d1a] font-bold placeholder-[#9faea9] outline-none focus:border-[#12796b] focus:ring-2 focus:ring-[#12796b]/10 transition-all resize-none leading-relaxed"
+          style={{ fontFamily: NK, maxHeight: '120px' }}
+        />
+      </div>
     </div>,
     document.body
   );

@@ -6,7 +6,8 @@ import { soundService } from '../../services/soundService';
 import { realtimeService } from '../../services/realtimeService';
 import { MessageThreadModal } from './MessageThreadModal';
 import { KarnamaAiChatModal } from './KarnamaAiChatModal';
-import { MessageSquare, Loader2, Search, X, Headphones, Briefcase, Sparkles, Lock } from 'lucide-react';
+import { AppGuideChatModal } from './AppGuideChatModal';
+import { MessageSquare, Loader2, Search, X, Headphones, Briefcase, Sparkles, Lock, HelpCircle } from 'lucide-react';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
 
@@ -49,6 +50,7 @@ export const MessagesInboxPage = ({ onNavigate, onEditResumeStyle }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [karnamaAccess, setKarnamaAccess] = useState(null);
   const [showKarnamaAi, setShowKarnamaAi] = useState(false);
+  const [showAppGuide, setShowAppGuide] = useState(false);
 
   // 100% Real Live Fetch from Database
   const loadThreads = async () => {
@@ -196,6 +198,25 @@ export const MessagesInboxPage = ({ onNavigate, onEditResumeStyle }) => {
           </div>
         </button>
 
+        {/* ── Pinned: App Guide (general FAQ assistant, open to everyone) ── */}
+        <button
+          type="button"
+          onClick={() => { soundService.playTick?.(); setShowAppGuide(true); }}
+          className="w-full flex items-center justify-between gap-3 px-4 sm:px-5 py-4 text-right bg-white rounded-[24px] border border-[#e8eeec] shadow-[0_2px_16px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] active:scale-[0.99] transition-all cursor-pointer"
+        >
+          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+            <div className="w-12 h-12 rounded-[18px] bg-[#111d1a] flex items-center justify-center text-white shrink-0 shadow-sm">
+              <HelpCircle className="w-6 h-6" />
+            </div>
+            <div className="min-w-0 flex-1 text-right">
+              <span className="text-[15px] font-black text-[#111d1a] truncate leading-tight block">ڕێبەری ئەپ</span>
+              <p className="text-xs text-[#7a8e88] font-bold truncate m-0 mt-1 leading-normal">
+                پرسیار دەربارەی چۆنیەتی بەکارهێنانی ئیش خواز بکە
+              </p>
+            </div>
+          </div>
+        </button>
+
         {/* ── Real Conversation List Card ──────────────────────── */}
         <section
           className="bg-white rounded-[28px] border border-[#e8eeec] shadow-[0_2px_16px_rgba(0,0,0,0.04)] overflow-hidden divide-y divide-[#f2f6f4]"
@@ -312,6 +333,11 @@ export const MessagesInboxPage = ({ onNavigate, onEditResumeStyle }) => {
       {/* ── Karnama AI Chat ─────────────────────────────────────── */}
       {showKarnamaAi && (
         <KarnamaAiChatModal onClose={() => setShowKarnamaAi(false)} onNavigate={onNavigate} onEditResumeStyle={onEditResumeStyle} />
+      )}
+
+      {/* ── App Guide Chat ──────────────────────────────────────── */}
+      {showAppGuide && (
+        <AppGuideChatModal onClose={() => setShowAppGuide(false)} />
       )}
     </div>
   );

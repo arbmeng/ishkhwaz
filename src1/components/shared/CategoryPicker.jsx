@@ -19,9 +19,17 @@ export const CategoryPicker = ({ categories = [], value, onChange, onClose }) =>
   const initialExpanded = selectedMain?.parent_id || (subsByParent[value] ? value : null);
   const [expanded, setExpanded] = useState(initialExpanded || null);
 
+  // Same lock technique as KarnamaAiChatModal/MessageThreadModal — pinning
+  // body via position:fixed instead of merely toggling overflow:hidden,
+  // which has a known WebKit quirk: toggling overflow on html/body after
+  // first paint can leave an already-mounted position:fixed descendant
+  // using a stale, miscalculated viewport rect until the next reflow.
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
+    const scrollY = window.scrollY;
+    const { style } = document.body;
+    const prev = { position: style.position, top: style.top, width: style.width, overflow: style.overflow };
+    style.position = 'fixed'; style.top = `-${scrollY}px`; style.width = '100%'; style.overflow = 'hidden';
+    return () => { Object.assign(style, prev); window.scrollTo(0, scrollY); };
   }, []);
 
   const pick = (id) => { onChange(id); onClose(); };

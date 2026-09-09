@@ -17,7 +17,10 @@ const TEAL = '#12796b';
 const TEAL_DEEP = '#0d5c50';
 const TEAL_SOFT = '#e7f4f1';
 
-const STRIPE_BG = 'repeating-linear-gradient(135deg, #e3f2ee, #e3f2ee 10px, #d7e8e4 10px, #d7e8e4 20px)';
+// Brand-tinted fallback for a freelancer with no avatar — a soft gradient
+// reads as a deliberate empty state, unlike a diagonal-stripe pattern which
+// looks like an unfinished dev placeholder.
+const NO_COVER_BG = 'radial-gradient(120% 140% at 20% 0%, #cdeae4 0%, #eaf6f3 45%, #f4f7f6 100%)';
 
 const parseJsonArray = (val) => {
   if (Array.isArray(val)) return val;
@@ -43,11 +46,24 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
     apiService.getRatings(freelancer.id).then(r => setRatingSummary({ average: r.average, count: r.count }));
   }, [isOpen, freelancer?.id]);
 
+  // Same lock technique as KarnamaAiChatModal/MessageThreadModal — pinning
+  // body via position:fixed instead of merely toggling overflow:hidden.
+  // The overflow-only approach (this file's previous fix) has a known
+  // WebKit quirk: toggling overflow on html/body *after* first paint can
+  // leave an already-mounted position:fixed descendant using a stale,
+  // miscalculated viewport rect until the next reflow — a real, if
+  // intermittent, cause of exactly this kind of transient horizontal
+  // misalignment on real iOS Safari (not reproducible in desktop Chromium,
+  // which is why it slipped through last time). Setting body itself to
+  // position:fixed removes it from the flow entirely, sidestepping the
+  // quirk rather than racing it.
   useEffect(() => {
     if (!isOpen) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prevOverflow; };
+    const scrollY = window.scrollY;
+    const { style } = document.body;
+    const prev = { position: style.position, top: style.top, width: style.width, overflow: style.overflow };
+    style.position = 'fixed'; style.top = `-${scrollY}px`; style.width = '100%'; style.overflow = 'hidden';
+    return () => { Object.assign(style, prev); window.scrollTo(0, scrollY); };
   }, [isOpen]);
 
   useEffect(() => {
@@ -139,7 +155,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
           ) : avatarUrl ? (
             <img src={avatarUrl} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover" style={{ filter: 'blur(18px) brightness(0.92) saturate(1.1)', transform: 'scale(1.15)' }} />
           ) : (
-            <div className="absolute inset-0" style={{ background: STRIPE_BG }} />
+            <div className="absolute inset-0" style={{ background: NO_COVER_BG }} />
           )}
           {hasPaidPlan && (
             <div

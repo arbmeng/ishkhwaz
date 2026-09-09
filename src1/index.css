@@ -207,7 +207,12 @@
   animation: mapZoomIn 0.28s ease-out both;
 }
 
-/* Custom Green Scrollbar */
+/* Scrollbar — thin, and tinted with the app's actual brand teal (#12796b)
+   instead of the unrelated bright lime/mint this used to be, which clashed
+   on pages with their own real color identity (gold company/freelancer
+   banners, etc.) since it never matched anything else in the app. Only
+   renders on desktop WebKit/Blink browsers either way (Firefox and mobile
+   Safari ignore ::-webkit-scrollbar and just show their own native one). */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -218,10 +223,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #A7F3D0;
+  background: #a8d8cd;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #84CC16;
+  background: #12796b;
 }

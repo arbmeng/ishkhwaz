@@ -31,6 +31,60 @@ const FEATURES = [
   { icon: '🔒', label: 'پارەدانی پارێزراو' },
 ];
 
+// Real hand-drawn SVG illustrations for each onboarding slide — brand teal,
+// no external image assets. Replaces the old "illustration — {name}" text
+// placeholder that used to sit here during development.
+const SearchIllustration = () => (
+  <svg viewBox="0 0 200 200" className="w-[62%] h-[62%]" fill="none">
+    <rect x="34" y="46" width="108" height="30" rx="8" fill="#fff" stroke="#cfe6e0" strokeWidth="2" />
+    <rect x="46" y="55" width="46" height="5" rx="2.5" fill="#12796b" opacity="0.85" />
+    <rect x="46" y="65" width="66" height="4" rx="2" fill="#cfe6e0" />
+    <rect x="26" y="86" width="108" height="30" rx="8" fill="#fff" stroke="#cfe6e0" strokeWidth="2" />
+    <rect x="38" y="95" width="46" height="5" rx="2.5" fill="#12796b" opacity="0.85" />
+    <rect x="38" y="105" width="66" height="4" rx="2" fill="#cfe6e0" />
+    <circle cx="128" cy="132" r="30" fill="#eaf6f3" stroke="#12796b" strokeWidth="6" />
+    <path d="M149 153 L167 171" stroke="#12796b" strokeWidth="8" strokeLinecap="round" />
+    <path d="M116 132 a12 12 0 0 1 12 -12" stroke="#5fb8a8" strokeWidth="4" strokeLinecap="round" />
+  </svg>
+);
+
+const LocationIllustration = () => (
+  <svg viewBox="0 0 200 200" className="w-[62%] h-[62%]" fill="none">
+    <ellipse cx="100" cy="168" rx="46" ry="8" fill="#cfe6e0" opacity="0.6" />
+    <circle cx="46" cy="60" r="5" fill="#5fb8a8" opacity="0.7" />
+    <circle cx="152" cy="70" r="4" fill="#5fb8a8" opacity="0.5" />
+    <circle cx="160" cy="130" r="5" fill="#5fb8a8" opacity="0.6" />
+    <circle cx="38" cy="120" r="4" fill="#5fb8a8" opacity="0.5" />
+    <path
+      d="M100 30 C126 30 147 51 147 77 C147 112 100 158 100 158 C100 158 53 112 53 77 C53 51 74 30 100 30 Z"
+      fill="#12796b"
+    />
+    <circle cx="100" cy="78" r="24" fill="#fff" />
+    <circle cx="100" cy="78" r="11" fill="#12796b" />
+  </svg>
+);
+
+const ShieldIllustration = () => (
+  <svg viewBox="0 0 200 200" className="w-[62%] h-[62%]" fill="none">
+    <path
+      d="M100 28 L152 46 C152 46 156 108 100 158 C44 108 48 46 48 46 Z"
+      fill="#eaf6f3"
+      stroke="#12796b"
+      strokeWidth="6"
+    />
+    <path d="M78 88 L94 106 L126 68" stroke="#12796b" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
+    <rect x="132" y="118" width="40" height="30" rx="8" fill="#12796b" />
+    <path d="M140 118 v-8 a12 12 0 0 1 24 0 v8" stroke="#12796b" strokeWidth="6" fill="none" strokeLinecap="round" />
+    <circle cx="152" cy="132" r="4" fill="#fff" />
+  </svg>
+);
+
+const ILLUSTRATIONS = {
+  search: SearchIllustration,
+  location: LocationIllustration,
+  shield: ShieldIllustration,
+};
+
 export const SplashOnboarding = ({ onComplete }) => {
   const [phase, setPhase] = useState('splash'); // 'splash' | 'onboarding'
   const [leaving, setLeaving] = useState(false);
@@ -234,10 +288,11 @@ export const SplashOnboarding = ({ onComplete }) => {
           transition: `opacity 220ms ${EASE}, transform 220ms ${EASE}`,
         }}
       >
-        <div className="aspect-square flex items-center justify-center relative" style={{ borderRadius: 24, border: '1px solid #d7e8e4', background: 'repeating-linear-gradient(135deg, #e3f2ee, #e3f2ee 10px, #d7e8e4 10px, #d7e8e4 20px)' }}>
-          <span className="px-3.5 py-2 rounded-xl text-[12px] font-semibold" style={{ background: 'rgba(255,255,255,0.85)', color: TEAL }}>
-            illustration — {SLIDES[step].illustration}
-          </span>
+        <div
+          className="aspect-square flex items-center justify-center relative"
+          style={{ borderRadius: 24, border: '1px solid #d7e8e4', background: 'radial-gradient(120% 100% at 50% 20%, #eaf6f3, #f4f7f6 75%)' }}
+        >
+          {(() => { const Illustration = ILLUSTRATIONS[SLIDES[step].illustration]; return <Illustration />; })()}
         </div>
         <div className="flex flex-col gap-3">
           <h2 style={{ margin: 0, fontFamily: "'Vazirmatn', sans-serif", fontSize: 24, fontWeight: 800, lineHeight: 1.4, color: '#111' }}>{SLIDES[step].title}</h2>

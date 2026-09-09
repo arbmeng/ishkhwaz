@@ -20,6 +20,7 @@ export const StoreProvider = ({ children }) => {
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
   const [freelancers, setFreelancers] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [toasts, setToasts] = useState([]);
   const [regions] = useState(kurdistanGovernorates);
@@ -76,13 +77,14 @@ export const StoreProvider = ({ children }) => {
   // slow/failing endpoint can never block or fail the others via Promise.all.
   const syncBackendData = async () => {
     try {
-      const [liveJobs, liveApps, liveNotifs, liveFreelancers, liveCategories, liveSettings, liveTiers] = await Promise.all([
+      const [liveJobs, liveApps, liveNotifs, liveFreelancers, liveCompanies, liveCategories, liveSettings, liveTiers] = await Promise.all([
         apiService.getJobs({}, token),
         // /applications requires auth server-side — skip entirely when
         // logged out instead of firing a request that's guaranteed to 401.
         token ? apiService.getApplications(token) : Promise.resolve(null),
         apiService.getNotifications(token),
         apiService.getFreelancers(),
+        apiService.getCompanies(),
         apiService.getCategories(),
         apiService.getSettings(),
         apiService.getPlanTiers(),
@@ -92,6 +94,7 @@ export const StoreProvider = ({ children }) => {
       if (Array.isArray(liveApps)) setApplications(liveApps);
       if (Array.isArray(liveNotifs)) setNotifications(liveNotifs);
       if (Array.isArray(liveFreelancers)) setFreelancers(liveFreelancers);
+      if (Array.isArray(liveCompanies)) setCompanies(liveCompanies);
       if (Array.isArray(liveCategories) && liveCategories.length > 0) setCategories(liveCategories);
       if (liveSettings && Object.keys(liveSettings).length > 0) setSettings(liveSettings);
       if (Array.isArray(liveTiers)) setPlanTiers(liveTiers);
@@ -296,6 +299,21 @@ export const StoreProvider = ({ children }) => {
     return false;
   };
 
+  const toggleJobStatus = async (jobId) => {
+    const res = await apiService.toggleJobStatus(jobId, token);
+    if (res && res.success) {
+      addToast({
+        title: res.status === 'active' ? 'چالاککرایەوە' : 'ناچالاککرا',
+        message: res.status === 'active' ? 'هەلی کارەکە دیسان بۆ گشتی دیارە' : 'هەلی کارەکە شاردرایەوە لە لیستی گشتی',
+        type: res.status === 'active' ? 'success' : 'info',
+      });
+      syncBackendData();
+      return true;
+    }
+    addToast({ title: 'سەرنەکەوت', message: res?.message || 'گۆڕینی دۆخی کارەکە سەرکەوتوو نەبوو', type: 'warning' });
+    return false;
+  };
+
   const deleteJob = async (jobId) => {
     const res = await apiService.deleteJob(jobId, token);
     if (res && res.success) {
@@ -325,6 +343,7 @@ export const StoreProvider = ({ children }) => {
       setJobs,
       applications,
       freelancers,
+      companies,
       savedJobIds,
       categories,
       settings,
@@ -345,6 +364,7 @@ export const StoreProvider = ({ children }) => {
       createJob,
       updateJob,
       deleteJob,
+      toggleJobStatus,
       syncBackendData,
       markAllRead,
       invitations,

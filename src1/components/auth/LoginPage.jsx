@@ -19,7 +19,7 @@ const GoogleIcon = () => (
 const TEAL = '#12796b';
 const TEAL_DEEP = '#0d5c50';
 
-export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess }) => {
+export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgotPassword }) => {
   const { login } = useAuth();
   const { addToast } = useStore();
 
@@ -88,7 +88,7 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess }) => {
 
   const handleForgotPassword = () => {
     soundService.playTick();
-    addToast({ title: 'بەم زووانە 🛠️', message: 'گەڕاندنەوەی وشەی نهێنی بەم زووانە چالاک دەبێت.', type: 'info' });
+    onForgotPassword?.();
   };
 
   const fieldCls = (hasError) =>
