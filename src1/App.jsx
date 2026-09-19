@@ -33,12 +33,14 @@ import { ForgotPasswordPage } from './components/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './components/auth/ResetPasswordPage';
 import { PullToRefresh } from './components/layout/PullToRefresh';
 import { JobDetailPage } from './components/company/JobDetailPage';
+import { JobPage } from './components/freelancer/JobPage';
 
-// /dashboard/jobs/{id} — read from the raw path (not the lowercased `target`
-// getInitialTab builds) so a refresh or shared link keeps the id exactly.
+// /jobs/{id} (job seeker page) and /dashboard/jobs/{id} (owner page) — read
+// from the raw path (not the lowercased `target` getInitialTab builds) so a
+// refresh or shared link keeps the id exactly.
 const getJobIdFromUrl = () => {
   if (typeof window === 'undefined') return null;
-  const m = window.location.pathname.match(/\/dashboard\/jobs\/([^/?#]+)/i);
+  const m = window.location.pathname.match(/^\/(?:dashboard\/)?jobs\/([^/?#]+)/i);
   return m ? decodeURIComponent(m[1]) : null;
 };
 
@@ -104,6 +106,7 @@ function MainAppContent() {
       if (target === 'profile' || target === 'user') return 'profile';
       if (target === 'dashboard' || target === 'my-company-dashboard' || target === 'company-dashboard' || target === 'my_company_dashboard') return 'my_company_dashboard';
       if (target.startsWith('dashboard/jobs/')) return 'job_view';
+      if (target.startsWith('jobs/')) return 'job_detail';
       if (target === 'wallet' || target === 'plans' || target === 'upgrade') return 'plans';
       if (target === 'resumes' || target === 'my-resumes') return 'resumes';
       if (target === 'cv' || target === 'build-cv' || target === 'cv_builder' || target === 'karnama_cv') return 'karnama_cv';
@@ -159,9 +162,11 @@ function MainAppContent() {
     return (params.get('company') || params.get('job')) ? window.location.search : null;
   });
 
-  // Optional 2nd arg only for tabs that need a record id (currently job_view).
+  // Optional 2nd arg: { jobId } for the job pages, { replace: true } to swap the
+  // current history entry instead of adding one (used to turn a legacy
+  // /search?...&job= share link into the /jobs/{id} page without a Back loop).
   const setActiveTab = (tabId, params) => {
-    if (tabId === 'job_view' && params?.jobId) setViewJobId(String(params.jobId));
+    if ((tabId === 'job_view' || tabId === 'job_detail') && params?.jobId) setViewJobId(String(params.jobId));
     setActiveTabState(tabId);
     if (typeof window !== 'undefined') {
       let path = '/login';
@@ -177,6 +182,7 @@ function MainAppContent() {
       else if (tabId === 'profile') path = '/profile';
       else if (tabId === 'my_company_dashboard') path = '/dashboard';
       else if (tabId === 'job_view') path = `/dashboard/jobs/${encodeURIComponent(params?.jobId ?? viewJobId ?? '')}`;
+      else if (tabId === 'job_detail') path = `/jobs/${encodeURIComponent(params?.jobId ?? viewJobId ?? '')}`;
       else if (tabId === 'plans') path = '/plans';
       else if (tabId === 'home') path = '/';
       else if (tabId === 'post_job') path = '/post-job';
@@ -191,9 +197,19 @@ function MainAppContent() {
       else if (tabId === 'reset_password') path = '/reset-password';
 
       try {
-        window.history.pushState({ tabId }, '', path);
+        // appNav marks an entry the app itself pushed, i.e. one with an
+        // in-app page behind it — so a page's Back button can safely use
+        // history.back() and never fall out of the site (a cold deep link's
+        // first entry has no state, so it doesn't get the flag).
+        if (params?.replace) window.history.replaceState({ tabId, appNav: !!window.history.state?.appNav }, '', path);
+        else window.history.pushState({ tabId, appNav: true }, '', path);
       } catch (e) { }
     }
+  };
+
+  const goBackFromJob = () => {
+    if (window.history.state?.appNav) window.history.back();
+    else setActiveTab('home');
   };
 
   // AUTH GUARD: If user is not logged in, force navigation to /login or /register
@@ -203,7 +219,7 @@ function MainAppContent() {
   // now requires login to view, so it's excluded below even though 'search'
   // itself is public. /install is public too — a link people share before
   // they even have an account.
-  const PUBLIC_TABS = ['register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'verify_email', 'forgot_password', 'reset_password'];
+  const PUBLIC_TABS = ['register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'job_detail', 'verify_email', 'forgot_password', 'reset_password'];
   useEffect(() => {
     if (!user) {
       if (activeTab === 'search' && initialShareLinkQuery) {
@@ -268,7 +284,7 @@ function MainAppContent() {
     const handlePopState = () => {
       const initial = getInitialTab();
       setViewJobId(getJobIdFromUrl());
-      const allowedLoggedOut = ['register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'verify_email', 'forgot_password', 'reset_password'];
+      const allowedLoggedOut = ['register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'job_detail', 'verify_email', 'forgot_password', 'reset_password'];
       if (!user && !allowedLoggedOut.includes(initial)) {
         setActiveTabState('login');
       } else {
@@ -382,7 +398,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'search') {
-      return <SearchPage initialTab={getInitialSearchTab()} />;
+      return <SearchPage initialTab={getInitialSearchTab()} onNavigate={setActiveTab} />;
     }
 
     if (activeTab === 'plans') {
@@ -395,6 +411,10 @@ function MainAppContent() {
 
     if (activeTab === 'my_applications' || activeTab === 'my_company_dashboard') {
       return <Dashboard onNavigate={setActiveTab} />;
+    }
+
+    if (activeTab === 'job_detail') {
+      return <JobPage key={viewJobId} jobId={viewJobId} onBack={goBackFromJob} onNavigate={setActiveTab} />;
     }
 
     if (activeTab === 'job_view') {
@@ -439,6 +459,8 @@ function MainAppContent() {
   };
 
   const isMapTab = activeTab === 'map';
+  // Sub-pages light up the nav item they belong to.
+  const navHighlight = activeTab === 'job_view' ? 'my_company_dashboard' : activeTab === 'job_detail' ? 'home' : activeTab;
 
   return (
     <div className={`bg-slate-50 text-slate-900 font-vazirmatn antialiased selection:bg-lime-400 selection:text-black flex flex-col justify-between ${isMapTab ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
@@ -455,7 +477,7 @@ function MainAppContent() {
           <main>{renderTabContent()}</main>
         ) : (
           <>
-            <DesktopHeaderNav activeTab={activeTab === 'job_view' ? 'my_company_dashboard' : activeTab} setActiveTab={setActiveTab} />
+            <DesktopHeaderNav activeTab={navHighlight} setActiveTab={setActiveTab} />
             <main
               className={isMapTab ? 'flex-1 min-h-0 overflow-hidden' : 'pb-24 lg:pb-12'}
               style={{ paddingTop: 'env(safe-area-inset-top)' }}
@@ -478,7 +500,7 @@ function MainAppContent() {
           physically blocking taps on the real "save" button underneath. */}
       {!isAuthOrRegisterPage && activeTab !== 'karnama_cv' && activeTab !== 'karnama_templates' && (
         <BottomNavbar
-          activeTab={activeTab === 'job_view' ? 'my_company_dashboard' : activeTab}
+          activeTab={navHighlight}
           setActiveTab={setActiveTab}
           onOpenMenu={() => setShowSidebarDrawer(true)}
         />

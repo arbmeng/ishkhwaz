@@ -5,7 +5,6 @@ import { useStore } from '../../context/StoreContext';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import { SendOfferModal } from '../requests/SendOfferModal';
-import { getPlanColor } from '../../utils/planPresets';
 import { StarRatingDisplay } from '../ui/StarRating';
 import { exportNodeToPdf, safeFilename } from '../../services/karnamaPdf';
 import { getTemplate } from '../../cvTemplates/registry';
@@ -17,11 +16,11 @@ import {
 
 const TEAL = '#12796b';
 const TEAL_DEEP = '#0d5c50';
-const TEAL_SOFT = '#e7f4f1';
-const PAGE = '#f5f7f6';
+const TEAL_SOFT = '#e8f3f1';
+const PAGE = '#f7f8f7';
 
 const NO_COVER_BG =
-  'radial-gradient(110% 130% at 15% 0%, #d8eee9 0%, #eef7f5 45%, #f7f9f8 100%)';
+  'linear-gradient(135deg, #edf7f5 0%, #f5f8f7 48%, #eef3f1 100%)';
 
 const parseJsonArray = (val) => {
   if (Array.isArray(val)) return val;
@@ -306,7 +305,6 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
 
   const tier = planTiers.find((t) => t.id === freelancer.plan);
   const hasPaidPlan = Boolean(tier && Number(tier.price) > 0);
-  const planColor = tier ? getPlanColor(tier.color) : null;
 
   const cvVisibilityLimit = getCvVisibilityLimit(freelancer, tier);
   const allPublicCvs = normalizePublicCvs(freelancer);
@@ -402,9 +400,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
         <div
           className="fixed top-0 inset-x-0 h-1 z-[80]"
           style={{
-            background: hasPaidPlan
-              ? planColor?.gradient || planColor?.accent || TEAL
-              : `linear-gradient(90deg, ${TEAL_DEEP}, ${TEAL}, #65bcae)`
+            background: `linear-gradient(90deg, #0f766e, #159a89, #8bd5ca)`
           }}
         />
 
@@ -453,16 +449,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
               }}
             />
 
-            {hasPaidPlan && (
-              <div
-                className="absolute inset-x-0 bottom-0 h-32 pointer-events-none"
-                style={{
-                  background: `linear-gradient(to top, ${
-                    planColor.accent
-                  }80, transparent)`
-                }}
-              />
-            )}
+            
 
             {/* Header controls */}
             <div
@@ -483,7 +470,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                 {hasPaidPlan && (
                   <div
                     className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[11px] font-black text-white shadow-lg backdrop-blur"
-                    style={{ background: `${planColor.accent}e8` }}
+                    style={{ background: 'rgba(15,118,110,.92)' }}
                   >
                     <Crown className="w-3.5 h-3.5" />
                     {tier.name_ku || tier.name_en || 'VIP'}
@@ -508,19 +495,14 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                     {hasPaidPlan && (
                       <div
                         className="absolute -inset-3 rounded-[30px] blur-xl opacity-70"
-                        style={{
-                          background:
-                            planColor.gradient || planColor.accent
-                        }}
+                        style={{ background: 'linear-gradient(135deg,#0f766e,#7ccfc3)' }}
                       />
                     )}
 
                     <div
                       className="relative p-1.5 rounded-[28px] shadow-[0_18px_45px_rgba(0,0,0,.28)]"
                       style={{
-                        background: hasPaidPlan
-                          ? planColor.gradient || planColor.accent
-                          : 'rgba(255,255,255,.9)'
+                        background: 'rgba(255,255,255,.96)'
                       }}
                     >
                       <div className="w-[82px] h-[82px] sm:w-[104px] sm:h-[104px] rounded-[22px] overflow-hidden bg-white flex items-center justify-center text-2xl sm:text-3xl font-black" style={{ color: TEAL_DEEP }}>
@@ -559,7 +541,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                       {hasPaidPlan && (
                         <span
                           className="sm:hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black text-white"
-                          style={{ background: planColor.accent }}
+                          style={{ background: '#0f766e' }}
                         >
                           <Crown className="w-3 h-3" />
                           {tier.name_ku || tier.name_en || 'VIP'}
@@ -638,7 +620,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
               {bio && (
                 <section
                   className="mt-5 rounded-[24px] bg-white border border-stone-200/80 p-5 sm:p-6 shadow-[0_8px_32px_rgba(20,30,25,.045)]"
-                  style={hasPaidPlan ? { borderColor: `${planColor.accent}35` } : undefined}
+                  style={hasPaidPlan ? { borderColor: '#b9dcd6' } : undefined}
                 >
                   <div className="flex items-start gap-3">
                     <div
@@ -871,9 +853,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                 <div
                   className="rounded-[28px] bg-white border p-5 shadow-[0_12px_45px_rgba(20,30,25,.07)]"
                   style={{
-                    borderColor: hasPaidPlan
-                      ? `${planColor.accent}35`
-                      : '#e4e8e6'
+                    borderColor: hasPaidPlan ? '#cfe4e0' : '#e4e8e6'
                   }}
                 >
                   <div className="text-[10px] font-black text-stone-400 mb-1">
@@ -910,13 +890,6 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                     </button>
                   )}
 
-                  <button
-                    onClick={handleShare}
-                    className="w-full mt-2.5 py-3 rounded-2xl text-stone-600 font-black text-xs flex items-center justify-center gap-2 hover:bg-stone-50 transition-colors"
-                  >
-                    <Share2 className="w-4 h-4" />
-                    هاوبەشکردنی پڕۆفایل
-                  </button>
                 </div>
 
                 <div className="rounded-[24px] bg-white border border-stone-200/80 p-4 shadow-[0_8px_28px_rgba(20,30,25,.04)]">
@@ -994,13 +967,6 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
               <Send className="w-4 h-4 shrink-0" />
             </button>
 
-            <button
-              onClick={handleShare}
-              aria-label="هاوبەشکردنی پڕۆفایل"
-              className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-2xl bg-white border border-stone-200 shadow-[0_7px_25px_rgba(0,0,0,.09)] flex items-center justify-center active:scale-95 transition-transform"
-            >
-              <Share2 className="w-4 h-4 text-stone-600" />
-            </button>
           </div>
         </div>
       </div>

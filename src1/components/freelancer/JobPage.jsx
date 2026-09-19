@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
@@ -42,9 +41,13 @@ const GOV_LABELS = {
 
 const FASTPAY_NUMBER_FALLBACK = '0770 123 4567';
 
-export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
+// A real routed page (/jobs/:id) — this used to be JobDetailModal, an overlay
+// opened from JobFeed, SearchPage and CompanyProfilePage. The job comes from
+// the store by id, so refresh, browser Back and shared links all work.
+export const JobPage = ({ jobId, onBack, onNavigate }) => {
   const { user, token, openAuthModal } = useAuth();
   const {
+    jobs = [],
     applications = [],
     submitCVApplication,
     savedJobIds = [],
@@ -52,8 +55,14 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
     settings = {},
     categories = [],
     addToast,
-    onNavigate
   } = useStore();
+  const job = jobs.find(j => String(j.id) === String(jobId));
+  const isOpen = true;
+  const onClose = onBack;
+  // A cold deep link renders before the store's job list has loaded; only
+  // call it "not found" once that's had a fair chance to arrive.
+  const [waited, setWaited] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setWaited(true), 6000); return () => clearTimeout(t); }, []);
 
   const FASTPAY_NUMBER = settings.fastpay_number || FASTPAY_NUMBER_FALLBACK;
   // Real fee, not a hardcoded string — this job's own fee_amount if the
@@ -109,26 +118,27 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
     return () => { cancelled = true; };
   }, [isOpen, user, token]);
 
-  // Same lock technique as KarnamaAiChatModal/MessageThreadModal — pinning
-  // body via position:fixed instead of merely toggling overflow:hidden.
-  // The overflow-only approach (this file's previous fix) has a known
-  // WebKit quirk: toggling overflow on html/body *after* first paint can
-  // leave an already-mounted position:fixed descendant using a stale,
-  // miscalculated viewport rect until the next reflow — a real, if
-  // intermittent, cause of a transient horizontal misalignment on real iOS
-  // Safari (not reproducible in desktop Chromium). Setting body itself to
-  // position:fixed removes it from the flow entirely, sidestepping the
-  // quirk rather than racing it.
-  useEffect(() => {
-    if (!isOpen) return;
-    const scrollY = window.scrollY;
-    const { style } = document.body;
-    const prev = { position: style.position, top: style.top, width: style.width, overflow: style.overflow };
-    style.position = 'fixed'; style.top = `-${scrollY}px`; style.width = '100%'; style.overflow = 'hidden';
-    return () => { Object.assign(style, prev); window.scrollTo(0, scrollY); };
-  }, [isOpen]);
+  // Opening a job (or moving between the apply steps) starts at the top —
+  // the list you came from leaves its scroll offset behind otherwise.
+  useEffect(() => { window.scrollTo(0, 0); }, [job?.id, step]);
 
-  if (!job || isOpen === false) return null;
+  if (!job) {
+    return (
+      <div dir="rtl" className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ background: '#f4f7f6', fontFamily: NK }}>
+        {waited ? (
+          <>
+            <div className="text-sm font-black text-[#111d1a]">ئەم هەلە کارە نەدۆزرایەوە یان چیتر چالاک نییە</div>
+            <button onClick={onBack} className="px-5 py-3 rounded-2xl text-white text-xs font-black" style={{ background: TEAL }}>گەڕانەوە</button>
+          </>
+        ) : (
+          <>
+            <Loader2 className="w-6 h-6 animate-spin" style={{ color: TEAL }} />
+            <div className="text-xs font-bold text-[#7b8e88]">کەمێک چاوەڕوان بە...</div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   const isSaved = savedJobIds.includes(job.id);
   const companyName = job.company_name || job.companyName || 'کۆمپانیا';
@@ -241,7 +251,6 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
     if (ok) {
       soundService.playSuccess?.();
       setStep('success');
-      onApply?.();
     }
   };
 
@@ -274,11 +283,11 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
     }
   };
 
-  return createPortal(
+  return (
     <div
       dir="rtl"
-      className="fixed inset-0 z-[9999] overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-0 lg:p-6 font-vazirmatn animate-fadeIn select-none"
-      style={{ fontFamily: NK }}
+      className="min-h-screen pb-24 lg:pb-10 font-vazirmatn"
+      style={{ fontFamily: NK, background: '#f4f7f6' }}
     >
       <input
         ref={fileInputRef}
@@ -288,8 +297,8 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
         className="hidden"
       />
 
-      {/* Modal Container */}
-      <div className="bg-[#f4f7f6] w-full min-h-screen lg:min-h-0 lg:max-w-xl lg:rounded-[32px] shadow-2xl border border-[#e8eeec] overflow-hidden flex flex-col justify-between">
+      {/* Page container — centered column on desktop under the shared header */}
+      <div className="bg-[#f4f7f6] w-full max-w-2xl mx-auto min-h-screen lg:min-h-0 lg:my-6 lg:rounded-[28px] lg:border lg:border-[#e8eeec] lg:shadow-sm lg:overflow-hidden flex flex-col justify-between">
 
         {/* ══════════════════════════════════════════════════════════════
             SCREEN 1: JOB DETAIL
@@ -298,7 +307,7 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
           <div className="flex-1 flex flex-col justify-between">
             {/* Top Bar */}
             <div
-              className="bg-white px-5 sm:px-6 border-b border-[#e8eeec] flex items-center justify-between shrink-0"
+              className="bg-white px-5 sm:px-6 border-b border-[#e8eeec] flex items-center justify-between shrink-0 sticky top-0 z-30 lg:static"
               style={{
                 paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 12px))',
                 paddingBottom: '14px',
@@ -990,8 +999,7 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
               <button
                 onClick={() => {
                   soundService.playTick?.();
-                  onClose();
-                  if (onNavigate) onNavigate('my_applications');
+                  onNavigate?.('my_applications');
                 }}
                 className="w-full py-4 rounded-2xl bg-[#111d1a] hover:bg-black text-white text-xs sm:text-sm font-black shadow-md active:scale-95 transition"
               >
@@ -1012,7 +1020,6 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
         )}
 
       </div>
-    </div>,
-    document.body
+    </div>
   );
 };

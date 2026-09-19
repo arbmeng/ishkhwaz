@@ -5804,6 +5804,11 @@ if (preg_match('#/admin/users/update$#', $uri) && $method === 'POST') {
     if (is_array($hiringPrefs)) $hiringPrefs = json_encode($hiringPrefs, JSON_UNESCAPED_UNICODE);
     if (!is_string($hiringPrefs)) $hiringPrefs = $target['hiring_preferences'] ?? '{}';
 
+    $profession = sanitize($input['profession'] ?? $target['profession'] ?? '', 150);
+    $experience = $input['experience'] ?? null;
+    if (is_array($experience)) $experience = json_encode(array_values($experience));
+    if (!is_string($experience)) $experience = $target['experience'] ?? '[]';
+
     // Only an owner can promote/demote another account to or from admin/owner
     if (in_array($role, ['admin', 'owner'], true) && $role !== $target['role'] && ($adminUser['role'] ?? '') !== 'owner') {
         jsonErr(403, 'Forbidden: only an owner can grant admin/owner roles.');
@@ -5821,14 +5826,14 @@ if (preg_match('#/admin/users/update$#', $uri) && $method === 'POST') {
             phone = ?, governorate = ?, district = ?, sub_district = ?, bio = ?, avatar = ?, cover = ?, gender = ?,
             verified = ?, status = ?, company_name = ?, company_reg = ?, company_phone = ?, company_email = ?,
             industry = ?, company_size = ?, company_type = ?, company_logo = ?, company_cover = ?,
-            skills = ?, favorite_categories = ?, hiring_preferences = ?
+            skills = ?, favorite_categories = ?, hiring_preferences = ?, profession = ?, experience = ?
         WHERE id = ?
     ')->execute([
             $name, $email, $role, $wallet, $plan, $planCredits, $planBoostUntil,
             $phone, $governorate, $district, $subDistrict, $bio, $avatar, $cover, $gender,
             $verified, $status, $companyName, $companyReg, $companyPhone, $companyEmail,
             $industry, $companySize, $companyType, $companyLogo, $companyCover,
-            $skills, $favCats, $hiringPrefs,
+            $skills, $favCats, $hiringPrefs, $profession, $experience,
             $id,
         ]);
 

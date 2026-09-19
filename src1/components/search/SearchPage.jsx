@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import { CompanyProfilePage } from '../company/CompanyProfilePage';
 import { FreelancerProfileModal } from '../freelancer/FreelancerProfileModal';
-import { JobDetailModal } from '../freelancer/JobDetailModal';
 import { Monogram } from '../ui/Monogram';
 import { getPlanColor, getContrastColor } from '../../utils/planPresets';
 import { useAuth } from '../../context/AuthContext';
@@ -62,7 +61,7 @@ const formatSalary = (job) => {
 };
 
 
-export const SearchPage = ({ initialTab = 'companies' }) => {
+export const SearchPage = ({ initialTab = 'companies', onNavigate }) => {
   const { jobs = [], freelancers = [], categories: liveCategories = [], companies = [], planTiers = [], addToast, savedJobIds = [], toggleSaveJob } = useStore();
   const { user } = useAuth();
   // A company account only ever wants to search for candidates to hire —
@@ -77,7 +76,6 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
   const [selectedGovernorate, setSelectedGovernorate] = useState('all');
   const [activeTab, setActiveTab] = useState(() => (isEmployer ? 'freelancers' : initialTab)); // 'companies', 'jobs', 'freelancers'
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [selectedJob, setSelectedJob] = useState(null);
   const [initialJobId, setInitialJobId] = useState(null);
   const [viewingFreelancerProfile, setViewingFreelancerProfile] = useState(null);
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
@@ -403,6 +401,7 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
         company={{ ...selectedCompany, cover: selectedCompany.cover || '', governorate: GOV_LABELS[selectedCompany.governorateId] || 'سلێمانی' }}
         jobs={safeJobs}
         initialJobId={initialJobId}
+        onNavigate={onNavigate}
         onBack={handleBackToSearch}
       />
     );
@@ -572,7 +571,7 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
                   secondaryIcon={saved ? BookmarkCheck : Bookmark}
                   secondaryActive={saved}
                   onSecondary={() => { soundService.playTick(); toggleSaveJob?.(job.id); }}
-                  onClick={() => { soundService.playTick(); setSelectedJob(job); }}
+                  onClick={() => { soundService.playTick(); onNavigate?.('job_detail', { jobId: job.id }); }}
                 />
               );
             })
@@ -727,9 +726,6 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
         onClose={handleCloseFreelancerProfile}
       />
 
-      {selectedJob && (
-        <JobDetailModal job={selectedJob} isOpen={!!selectedJob} onClose={() => setSelectedJob(null)} />
-      )}
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
-import { JobDetailModal } from './JobDetailModal';
 import { FreelancerProfileModal } from './FreelancerProfileModal';
 import { SendInvitationModal } from '../company/SendInvitationModal';
 import { monogramColors } from '../ui/Monogram';
@@ -247,7 +246,6 @@ export const JobFeed = ({ onNavigate }) => {
   const [jobTypeFilter,    setJobTypeFilter]    = useState('all');
   const [govFilter,        setGovFilter]        = useState('all');
   const [priceFilter,      setPriceFilter]      = useState('all');
-  const [selectedJob,      setSelectedJob]      = useState(null);
   const [page,             setPage]             = useState(1);
   const [savedSearches,    setSavedSearches]    = useState([]);
   const [expandedGovId,    setExpandedGovId]    = useState(null);
@@ -534,7 +532,7 @@ export const JobFeed = ({ onNavigate }) => {
     const avgResponseH = Number(job.company_avg_response_hours) || 0;
 
     return (
-      <div onClick={() => { soundService.playTick?.(); setSelectedJob(job); }}
+      <div onClick={() => { soundService.playTick?.(); onNavigate?.('job_detail', { jobId: job.id }); }}
         className="bg-white rounded-[28px] border border-stone-100/90 shadow-[0_4px_20px_rgba(20,45,40,0.055)] hover:shadow-[0_18px_40px_rgba(20,45,40,0.12)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer overflow-hidden group"
         style={isBoosted ? { boxShadow: `0 0 0 2px ${TEAL}, 0 2px 16px rgba(0,0,0,0.05)` } : {}}>
         <div className="relative h-40 sm:h-44">
@@ -597,7 +595,7 @@ export const JobFeed = ({ onNavigate }) => {
           </div>
 
           <button
-            onClick={e => { e.stopPropagation(); soundService.playTick?.(); setSelectedJob(job); }}
+            onClick={e => { e.stopPropagation(); soundService.playTick?.(); onNavigate?.('job_detail', { jobId: job.id }); }}
             disabled={isApplied}
             className={`mt-3 w-full py-2.5 rounded-xl text-[11px] font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 ${
               isApplied ? 'bg-emerald-50 text-emerald-700' : 'text-white'
@@ -793,7 +791,7 @@ export const JobFeed = ({ onNavigate }) => {
                 return (
                   <div
                     key={job.id}
-                    onClick={() => setSelectedJob(job)}
+                    onClick={() => onNavigate?.('job_detail', { jobId: job.id })}
                     className="shrink-0 w-64 p-4 rounded-3xl border cursor-pointer transition-all snap-start active:scale-[0.98]"
                     style={{ background: TEAL_SOFT, borderColor: `${TEAL}40` }}
                   >
@@ -1178,13 +1176,6 @@ export const JobFeed = ({ onNavigate }) => {
       </div>
 
       {/* ── Detail modals ─────────────────────────────────── */}
-      {!isEmployer && selectedJob && (
-        <JobDetailModal
-          job={selectedJob}
-          onClose={() => setSelectedJob(null)}
-          onNavigate={onNavigate}
-        />
-      )}
       {isEmployer && (
         <>
           <FreelancerProfileModal freelancer={selectedFreelancer} isOpen={!!selectedFreelancer} onClose={() => setSelectedFreelancer(null)} />

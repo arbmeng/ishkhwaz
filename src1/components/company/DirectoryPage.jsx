@@ -109,6 +109,30 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
     return Object.values(map);
   }, [jobs]);
 
+  // The open company profile lives in the URL (?company=NAME), like SearchPage's
+  // does — so going to a job page and pressing Back lands on the same company
+  // profile, and Back from a profile closes it instead of leaving the section.
+  const openCompany = (c) => {
+    setSelectedCompany(c);
+    try { window.history.pushState({ tabId: 'companies', appNav: true, companyView: true }, '', `/companies?company=${encodeURIComponent(c.name)}`); } catch (e) { }
+  };
+  const closeCompany = () => {
+    if (window.history.state?.companyView) { window.history.back(); return; } // the popstate sync below clears it
+    setSelectedCompany(null);
+    try { window.history.replaceState(window.history.state, '', '/companies'); } catch (e) { }
+  };
+  useEffect(() => {
+    const sync = () => {
+      const name = new URLSearchParams(window.location.search).get('company');
+      if (!name) { setSelectedCompany(null); return; }
+      const found = companyList.find(c => c.name.toLowerCase() === name.toLowerCase());
+      if (found) setSelectedCompany(prev => (prev?.name === found.name ? prev : found));
+    };
+    sync();
+    window.addEventListener('popstate', sync);
+    return () => window.removeEventListener('popstate', sync);
+  }, [companyList]);
+
   const filteredCompanies = useMemo(() => {
     return companyList.filter((c) => {
       if (govFilter !== 'all' && c.governorateName !== govFilter && c.governorate !== govFilter) return false;
@@ -131,7 +155,8 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
       <CompanyProfilePage
         company={{ ...selectedCompany, governorate: selectedCompany.governorateName || 'سلێمانی' }}
         jobs={jobs}
-        onBack={() => setSelectedCompany(null)}
+        onNavigate={onNavigate}
+        onBack={closeCompany}
       />
     );
   }
@@ -261,7 +286,7 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
                 return (
                   <div
                     key={c.name}
-                    onClick={() => { soundService.playTick?.(); setSelectedCompany(c); }}
+                    onClick={() => { soundService.playTick?.(); openCompany(c); }}
                     className={`bg-white rounded-[24px] border overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between cursor-pointer group ${
                       isFeatured
                         ? 'border-[#beece2] shadow-[0_4px_20px_rgba(18,121,107,0.08)]'

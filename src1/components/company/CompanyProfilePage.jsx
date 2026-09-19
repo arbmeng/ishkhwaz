@@ -5,7 +5,6 @@ import { soundService } from '../../services/soundService';
 import { apiService } from '../../services/api';
 import { StarRatingDisplay } from '../ui/StarRating';
 import { Monogram } from '../ui/Monogram';
-import { JobDetailModal } from '../freelancer/JobDetailModal';
 import {
   ArrowLeft, MapPin, Phone, Mail, Globe, Briefcase, CheckCircle2,
   Share2, Send, BadgeCheck, ExternalLink, Sparkles, Copy, Clock3,
@@ -79,9 +78,8 @@ const infoRow = (Icon, label, value, mono = false, isLink = false, linkHref = ''
   </div>
 );
 
-export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId }) => {
+export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId, onNavigate }) => {
   const { applications = [], addToast } = useStore();
-  const [activeJobDetailModal, setActiveJobDetailModal] = useState(null);
   const [activeTab, setActiveTab] = useState('about');
   const [jobQuery, setJobQuery] = useState('');
   const [copied, setCopied] = useState(false);
@@ -116,13 +114,8 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
   }, company.member_since ? new Date(company.member_since).getFullYear() : null);
 
   useEffect(() => {
-    if (initialJobId) {
-      const targetJob = companyJobs.find(j => String(j.id) === String(initialJobId));
-      if (targetJob) {
-        setActiveJobDetailModal(targetJob);
-        setActiveTab('jobs');
-      }
-    }
+    // A legacy /search?company=X&job=Y share link: the job is its own page now.
+    if (initialJobId) onNavigate?.('job_detail', { jobId: initialJobId, replace: true });
   }, [initialJobId]);
 
   // Same lock technique as KarnamaAiChatModal/MessageThreadModal — pinning
@@ -145,20 +138,7 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
 
   const handleOpenJobDetail = (job) => {
     soundService.playTick?.();
-    setActiveJobDetailModal(job);
-    if (typeof window !== 'undefined') {
-      const shareUrl = `/search?company=${encodeURIComponent(company.name || '')}&job=${encodeURIComponent(job.id)}`;
-      try { window.history.pushState({ company: company.name, job: job.id }, '', shareUrl); } catch (e) { }
-    }
-  };
-
-  const handleCloseJobDetail = () => {
-    soundService.playTick?.();
-    setActiveJobDetailModal(null);
-    if (typeof window !== 'undefined') {
-      const compUrl = `/search?company=${encodeURIComponent(company.name || '')}`;
-      try { window.history.pushState({ company: company.name }, '', compUrl); } catch (e) { }
-    }
+    onNavigate?.('job_detail', { jobId: job.id });
   };
 
   const handleShareJob = (job, e) => {
@@ -507,13 +487,6 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
         </div>
       </div>
 
-      {activeJobDetailModal && (
-        <JobDetailModal
-          job={activeJobDetailModal}
-          isOpen
-          onClose={handleCloseJobDetail}
-        />
-      )}
     </>
   ), document.body);
 };
