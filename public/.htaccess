@@ -40,6 +40,13 @@
   # regardless of prefix, see GET /share/job/{id} there.
   RewriteRule ^share/(job|company)/[^/]+$ api/index.php [QSA,L]
 
+  # Leftover Next.js export folders from the Zera World site (plans/, messages/,
+  # map/, dashboard/) live in this docroot and shadow these app routes: the
+  # server 301s /plans -> /plans/ and serves THAT site's index.html instead of
+  # the SPA. Send these exact paths to the SPA first. Remove this rule once the
+  # folders are deleted from the server.
+  RewriteRule ^(plans|messages|map|dashboard)/?$ /index.html [L]
+
   # Frontend Single Page App fallback
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
