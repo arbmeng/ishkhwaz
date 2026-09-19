@@ -4,9 +4,7 @@ import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { apiService } from '../../services/api';
 import { EditJobModal } from '../company/EditJobModal';
-import { JobDetailViewModal } from '../company/JobDetailViewModal';
 import { CompanyBrandingModal } from '../company/CompanyBrandingModal';
-import { ConfirmationModal } from '../ui/ConfirmationModal';
 import { FreelancerProfileModal } from '../freelancer/FreelancerProfileModal';
 import { MessageThreadModal } from '../messages/MessageThreadModal';
 import { DisputeModal } from '../shared/DisputeModal';
@@ -73,7 +71,6 @@ export const Dashboard = ({ onNavigate }) => {
     categories: liveCategories = [],
     updateCompanyApplicantStatus,
     rateApplication,
-    deleteJob,
     toggleJobStatus,
     respondToInvitation,
     syncBackendData,
@@ -163,8 +160,6 @@ export const Dashboard = ({ onNavigate }) => {
     apiService.getCompanyAnalytics(14, token).then(setAnalytics);
   }, [isEmployer, token]);
   const [editingJob, setEditingJob] = useState(null);
-  const [viewingJob, setViewingJob] = useState(null);
-  const [jobToDelete, setJobToDelete] = useState(null);
   const [viewingFreelancer, setViewingFreelancer] = useState(null);
   const [showBrandingModal, setShowBrandingModal] = useState(false);
   const [togglingJobId, setTogglingJobId] = useState(null);
@@ -563,7 +558,7 @@ export const Dashboard = ({ onNavigate }) => {
                         return (
                           <div
                             key={job.id}
-                            onClick={() => { soundService.playTick?.(); setViewingJob(job); }}
+                            onClick={() => { soundService.playTick?.(); onNavigate?.('job_view', { jobId: job.id }); }}
                             className="p-4 sm:p-5 rounded-3xl bg-white border border-[#e8eeec] hover:border-[#12796b]/40 shadow-2xs cursor-pointer transition space-y-3"
                           >
                             <div className="flex items-start gap-3">
@@ -893,25 +888,6 @@ export const Dashboard = ({ onNavigate }) => {
 
       {isEmployer && editingJob && (
         <EditJobModal job={editingJob} isOpen={!!editingJob} onClose={() => setEditingJob(null)} />
-      )}
-
-      {isEmployer && viewingJob && (
-        <JobDetailViewModal
-          job={viewingJob}
-          isOpen={!!viewingJob}
-          onClose={() => setViewingJob(null)}
-          onEdit={(job) => { setViewingJob(null); setEditingJob(job); }}
-          onDelete={(job) => { setViewingJob(null); setJobToDelete(job); }}
-        />
-      )}
-
-      {isEmployer && jobToDelete && (
-        <ConfirmationModal
-          title="سڕینەوەی هەلی کار"
-          message={`ئایا دڵنیایت دەتەوێت "${jobToDelete.title_ku || jobToDelete.title}" بسڕیتەوە؟`}
-          onConfirm={async () => { await deleteJob(jobToDelete.id); setJobToDelete(null); }}
-          onClose={() => setJobToDelete(null)}
-        />
       )}
 
       {isEmployer && viewingFreelancer && (

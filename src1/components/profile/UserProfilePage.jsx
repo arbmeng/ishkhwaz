@@ -13,7 +13,7 @@ import {
   Heart, Trash2, Briefcase, ChevronLeft, LogOut, User,
   Bell, MapPin, Plus, X, Layers, Sparkles, Building2,
   ExternalLink, ShieldCheck, FileCheck,
-  HelpCircle, Info, MailWarning, Loader2
+  HelpCircle, Info, MailWarning, Loader2, Activity, Award, Target, UserRoundCheck, Zap, Globe2
 } from 'lucide-react';
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
@@ -414,6 +414,94 @@ export const UserProfilePage = ({ onNavigate }) => {
   }, []);
 
   /* ══════════════════════════════════════════════════════════════════
+     PREMIUM PROFILE COMMAND BAR — responsive across phone/tablet/desktop
+  ══════════════════════════════════════════════════════════════════ */
+  const ProfileCommandBar = () => {
+    const completionLabel = completion >= 90 ? 'پڕۆفایلی تەواو' : completion >= 70 ? 'نزیکەی تەواو' : 'پێویستی بە نوێکردنەوە هەیە';
+    return (
+      <section className="profile-commandbar mb-5" dir="rtl" style={{ fontFamily: NK }}>
+        <div className="relative overflow-hidden rounded-[26px] border border-[#dce8e4] bg-white shadow-[0_14px_45px_rgba(17,61,54,.08)]">
+          <div className="absolute inset-0 pointer-events-none opacity-60"
+            style={{ background: 'radial-gradient(circle at 8% 15%, rgba(15,107,95,.13), transparent 30%), radial-gradient(circle at 90% 90%, rgba(36,94,86,.09), transparent 34%)' }} />
+          <div className="relative p-4 sm:p-5 lg:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black"
+                    style={{ background: '#eaf5f2', color: TEAL_DEEP }}>
+                    <Activity className="w-3 h-3" /> پڕۆفایلی پیشەیی
+                  </span>
+                  {isVIP && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black text-white"
+                      style={{ background: planAccent }}>
+                      <Award className="w-3 h-3" /> VIP
+                    </span>
+                  )}
+                </div>
+                <h2 className="text-xl sm:text-2xl lg:text-[28px] font-black tracking-tight" style={{ color: TXT }}>
+                  {isEmployer ? `کۆمپانیای ${displayName}` : `بەخێربێیت، ${displayName}`}
+                </h2>
+                <p className="text-[11px] sm:text-xs font-medium mt-1.5 max-w-2xl leading-6" style={{ color: MUTED }}>
+                  {isEmployer
+                    ? 'پڕۆفایلی کۆمپانیاکەت بە شێوەیەکی پیشەیی ڕێکبخە بۆ ئەوەی کاندیدەکان زووتر باوەڕت پێ بکەن.'
+                    : 'پڕۆفایلێکی بەهێزتر دەبێتە ناسنامەی پیشەیی تۆ و یارمەتیت دەدات لەگەڵ هەلی کارە گونجاوەکاندا دیارتر بیت.'}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full lg:w-auto lg:min-w-[390px]">
+                <div className="rounded-2xl border p-3 bg-[#fbfdfc]" style={{ borderColor: '#e5eeeb' }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-black" style={{ color: MUTED }}>تەواوی</span>
+                    <Target className="w-3.5 h-3.5" style={{ color: TEAL }} />
+                  </div>
+                  <div className="text-lg sm:text-xl font-black font-mono mt-1" style={{ color: TXT }}>{completion}%</div>
+                  <div className="text-[9px] font-bold mt-0.5 truncate" style={{ color: TEAL }}>{completionLabel}</div>
+                </div>
+                <div className="rounded-2xl border p-3 bg-[#fbfdfc]" style={{ borderColor: '#e5eeeb' }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-black" style={{ color: MUTED }}>بینین</span>
+                    <Eye className="w-3.5 h-3.5" style={{ color: TEAL }} />
+                  </div>
+                  <div className="text-lg sm:text-xl font-black font-mono mt-1" style={{ color: TXT }}>{profileViews}</div>
+                  <div className="text-[9px] font-bold mt-0.5 truncate" style={{ color: MUTED }}>بینینی پڕۆفایل</div>
+                </div>
+                <div className="rounded-2xl border p-3 bg-[#fbfdfc]" style={{ borderColor: '#e5eeeb' }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-black" style={{ color: MUTED }}>{isEmployer ? 'هەلی کار' : 'داواکاری'}</span>
+                    <Briefcase className="w-3.5 h-3.5" style={{ color: TEAL }} />
+                  </div>
+                  <div className="text-lg sm:text-xl font-black font-mono mt-1" style={{ color: TXT }}>{isEmployer ? employerJobs.length : applCount}</div>
+                  <div className="text-[9px] font-bold mt-0.5 truncate" style={{ color: MUTED }}>{isEmployer ? 'بڵاوکراوە' : 'نێردراوە'}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-col sm:flex-row gap-2.5">
+              <button onClick={() => { soundService.playTick?.(); setShowEdit(true); }}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-white text-xs font-black shadow-[0_8px_20px_rgba(15,107,95,.18)] hover:-translate-y-0.5 transition"
+                style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}>
+                <UserRoundCheck className="w-4 h-4" />
+                {isEmployer ? 'نوێکردنەوەی پڕۆفایل' : 'بەهێزکردنی پڕۆفایل'}
+              </button>
+              {!isEmployer && (
+                <button onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }}
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border text-xs font-black hover:bg-[#f4faf8] transition"
+                  style={{ borderColor: '#dbe7e3', color: TEAL_DEEP, background: '#fff' }}>
+                  <FileText className="w-4 h-4" /> بەڕێوەبردنی CV
+                </button>
+              )}
+              <div className="hidden lg:flex items-center gap-2 mr-auto text-[10px] font-bold" style={{ color: MUTED }}>
+                <Zap className="w-3.5 h-3.5" style={{ color: TEAL }} />
+                {location || 'سلێمانی'} <Globe2 className="w-3 h-3 mr-1" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  };
+
+  /* ══════════════════════════════════════════════════════════════════
      PROFILE HERO — identity rail + bento grid, one responsive layout
      shared by mobile and desktop (rail stacks on top below 1024px)
   ══════════════════════════════════════════════════════════════════ */
@@ -451,6 +539,8 @@ export const UserProfilePage = ({ onNavigate }) => {
           </button>
         </div>
       )}
+
+      <ProfileCommandBar />
 
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 items-start">
 
@@ -1238,7 +1328,7 @@ export const UserProfilePage = ({ onNavigate }) => {
 
   /* ── Settings modal ── */
   const SettingsModal = () => (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+    <div className="fixed inset-0 z-50 bg-[#07110f]/55 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ animation: 'profileFadeUp 0.25s ease both' }}>
       <div className="w-full max-w-md bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
         onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
@@ -1319,7 +1409,7 @@ export const UserProfilePage = ({ onNavigate }) => {
 
   /* ── Saved jobs modal ── */
   const SavedModal = () => (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+    <div className="fixed inset-0 z-50 bg-[#07110f]/55 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ animation: 'profileFadeUp 0.25s ease both' }}>
       <div className="w-full max-w-lg bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
         onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
@@ -1360,7 +1450,7 @@ export const UserProfilePage = ({ onNavigate }) => {
 
   /* ── Viewers modal ── */
   const ViewersModal = () => (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+    <div className="fixed inset-0 z-50 bg-[#07110f]/55 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ animation: 'profileFadeUp 0.25s ease both' }}>
       <div className="w-full max-w-md bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
         onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
@@ -1390,7 +1480,7 @@ export const UserProfilePage = ({ onNavigate }) => {
 
   /* ── Logout modal ── */
   const LogoutModal = () => (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+    <div className="fixed inset-0 z-50 bg-[#07110f]/60 backdrop-blur-md flex items-center justify-center p-4"
       style={{ animation: 'profileFadeUp 0.2s ease both' }}>
       <div className="w-full max-w-sm bg-white rounded-3xl p-6 text-center shadow-2xl border border-[#e4eae7] space-y-4"
         onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
@@ -1417,10 +1507,23 @@ export const UserProfilePage = ({ onNavigate }) => {
      ROOT RENDER
   ══════════════════════════════════════════════════════════════════ */
   return (
-    <div className="w-full min-h-screen pb-24 pt-2 px-3 sm:px-5 lg:px-8" style={{ background: '#f0f4f2' }}>
+    <div className="profile-page-shell w-full min-h-screen pb-24 pt-3 sm:pt-5 px-3 sm:px-5 lg:px-8" style={{ background: 'linear-gradient(180deg,#f8fbfa 0%,#eef4f1 42%,#f2f6f4 100%)' }}>
+      <div className="profile-ambient profile-ambient-a" aria-hidden="true" />
+      <div className="profile-ambient profile-ambient-b" aria-hidden="true" />
       <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
       <input ref={coverRef} type="file" accept="image/*" onChange={handleCoverChange} className="hidden" />
 
+      <style>{`
+        .profile-page-shell{position:relative;isolation:isolate;overflow:hidden}
+        .profile-page-shell > *{position:relative;z-index:1}
+        .profile-ambient{position:absolute!important;z-index:0!important;pointer-events:none;filter:blur(1px)}
+        .profile-ambient-a{width:420px;height:420px;right:-220px;top:100px;background:radial-gradient(circle,rgba(15,107,95,.10),transparent 68%)}
+        .profile-ambient-b{width:360px;height:360px;left:-210px;bottom:120px;background:radial-gradient(circle,rgba(36,94,86,.07),transparent 68%)}
+        .profile-commandbar{animation:profileFadeUp .45s cubic-bezier(.22,1,.36,1) both}
+        @media (min-width:1024px){.profile-page-shell{min-height:100vh}.profile-commandbar{margin-bottom:22px}.profile-page-shell .lg\\:sticky{box-shadow:0 12px 40px rgba(17,61,54,.06)}}
+        @media (max-width:639px){.profile-commandbar .rounded-\\[26px\\]{border-radius:22px}.profile-page-shell{padding-bottom:calc(80px + env(safe-area-inset-bottom))}}
+        @media (prefers-reduced-motion:reduce){.profile-commandbar{animation:none!important}.profile-page-shell *{scroll-behavior:auto!important;transition-duration:0.01ms!important}}
+      `}</style>
       <ProfileHero />
 
       {showEdit     && <EditModal />}

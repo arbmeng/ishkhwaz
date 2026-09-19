@@ -32,6 +32,15 @@ import { VerifyEmailPage } from './components/auth/VerifyEmailPage';
 import { ForgotPasswordPage } from './components/auth/ForgotPasswordPage';
 import { ResetPasswordPage } from './components/auth/ResetPasswordPage';
 import { PullToRefresh } from './components/layout/PullToRefresh';
+import { JobDetailPage } from './components/company/JobDetailPage';
+
+// /dashboard/jobs/{id} — read from the raw path (not the lowercased `target`
+// getInitialTab builds) so a refresh or shared link keeps the id exactly.
+const getJobIdFromUrl = () => {
+  if (typeof window === 'undefined') return null;
+  const m = window.location.pathname.match(/\/dashboard\/jobs\/([^/?#]+)/i);
+  return m ? decodeURIComponent(m[1]) : null;
+};
 
 function MainAppContent() {
   const { user, token, openAuthModal, needsProfileCompletion, clearNeedsProfileCompletion } = useAuth();
@@ -94,6 +103,7 @@ function MainAppContent() {
       if (target === 'freelancers' || target === 'candidates') return 'freelancers';
       if (target === 'profile' || target === 'user') return 'profile';
       if (target === 'dashboard' || target === 'my-company-dashboard' || target === 'company-dashboard' || target === 'my_company_dashboard') return 'my_company_dashboard';
+      if (target.startsWith('dashboard/jobs/')) return 'job_view';
       if (target === 'wallet' || target === 'plans' || target === 'upgrade') return 'plans';
       if (target === 'resumes' || target === 'my-resumes') return 'resumes';
       if (target === 'cv' || target === 'build-cv' || target === 'cv_builder' || target === 'karnama_cv') return 'karnama_cv';
@@ -137,6 +147,7 @@ function MainAppContent() {
   };
 
   const [activeTab, setActiveTabState] = useState(getInitialTab);
+  const [viewJobId, setViewJobId] = useState(getJobIdFromUrl);
 
   // Captured synchronously on first render, before SearchPage's own effect
   // rewrites the URL to /search/company — reading window.location.search
@@ -148,7 +159,9 @@ function MainAppContent() {
     return (params.get('company') || params.get('job')) ? window.location.search : null;
   });
 
-  const setActiveTab = (tabId) => {
+  // Optional 2nd arg only for tabs that need a record id (currently job_view).
+  const setActiveTab = (tabId, params) => {
+    if (tabId === 'job_view' && params?.jobId) setViewJobId(String(params.jobId));
     setActiveTabState(tabId);
     if (typeof window !== 'undefined') {
       let path = '/login';
@@ -163,6 +176,7 @@ function MainAppContent() {
       else if (tabId === 'freelancers') path = '/freelancers';
       else if (tabId === 'profile') path = '/profile';
       else if (tabId === 'my_company_dashboard') path = '/dashboard';
+      else if (tabId === 'job_view') path = `/dashboard/jobs/${encodeURIComponent(params?.jobId ?? viewJobId ?? '')}`;
       else if (tabId === 'plans') path = '/plans';
       else if (tabId === 'home') path = '/';
       else if (tabId === 'post_job') path = '/post-job';
@@ -253,6 +267,7 @@ function MainAppContent() {
   useEffect(() => {
     const handlePopState = () => {
       const initial = getInitialTab();
+      setViewJobId(getJobIdFromUrl());
       const allowedLoggedOut = ['register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'verify_email', 'forgot_password', 'reset_password'];
       if (!user && !allowedLoggedOut.includes(initial)) {
         setActiveTabState('login');
@@ -382,6 +397,10 @@ function MainAppContent() {
       return <Dashboard onNavigate={setActiveTab} />;
     }
 
+    if (activeTab === 'job_view') {
+      return <JobDetailPage jobId={viewJobId} onBack={() => setActiveTab('my_company_dashboard')} />;
+    }
+
     if (activeTab === 'messages') {
       return <MessagesInboxPage onNavigate={setActiveTab} onEditResumeStyle={startResumeStyleEdit} />;
     }
@@ -436,7 +455,7 @@ function MainAppContent() {
           <main>{renderTabContent()}</main>
         ) : (
           <>
-            <DesktopHeaderNav activeTab={activeTab} setActiveTab={setActiveTab} />
+            <DesktopHeaderNav activeTab={activeTab === 'job_view' ? 'my_company_dashboard' : activeTab} setActiveTab={setActiveTab} />
             <main
               className={isMapTab ? 'flex-1 min-h-0 overflow-hidden' : 'pb-24 lg:pb-12'}
               style={{ paddingTop: 'env(safe-area-inset-top)' }}
@@ -459,7 +478,7 @@ function MainAppContent() {
           physically blocking taps on the real "save" button underneath. */}
       {!isAuthOrRegisterPage && activeTab !== 'karnama_cv' && activeTab !== 'karnama_templates' && (
         <BottomNavbar
-          activeTab={activeTab}
+          activeTab={activeTab === 'job_view' ? 'my_company_dashboard' : activeTab}
           setActiveTab={setActiveTab}
           onOpenMenu={() => setShowSidebarDrawer(true)}
         />
