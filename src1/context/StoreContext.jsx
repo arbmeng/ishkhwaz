@@ -26,6 +26,7 @@ export const StoreProvider = ({ children }) => {
   const [regions] = useState(kurdistanGovernorates);
   const [savedJobIds, setSavedJobIds] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [workTypes, setWorkTypes] = useState([]);
   const [settings, setSettings] = useState({});
   const [planTiers, setPlanTiers] = useState([]);
   // True only until the very first fetch resolves — drives real skeleton
@@ -77,7 +78,7 @@ export const StoreProvider = ({ children }) => {
   // slow/failing endpoint can never block or fail the others via Promise.all.
   const syncBackendData = async () => {
     try {
-      const [liveJobs, liveApps, liveNotifs, liveFreelancers, liveCompanies, liveCategories, liveSettings, liveTiers] = await Promise.all([
+      const [liveJobs, liveApps, liveNotifs, liveFreelancers, liveCompanies, liveCategories, liveWorkTypes, liveSettings, liveTiers] = await Promise.all([
         apiService.getJobs({}, token),
         // /applications requires auth server-side — skip entirely when
         // logged out instead of firing a request that's guaranteed to 401.
@@ -86,6 +87,7 @@ export const StoreProvider = ({ children }) => {
         apiService.getFreelancers(),
         apiService.getCompanies(),
         apiService.getCategories(),
+        apiService.getWorkTypes(),
         apiService.getSettings(),
         apiService.getPlanTiers(),
       ]);
@@ -96,6 +98,7 @@ export const StoreProvider = ({ children }) => {
       if (Array.isArray(liveFreelancers)) setFreelancers(liveFreelancers);
       if (Array.isArray(liveCompanies)) setCompanies(liveCompanies);
       if (Array.isArray(liveCategories) && liveCategories.length > 0) setCategories(liveCategories);
+      if (Array.isArray(liveWorkTypes) && liveWorkTypes.length > 0) setWorkTypes(liveWorkTypes);
       if (liveSettings && Object.keys(liveSettings).length > 0) setSettings(liveSettings);
       if (Array.isArray(liveTiers)) setPlanTiers(liveTiers);
     } catch (e) {
@@ -346,6 +349,7 @@ export const StoreProvider = ({ children }) => {
       companies,
       savedJobIds,
       categories,
+      workTypes,
       settings,
       planTiers,
       isInitialLoading,

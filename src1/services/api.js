@@ -230,6 +230,15 @@ export const apiService = {
     }
   },
 
+  async getWorkTypes() {
+    try {
+      const data = await fetchJsonRetry(`${API_BASE_URL}/work-types`);
+      return data.workTypes || [];
+    } catch (e) {
+      return [];
+    }
+  },
+
   async getSettings() {
     try {
       const data = await fetchJsonRetry(`${API_BASE_URL}/settings`);
@@ -807,6 +816,30 @@ export const apiService = {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ id }),
       });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+  async setPublicResume(id, token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/resumes/set-public`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ id: id || '' }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+  async getPublicResume(userId) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/resumes/public?user_id=${encodeURIComponent(userId)}`);
       const data = await res.json();
       if (!res.ok) return { success: false, message: data.message };
       return data;

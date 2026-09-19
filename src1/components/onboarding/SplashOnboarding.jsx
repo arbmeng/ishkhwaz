@@ -136,7 +136,7 @@ export const SplashOnboarding = ({ onComplete }) => {
     return (
       <div
         dir="rtl"
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-7 select-none overflow-hidden"
+        className="fixed inset-0 z-[10001] flex flex-col items-center justify-center gap-7 select-none overflow-hidden"
         style={{
           backgroundColor: '#f4f7f6',
           backgroundImage: 'radial-gradient(120% 60% at 50% 28%, #cdeae4, #f4f7f6 68%)',
@@ -275,7 +275,7 @@ export const SplashOnboarding = ({ onComplete }) => {
   }
 
   return (
-    <div dir="rtl" className="fixed inset-0 z-50 flex flex-col select-none" style={{ background: '#f4f7f6' }}>
+    <div dir="rtl" className="fixed inset-0 z-[10001] flex flex-col select-none" style={{ background: '#f4f7f6' }}>
       <div className="flex justify-start p-4 shrink-0" style={{ paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 8px))' }}>
         <button onClick={onComplete} className="text-[13px] font-semibold px-2 py-2" style={{ color: '#8b938d' }}>تێپەڕاندن</button>
       </div>

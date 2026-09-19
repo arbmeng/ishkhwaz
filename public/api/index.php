@@ -1601,6 +1601,12 @@ foreach ([
     // to any client app to stay accurate. "Online" = active within the last
     // few minutes, same definition virtually every product uses.
     "ALTER TABLE users ADD COLUMN last_active_at VARCHAR(32) NULL",
+    // A freelancer can pick ONE of their saved resumes (from the real
+    // multi-CV `resumes` table) to be publicly viewable on their profile —
+    // separate from the old, always-empty `cv_url` column (never written to
+    // by any live code path; that field only ever mattered per-application,
+    // via applications.cv_url/resume_id). NULL means "no public CV set".
+    "ALTER TABLE users ADD COLUMN public_resume_id VARCHAR(40) NULL",
 ] as $migration) {
     try { $pdo->exec($migration); } catch (Exception $e) { /* already applied */ }
 }
@@ -2703,6 +2709,7 @@ if (preg_match('#/auth/me$#', $uri) && $method === 'GET') {
             'plan_credits'     => (int)($authUser['plan_credits'] ?? 0),
             'plan_boost_until' => $authUser['plan_boost_until'] ?? null,
             'created_at'       => $authUser['created_at'] ?? null,
+            'public_resume_id' => $authUser['public_resume_id'] ?? null,
         ]
     ]);
     exit(0);
@@ -3224,7 +3231,7 @@ if (preg_match('#/jobs/boost$#', $uri) && $method === 'POST') {
 if (preg_match('#/freelancers$#', $uri) && $method === 'GET') {
     // Only expose safe public fields — never expose phone/email raw
     $stmt = $pdo->query("
-        SELECT id, name, profession, role, gender, governorate, district, sub_district, skills, bio, avatar, cover, status, profile_views, plan, plan_boost_until, created_at, experience, favorite_categories, verified
+        SELECT id, name, profession, role, gender, governorate, district, sub_district, skills, bio, avatar, cover, status, profile_views, plan, plan_boost_until, created_at, experience, favorite_categories, verified, public_resume_id
         FROM users WHERE role = 'freelancer' AND status = 'active'
         ORDER BY (plan_boost_until IS NOT NULL AND plan_boost_until > NOW()) DESC, created_at DESC
     ");
@@ -4780,7 +4787,51 @@ if (preg_match('#/resumes/delete$#', $uri) && $method === 'POST') {
     $id = sanitize($input['id'] ?? '', 40);
     if (empty($id)) jsonErr(400, 'Resume ID required.');
     $pdo->prepare('DELETE FROM resumes WHERE id = ? AND user_id = ?')->execute([$id, $authUser['id']]);
+    // If the deleted resume was the public one, that link is now dangling —
+    // clear it so a stale id doesn't linger in users.public_resume_id.
+    $pdo->prepare('UPDATE users SET public_resume_id = NULL WHERE id = ? AND public_resume_id = ?')->execute([$authUser['id'], $id]);
     echo json_encode(['success' => true]);
+    exit(0);
+}
+
+// Resumes: Set/clear which one is public  POST /resumes/set-public  { id }
+// Pass id = null/'' to unpublish (profile shows no CV button at all).
+if (preg_match('#/resumes/set-public$#', $uri) && $method === 'POST') {
+    $authUser = requireAuth($pdo);
+    $input = safeJson();
+    $id = sanitize($input['id'] ?? '', 40);
+
+    if ($id !== '') {
+        $owned = $pdo->prepare('SELECT 1 FROM resumes WHERE id = ? AND user_id = ?');
+        $owned->execute([$id, $authUser['id']]);
+        if (!$owned->fetch()) jsonErr(404, 'سیڤیەکە نەدۆزرایەوە.');
+        $pdo->prepare('UPDATE users SET public_resume_id = ? WHERE id = ?')->execute([$id, $authUser['id']]);
+    } else {
+        $pdo->prepare('UPDATE users SET public_resume_id = NULL WHERE id = ?')->execute([$authUser['id']]);
+    }
+    echo json_encode(['success' => true, 'public_resume_id' => $id !== '' ? $id : null]);
+    exit(0);
+}
+
+// Resumes: Public read  GET /resumes/public?user_id=X  — no auth. Returns
+// ONLY the one resume that freelancer explicitly designated as public via
+// the endpoint above; every other saved resume stays private.
+if (preg_match('#/resumes/public$#', $uri) && $method === 'GET') {
+    $userId = sanitize($_GET['user_id'] ?? '', 64);
+    if (empty($userId)) jsonErr(400, 'User ID required.');
+
+    $u = $pdo->prepare('SELECT public_resume_id FROM users WHERE id = ?');
+    $u->execute([$userId]);
+    $u = $u->fetch();
+    if (!$u || empty($u['public_resume_id'])) jsonErr(404, 'ئەم بەکارهێنەرە هیچ CV ی گشتی نییە.');
+
+    $stmt = $pdo->prepare('SELECT id, title, template_id, resume_data FROM resumes WHERE id = ? AND user_id = ?');
+    $stmt->execute([$u['public_resume_id'], $userId]);
+    $resume = $stmt->fetch();
+    if (!$resume) jsonErr(404, 'ئەم بەکارهێنەرە هیچ CV ی گشتی نییە.');
+    $resume['resume_data'] = json_decode($resume['resume_data'], true);
+
+    echo json_encode(['success' => true, 'resume' => $resume]);
     exit(0);
 }
 

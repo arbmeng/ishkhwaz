@@ -212,7 +212,10 @@ export const UserProfilePage = ({ onNavigate }) => {
 
   /* ── computed ── */
   const displayName   = isEmployer ? (companyName || user?.company_name || user?.name || 'کۆمپانیا') : (name || user?.name || 'بەکارهێنەر');
-  const displayTitle  = isEmployer ? (industry || user?.industry || 'کۆمپانیا و خاوەنکار') : (profession || user?.profession || 'کارخواز');
+  // For an employer, the subtitle under the name is the OWNER's own job
+  // title (e.g. "گەشەپێدەر") — not the company's industry, which already
+  // has its own field/section further down the page.
+  const displayTitle  = isEmployer ? (profession || user?.profession || 'خاوەنکار') : (profession || user?.profession || 'کارخواز');
   const displayAvatar = avatar     || user?.avatar || user?.company_logo || '';
   const initial       = displayName.trim().charAt(0) || (isEmployer ? 'ک' : 'ئ');
   const joinYear      = user?.created_at ? new Date(user.created_at).getFullYear() : null;
@@ -452,61 +455,84 @@ export const UserProfilePage = ({ onNavigate }) => {
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 items-start">
 
         {/* ══════════ IDENTITY RAIL ══════════ */}
-        <aside className="bg-white rounded-2xl border border-[#e4eae7] shadow-sm p-6 lg:sticky lg:top-5 relative overflow-hidden">
-          {/* subtle kilim-inspired weave, restrained */}
+        <aside className="bg-white rounded-2xl border border-[#e4eae7] shadow-sm lg:sticky lg:top-5 relative overflow-hidden">
+          {/* Cover banner — real photo when set (cover/company_cover already
+              collected in the edit modal below), gradient fallback otherwise */}
           <div
-            className="absolute inset-0 pointer-events-none opacity-[0.05]"
-            style={{
-              backgroundImage: `repeating-linear-gradient(45deg, ${TXT} 0 1.5px, transparent 1.5px 22px), repeating-linear-gradient(-45deg, ${TXT} 0 1.5px, transparent 1.5px 22px)`,
-              WebkitMaskImage: 'radial-gradient(circle at 100% 0%, #000 0%, transparent 62%)',
-              maskImage: 'radial-gradient(circle at 100% 0%, #000 0%, transparent 62%)',
-            }}
-          />
-
-          <div className="flex items-start justify-between gap-2 relative">
-            {isVIP && (
+            className="h-36 sm:h-44 relative"
+            style={{ background: cover ? `url(${cover}) center/cover` : `linear-gradient(135deg, ${TEAL}, #2db89f)` }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
+            <div className="absolute top-3 inset-x-3 flex items-start justify-between gap-2">
+              {isVIP && (
+                <span
+                  className="text-white text-[11px] font-black px-2.5 py-1 rounded-full inline-flex items-center gap-1 shrink-0"
+                  style={{ background: planAccent }}
+                >
+                  <Sparkles className="w-3 h-3" /> VIP
+                </span>
+              )}
               <span
-                className="text-white text-[11px] font-black px-2.5 py-1 rounded-full inline-flex items-center gap-1 shrink-0"
-                style={{ background: planAccent }}
+                className="text-[11px] font-black px-2.5 py-1 rounded-full shrink-0"
+                style={{ background: 'rgba(255,255,255,0.92)', color: TXT }}
               >
-                <Sparkles className="w-3 h-3" /> VIP
+                {isEmployer ? 'کۆمپانیا و خاوەنکار' : 'کارخواز'}
               </span>
-            )}
-            <span
-              className="text-[11px] font-black px-2.5 py-1 rounded-full shrink-0"
-              style={{ background: CARD, color: TXT, border: '1px solid #e4eae7' }}
+            </div>
+            <button
+              type="button"
+              onClick={() => coverRef.current?.click()}
+              className="absolute bottom-2 left-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition"
+              style={{ background: 'rgba(255,255,255,0.92)' }}
+              aria-label="گۆڕینی وێنەی پاشبنەما"
             >
-              {isEmployer ? 'کۆمپانیا و خاوەنکار' : 'کارخواز'}
-            </span>
+              <Camera className="w-3.5 h-3.5" style={{ color: TXT }} />
+            </button>
           </div>
 
-          <div className="relative w-[108px] h-[108px] mx-auto my-5">
-            <CompletionRing pct={completion} />
+          <div className="p-6 pt-0 relative">
+            {/* subtle kilim-inspired weave, restrained */}
             <div
-              onClick={() => avatarRef.current?.click()}
-              className={`absolute inset-[9px] ${isEmployer ? 'rounded-2xl' : 'rounded-full'} overflow-hidden border-2 border-white cursor-pointer group flex items-center justify-center shadow-sm`}
-              style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}
-            >
-              {displayAvatar
-                ? <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
-                : <span className="text-3xl font-black text-white">{initial}</span>}
-              <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white">
-                <Camera className="w-4 h-4" />
+              className="absolute inset-0 pointer-events-none opacity-[0.05]"
+              style={{
+                backgroundImage: `repeating-linear-gradient(45deg, ${TXT} 0 1.5px, transparent 1.5px 22px), repeating-linear-gradient(-45deg, ${TXT} 0 1.5px, transparent 1.5px 22px)`,
+                WebkitMaskImage: 'radial-gradient(circle at 100% 0%, #000 0%, transparent 62%)',
+                maskImage: 'radial-gradient(circle at 100% 0%, #000 0%, transparent 62%)',
+              }}
+            />
+
+            {/* Avatar overlaps the banner, anchored to the reading-start
+                (right) side rather than centered — sits "inside" the cover
+                photo like a standard cover+avatar profile layout */}
+            <div className="flex justify-start -mt-14 relative z-10">
+              <div className="relative w-[108px] h-[108px]">
+                <CompletionRing pct={completion} />
+                <div
+                  onClick={() => avatarRef.current?.click()}
+                  className="absolute inset-[9px] rounded-full overflow-hidden border-2 border-white cursor-pointer group flex items-center justify-center shadow-sm"
+                  style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}
+                >
+                  {displayAvatar
+                    ? <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
+                    : <span className="text-3xl font-black text-white">{initial}</span>}
+                  <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white">
+                    <Camera className="w-4 h-4" />
+                  </div>
+                </div>
+                <span
+                  className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-black px-2 py-0.5 rounded-full border-2 border-white font-mono"
+                  style={{ background: TEAL }}
+                >
+                  {completion}٪
+                </span>
               </div>
             </div>
-            <span
-              className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-black px-2 py-0.5 rounded-full border-2 border-white font-mono"
-              style={{ background: TEAL }}
-            >
-              {completion}٪
-            </span>
-          </div>
 
-          <h2 className="text-center text-xl font-black relative" style={{ color: TXT }}>{displayName}</h2>
-          <p className="text-center text-xs font-bold mt-1 relative" style={{ color: SUB }}>{displayTitle}</p>
-          <p className="text-center text-[11px] font-medium mt-1 mb-6 relative" style={{ color: MUTED }}>
-            {govObj?.name_ku || 'سلێمانی'}{distObj?.name_ku ? `، ${distObj.name_ku}` : ''}{joinYear ? ` · ئەندام لە ${joinYear}` : ''}
-          </p>
+            <h2 className="text-right text-xl font-black relative mt-4" style={{ color: TXT }}>{displayName}</h2>
+            <p className="text-right text-xs font-bold mt-1 relative" style={{ color: SUB }}>{displayTitle}</p>
+            <p className="text-right text-[11px] font-medium mt-1 mb-6 relative" style={{ color: MUTED }}>
+              {govObj?.name_ku || 'سلێمانی'}{distObj?.name_ku ? `، ${distObj.name_ku}` : ''}{joinYear ? ` · ئەندام لە ${joinYear}` : ''}
+            </p>
 
           <button
             onClick={() => { soundService.playTick?.(); setShowEdit(true); }}
@@ -555,6 +581,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                 <div className="text-[10px] font-bold mt-0.5" style={{ color: MUTED }}>{label}</div>
               </button>
             ))}
+          </div>
           </div>
         </aside>
 
@@ -738,6 +765,17 @@ export const UserProfilePage = ({ onNavigate }) => {
   const EditModal = () => {
     const [activeSection, setActiveSection] = useState(isEmployer ? 'company_info' : 'basic');
 
+    // Tells main.jsx's service-worker updater not to force-reload the app
+    // while this form is open (see main.jsx for the full reasoning) — a
+    // deploy landing mid-edit used to silently wipe whatever was typed here.
+    useEffect(() => {
+      window.__ishkhwazEditing = true;
+      return () => {
+        window.__ishkhwazEditing = false;
+        window.dispatchEvent(new Event('ishkhwaz:edit-done'));
+      };
+    }, []);
+
     const tabs = isEmployer ? [
       { id: 'company_info', label: 'زانیاری کۆمپانیا', icon: Building2 },
       { id: 'location', label: 'شوێن و ناونیشان', icon: MapPin },
@@ -763,9 +801,18 @@ export const UserProfilePage = ({ onNavigate }) => {
         {children}
       </div>
     );
-    const SectionCard = ({ title, children, className = '' }) => (
-      <div className={`rounded-xl border p-5 space-y-4 ${className}`} style={{ background: CARD, borderColor: '#eef3f1' }}>
-        {title && <h4 className="text-xs font-black" style={{ color: TXT }}>{title}</h4>}
+    const SectionCard = ({ title, icon: SIcon, children, className = '' }) => (
+      <div className={`rounded-2xl border p-5 space-y-4 ${className}`} style={{ background: '#fff', borderColor: '#eef3f1', boxShadow: '0 1px 3px rgba(17,61,54,.04)' }}>
+        {title && (
+          <div className="flex items-center gap-2 pb-3 border-b" style={{ borderColor: '#f4f7f6' }}>
+            {SIcon && (
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#eef7f5', color: TEAL }}>
+                <SIcon className="w-3.5 h-3.5" />
+              </div>
+            )}
+            <h4 className="text-xs font-black" style={{ color: TXT }}>{title}</h4>
+          </div>
+        )}
         {children}
       </div>
     );
@@ -779,18 +826,30 @@ export const UserProfilePage = ({ onNavigate }) => {
         >
           {/* Header Bar */}
           <div
-            className="px-6 border-b border-[#eef3f1] flex items-center justify-between bg-white shrink-0"
+            className="px-6 flex items-center justify-between shrink-0 relative overflow-hidden"
             style={{
-              paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 12px))',
-              paddingBottom: '14px',
+              paddingTop: 'max(20px, calc(env(safe-area-inset-top) + 16px))',
+              paddingBottom: '20px',
+              background: `linear-gradient(120deg, ${TEAL_DEEP}, ${TEAL})`,
             }}
           >
-            <button onClick={() => setShowEdit(false)} className="w-9 h-9 rounded-2xl flex items-center justify-center transition active:scale-95" style={{ background: CARD, color: SUB }}>
+            <div
+              className="absolute inset-0 pointer-events-none opacity-[0.08]"
+              style={{
+                backgroundImage: `repeating-linear-gradient(45deg, #fff 0 1.5px, transparent 1.5px 22px)`,
+              }}
+            />
+            <button onClick={() => setShowEdit(false)} className="w-9 h-9 rounded-2xl flex items-center justify-center transition active:scale-95 relative" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}>
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-sm sm:text-base font-black" style={{ color: TXT }}>
-              {isEmployer ? 'دەستکاری پڕۆفایلی کۆمپانیا' : 'دەستکاری پڕۆفایل'}
-            </h3>
+            <div className="flex items-center gap-2.5 relative">
+              <h3 className="text-sm sm:text-base font-black text-white">
+                {isEmployer ? 'دەستکاری پڕۆفایلی کۆمپانیا' : 'دەستکاری پڕۆفایل'}
+              </h3>
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)' }}>
+                {isEmployer ? <Building2 className="w-4 h-4 text-white" /> : <User className="w-4 h-4 text-white" />}
+              </div>
+            </div>
           </div>
 
           <div
@@ -824,14 +883,21 @@ export const UserProfilePage = ({ onNavigate }) => {
                 <h4 className="text-base font-black truncate" style={{ color: TXT }}>{displayName}</h4>
                 <p className="text-xs font-bold mt-0.5 truncate" style={{ color: SUB }}>{displayTitle}</p>
 
-                <div className="flex items-center justify-center gap-1.5 mt-3 pt-3 border-t" style={{ borderColor: '#f0f4f2' }}>
-                  <span className="text-sm font-black font-mono" style={{ color: TEAL }}>{completion}%</span>
-                  <span className="text-[11px] font-bold" style={{ color: MUTED }}>تەواوی پڕۆفایل</span>
+                <div className="mt-3 pt-3 border-t" style={{ borderColor: '#f0f4f2' }}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-bold" style={{ color: MUTED }}>تەواوی پڕۆفایل</span>
+                    <span className="text-xs font-black font-mono" style={{ color: TEAL }}>{completion}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#eef3f1' }}>
+                    <div className="h-full rounded-full transition-all" style={{ width: `${completion}%`, background: `linear-gradient(90deg, ${TEAL}, ${TEAL_DEEP})` }} />
+                  </div>
                 </div>
               </div>
 
-              {/* Vertical Navigation Tabs */}
-              <div className="space-y-1 text-xs font-bold">
+              {/* Navigation Tabs — icon-badge style, active tab gets a
+                  colored accent bar + tinted background instead of a plain
+                  highlighted row */}
+              <div className="space-y-1.5 text-xs font-bold">
                 {tabs.map(tab => {
                   const Icon = tab.icon;
                   const isActive = activeSection === tab.id;
@@ -839,16 +905,19 @@ export const UserProfilePage = ({ onNavigate }) => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveSection(tab.id)}
-                      className="w-full flex items-center justify-between py-3 px-4 rounded-xl transition-all"
+                      className="w-full flex items-center gap-3 py-2.5 px-3 rounded-xl transition-all relative overflow-hidden"
                       style={isActive
-                        ? { background: '#eef1f0', color: TEAL_DEEP, fontWeight: 900, boxShadow: '0 1px 2px rgba(17,61,54,.04)' }
+                        ? { background: '#eef7f5', color: TEAL_DEEP, fontWeight: 900 }
                         : { color: SUB }}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <Icon className="w-4 h-4" />
-                        <span>{tab.label}</span>
+                      {isActive && <span className="absolute right-0 top-1.5 bottom-1.5 w-[3px] rounded-full" style={{ background: TEAL }} />}
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                        style={isActive ? { background: TEAL, color: '#fff' } : { background: '#f0f4f2', color: SUB }}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
                       </div>
-                      <ChevronLeft className="w-3.5 h-3.5 rtl:rotate-0 rotate-180 opacity-50" />
+                      <span className="flex-1 text-right">{tab.label}</span>
                     </button>
                   );
                 })}
@@ -860,7 +929,7 @@ export const UserProfilePage = ({ onNavigate }) => {
 
               {/* ── TAB 1: BASIC INFO (FREELANCER) ── */}
               {activeSection === 'basic' && (
-                <SectionCard title="زانیاری بنەڕەتی" className="animate-fadeIn">
+                <SectionCard title="زانیاری بنەڕەتی" icon={User} className="animate-fadeIn">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="ناوی تەواو *">
                       <input value={name} onChange={e => setName(e.target.value)} placeholder="هەڵمەت ئازاد" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
@@ -889,13 +958,34 @@ export const UserProfilePage = ({ onNavigate }) => {
 
               {/* ── TAB 1: COMPANY INFO (EMPLOYER) ── */}
               {activeSection === 'company_info' && (
-                <SectionCard title="زانیاری کۆمپانیا" className="animate-fadeIn">
+                <div className="space-y-4 animate-fadeIn">
+                  {/* Live preview — updates as the fields below change, so it's
+                      obvious what a viewer will actually see instead of only
+                      seeing raw form fields */}
+                  <div
+                    className="rounded-2xl p-4 flex items-center gap-3.5 relative overflow-hidden"
+                    style={{ background: `linear-gradient(120deg, ${TEAL_DEEP}, ${TEAL})` }}
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center overflow-hidden shrink-0">
+                      {displayAvatar ? <img src={displayAvatar} alt="" className="w-full h-full object-cover" /> : <span className="text-lg font-black text-white">{initial}</span>}
+                    </div>
+                    <div className="text-right flex-1 min-w-0">
+                      <div className="text-sm font-black text-white truncate">{companyName || 'ناوی کۆمپانیا'}</div>
+                      <div className="text-[11px] font-bold text-white/75 truncate">{profession || industry || 'ناونیشانی پیشەیی'}</div>
+                    </div>
+                    <span className="text-[10px] font-black text-white/70 shrink-0">پێشبینین</span>
+                  </div>
+
+                <SectionCard title="زانیاری کۆمپانیا" icon={Building2}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label="ناوی فەرمی کۆمپانیا *">
                       <input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="کۆمپانیای ئاسۆ" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
                     </Field>
                     <Field label="بواری کار (Industry)">
                       <input value={industry} onChange={e => setIndustry(e.target.value)} placeholder="تەکنەلۆژیا، بیناسازی، پزیشکی..." className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                    </Field>
+                    <Field label="ناونیشانی پیشەیی خاوەنکار">
+                      <input value={profession} onChange={e => setProfession(e.target.value)} placeholder="گەشەپێدەر، بەڕێوەبەر..." className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
                     </Field>
                     <Field label="ژمارەی تەلەفۆنی فەرمی">
                       <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+964 770 000 0000" dir="ltr" className={`${fieldCls} ${fieldFocus} font-mono text-right`} style={fieldStyle} />
@@ -910,11 +1000,12 @@ export const UserProfilePage = ({ onNavigate }) => {
                       className={`${fieldCls} ${fieldFocus} font-medium leading-relaxed resize-none p-4`} style={fieldStyle} />
                   </Field>
                 </SectionCard>
+                </div>
               )}
 
               {/* ── TAB 2: LOCATION ── */}
               {activeSection === 'location' && (
-                <SectionCard title="شوێن و ناوچە" className="animate-fadeIn">
+                <SectionCard title="شوێن و ناوچە" icon={MapPin} className="animate-fadeIn">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <Field label="شار">
                       <select value={govId} onChange={e => { setGovId(e.target.value); setDistId(''); setSubId(''); }} className={`${fieldCls} ${fieldFocus}`} style={fieldStyle}>
@@ -945,7 +1036,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               {/* ── TAB 3: SKILLS (FREELANCER) ── */}
               {activeSection === 'skills' && (
                 <div className="space-y-4 animate-fadeIn">
-                  <SectionCard title="زیادکردنی شارەزایی">
+                  <SectionCard title="زیادکردنی شارەزایی" icon={Plus}>
                     <div className="flex gap-2">
                       <input
                         value={skillInput}
@@ -960,7 +1051,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                     </div>
                   </SectionCard>
 
-                  <SectionCard title={`شارەزاییە هەڵبژێردراوەکان (${skills.length})`}>
+                  <SectionCard title={`شارەزاییە هەڵبژێردراوەکان (${skills.length})`} icon={Layers}>
                     <div className="flex flex-wrap gap-2 min-h-[46px]">
                       {skills.map(s => (
                         <span key={s} className="px-3 py-1.5 rounded-xl bg-white border text-xs font-bold flex items-center gap-1.5 shadow-2xs" style={{ borderColor: '#dce5e1', color: TXT }}>
@@ -972,7 +1063,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                     </div>
                   </SectionCard>
 
-                  <SectionCard title="پێشنیارە باوەکان">
+                  <SectionCard title="پێشنیارە باوەکان" icon={Sparkles}>
                     <div className="flex flex-wrap gap-1.5">
                       {SUGGESTED_SKILLS.filter(s => !skills.includes(s)).map(s => (
                         <button key={s} type="button" onClick={() => addSkill(s)}
@@ -989,7 +1080,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               {/* ── TAB 4: EXPERIENCE (FREELANCER) ── */}
               {activeSection === 'experience' && (
                 <div className="space-y-4 animate-fadeIn">
-                  <SectionCard title="زیادکردنی ئەزموونی نوێ">
+                  <SectionCard title="زیادکردنی ئەزموونی نوێ" icon={Plus}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <input value={expTitle} onChange={e => setExpTitle(e.target.value)} placeholder="ناونیشانی کار / پڕۆژە *" className={`${fieldCls} ${fieldFocus} py-2.5`} style={fieldStyle} />
                       <input value={expPeriod} onChange={e => setExpPeriod(e.target.value)} placeholder="ماوە (نموونە: 2022 — 2024)" className={`${fieldCls} ${fieldFocus} py-2.5`} style={fieldStyle} />
@@ -1001,7 +1092,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                     </button>
                   </SectionCard>
 
-                  <SectionCard title={`مێژووی تۆمارکراو (${experiences.length})`}>
+                  <SectionCard title={`مێژووی تۆمارکراو (${experiences.length})`} icon={Briefcase}>
                     {experiences.length === 0 ? (
                       <p className="text-xs font-bold" style={{ color: MUTED }}>هیچ ئەزموونێک زیاد نەکراوە.</p>
                     ) : experiences.map((exp, idx) => (
@@ -1021,7 +1112,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               {/* ── TAB: BRANDING (EMPLOYER) ── */}
               {activeSection === 'branding' && (
                 <div className="space-y-4 animate-fadeIn">
-                  <SectionCard title="لۆگۆی کۆمپانیا">
+                  <SectionCard title="لۆگۆی کۆمپانیا" icon={Camera}>
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 rounded-2xl bg-white border flex items-center justify-center overflow-hidden shrink-0 shadow-xs" style={{ borderColor: '#e4eae7' }}>
                         {displayAvatar ? <img src={displayAvatar} alt="" className="w-full h-full object-cover" /> : <span className="text-xl font-black" style={{ color: TEAL }}>{initial}</span>}
@@ -1032,7 +1123,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                     </div>
                   </SectionCard>
 
-                  <SectionCard title="وێنەی کەڤەری کۆمپانیا">
+                  <SectionCard title="وێنەی کەڤەری کۆمپانیا" icon={Camera}>
                     <div className="h-28 w-full rounded-xl overflow-hidden relative" style={{ background: cover ? `url(${cover}) center/cover` : `linear-gradient(135deg, ${TEAL}, #2db89f)` }}>
                       <button type="button" onClick={() => coverRef.current?.click()} className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-white/90 text-xs font-bold shadow-md hover:bg-white transition flex items-center gap-1.5" style={{ color: TXT }}>
                         <Camera className="w-3.5 h-3.5" /> گۆڕینی کەڤەر
@@ -1045,7 +1136,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               {/* ── TAB: PHOTOS (FREELANCER) ── */}
               {activeSection === 'photos' && (
                 <div className="space-y-4 animate-fadeIn">
-                  <SectionCard title="وێنەی پرۆفایل">
+                  <SectionCard title="وێنەی پرۆفایل" icon={Camera}>
                     <div className="flex items-center gap-4">
                       <div className="w-16 h-16 rounded-full bg-white border flex items-center justify-center overflow-hidden shrink-0 shadow-xs" style={{ borderColor: '#e4eae7' }}>
                         {displayAvatar ? <img src={displayAvatar} alt="" className="w-full h-full object-cover" /> : <span className="text-xl font-black" style={{ color: TEAL }}>{initial}</span>}
@@ -1056,7 +1147,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                     </div>
                   </SectionCard>
 
-                  <SectionCard title="وێنەی کەڤەر">
+                  <SectionCard title="وێنەی کەڤەر" icon={Camera}>
                     <div className="h-28 w-full rounded-xl overflow-hidden relative" style={{ background: cover ? `url(${cover}) center/cover` : `linear-gradient(135deg, ${TEAL}, #2db89f)` }}>
                       <button type="button" onClick={() => coverRef.current?.click()} className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-white/90 text-xs font-bold shadow-md hover:bg-white transition flex items-center gap-1.5" style={{ color: TXT }}>
                         <Camera className="w-3.5 h-3.5" /> گۆڕینی کەڤەر
@@ -1087,7 +1178,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               {/* ── TAB: SETTINGS ── */}
               {activeSection === 'settings' && (
                 <div className="animate-fadeIn">
-                  <SectionCard title="ڕێکخستن">
+                  <SectionCard title="ڕێکخستن" icon={Settings}>
                     <div className="flex items-center justify-between">
                       <button type="button" onClick={handleTogglePush} disabled={pushBusy}
                         className="w-12 h-6 rounded-full p-1 flex items-center transition-colors duration-300"

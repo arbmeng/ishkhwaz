@@ -245,6 +245,22 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
     }
   };
 
+
+  const handleOpenPlans = () => {
+    soundService.playTick?.();
+    onNavigate?.('plans');
+  };
+
+  const currentPlanName = String(
+    user?.plan_name || user?.plan || user?.subscription_plan || 'free'
+  ).toLowerCase();
+
+  const isProPlan = currentPlanName.includes('pro');
+  const isProPlusPlan =
+    currentPlanName.includes('pro+') ||
+    currentPlanName.includes('pro plus') ||
+    currentPlanName.includes('premium');
+
   const handleShare = () => {
     soundService.playTick?.();
     // Crawler-aware share preview (real per-job title/image for
@@ -611,6 +627,139 @@ export const JobDetailModal = ({ job, isOpen = true, onClose, onApply }) => {
                   )}
                 </div>
               )}
+
+
+              {/* ═══════════════════════════════════════════════════════════
+                  PREMIUM UPGRADE EXPERIENCE
+                  Designed as a high-end subscription moment, not a basic ad.
+              ═══════════════════════════════════════════════════════════ */}
+              <section className="relative overflow-hidden rounded-[28px] border border-[#1f4039] bg-[#0b1714] text-white shadow-[0_20px_55px_rgba(8,30,25,0.22)]">
+                {/* Ambient glow */}
+                <div className="absolute -top-20 -right-16 w-48 h-48 rounded-full bg-[#27c5a6]/20 blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-24 -left-16 w-52 h-52 rounded-full bg-[#12796b]/20 blur-3xl pointer-events-none" />
+                <div className="absolute inset-0 opacity-[0.045] pointer-events-none"
+                  style={{
+                    backgroundImage:
+                      'radial-gradient(circle at 1px 1px, rgba(255,255,255,.9) 1px, transparent 0)',
+                    backgroundSize: '18px 18px'
+                  }}
+                />
+
+                <div className="relative p-4 sm:p-5">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        soundService.playTick?.();
+                        onNavigate?.('plans');
+                      }}
+                      className="shrink-0 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-[10px] font-black text-white transition active:scale-95"
+                    >
+                      هەموو پلانەکان
+                    </button>
+
+                    <div className="text-right">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#d4f7ee]/10 border border-[#d4f7ee]/15 text-[#a8f1df] text-[9px] font-black mb-2">
+                        <Sparkles className="w-3 h-3" />
+                        KARNAMA PRO
+                      </div>
+                      <h3 className="text-base sm:text-lg font-black tracking-tight">
+                        CV ـەکەت بۆ هەر کارێک تایبەت بکە
+                      </h3>
+                      <p className="mt-1 text-[10px] sm:text-[11px] leading-relaxed text-white/55 font-medium">
+                        یەک CV بۆ هەموو کارەکان نییە. هەڵبژاردەی زیاتر،
+                        پڕۆفایلی پیشەیی‌تر و دەرفەتی زیاتر بۆ پیشاندانی تواناکانت.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Feature strip */}
+                  <div className="grid grid-cols-3 gap-2 mt-4">
+                    <div className="rounded-2xl bg-white/[0.055] border border-white/[0.07] p-2.5 text-right">
+                      <div className="w-7 h-7 rounded-lg bg-[#27c5a6]/15 text-[#8be8d4] flex items-center justify-center mb-2">
+                        <FileText className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="text-[11px] font-black">CV ـی زیاتر</div>
+                      <div className="text-[9px] text-white/40 mt-0.5">بۆ ئامانجی جیاواز</div>
+                    </div>
+
+                    <div className="rounded-2xl bg-white/[0.055] border border-white/[0.07] p-2.5 text-right">
+                      <div className="w-7 h-7 rounded-lg bg-[#27c5a6]/15 text-[#8be8d4] flex items-center justify-center mb-2">
+                        <Eye className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="text-[11px] font-black">بینینی کۆمپانیا</div>
+                      <div className="text-[9px] text-white/40 mt-0.5">CV ـی هەڵبژێردراو</div>
+                    </div>
+
+                    <div className="rounded-2xl bg-white/[0.055] border border-white/[0.07] p-2.5 text-right">
+                      <div className="w-7 h-7 rounded-lg bg-[#27c5a6]/15 text-[#8be8d4] flex items-center justify-center mb-2">
+                        <Zap className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="text-[11px] font-black">ئامادەی کار</div>
+                      <div className="text-[9px] text-white/40 mt-0.5">خێراتر و ڕێکخراوتر</div>
+                    </div>
+                  </div>
+
+                  {/* Plan comparison */}
+                  <div className="mt-4 grid grid-cols-2 gap-2.5">
+                    <div className="rounded-2xl border border-[#27c5a6]/35 bg-[#12796b]/15 p-3 text-right">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="px-2 py-1 rounded-lg bg-[#27c5a6]/15 text-[#8be8d4] text-[9px] font-black">
+                          ٣ CV
+                        </span>
+                        <span className="text-sm font-black">Pro</span>
+                      </div>
+                      <div className="mt-2 text-[10px] text-white/55 font-medium">
+                        بۆ کارە سەرەکییەکان و چەند جۆرێکی پیشە
+                      </div>
+                    </div>
+
+                    <div className="relative rounded-2xl border border-[#d8b66a]/55 bg-gradient-to-br from-[#8f6a1d]/20 to-[#d8b66a]/5 p-3 text-right overflow-hidden">
+                      <div className="absolute top-0 left-0 px-2 py-1 rounded-br-xl rounded-tl-2xl bg-[#d8b66a] text-[#1d1608] text-[8px] font-black">
+                        PRO+
+                      </div>
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <span className="px-2 py-1 rounded-lg bg-[#d8b66a]/15 text-[#f2d98d] text-[9px] font-black">
+                          ٦ CV
+                        </span>
+                        <span className="text-sm font-black">Pro+</span>
+                      </div>
+                      <div className="mt-2 text-[10px] text-white/55 font-medium">
+                        بۆ کۆمپانیای جیاواز و هەلی کارێکی زۆرتر
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Strong CTA */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundService.playTick?.();
+                      onNavigate?.('plans');
+                    }}
+                    className="group relative w-full mt-4 overflow-hidden rounded-2xl bg-white text-[#0b1714] py-3.5 px-4 shadow-[0_10px_28px_rgba(0,0,0,.22)] hover:shadow-[0_14px_34px_rgba(0,0,0,.3)] active:scale-[0.99] transition"
+                  >
+                    <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-[#d4f7ee]/70 to-transparent" />
+                    <span className="relative flex items-center justify-center gap-2">
+                      <Crown className="w-4 h-4 text-[#12796b]" />
+                      <span className="text-xs font-black">
+                        {isProPlusPlan
+                          ? 'پلانەکەت بەڕێوەبەرە'
+                          : isProPlan
+                            ? 'بەرزکردنەوە بۆ Pro+'
+                            : 'بەرزکردنەوەی پلان'}
+                      </span>
+                      <ChevronRight className="w-4 h-4 rtl:rotate-180 text-[#12796b]" />
+                    </span>
+                  </button>
+
+                  <div className="flex items-center justify-center gap-1.5 mt-2.5 text-[9px] text-white/35 font-medium">
+                    <ShieldCheck className="w-3 h-3" />
+                    <span>دەتوانیت پلانەکەت لە بەشی پلانەکان بگۆڕیت</span>
+                  </div>
+                </div>
+              </section>
 
               {/* Optional Cover Letter */}
               <div className="space-y-1.5 pt-1">

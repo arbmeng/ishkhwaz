@@ -1,38 +1,84 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { apiService } from '../../services/api';
 import { soundService } from '../../services/soundService';
 import { kurdistanGovernorates } from '../../data/kurdistanLocations';
+import JobLocationPicker from '../ui/JobLocationPicker';
 import {
-  Building2, MapPin, DollarSign, Briefcase, Plus, CheckCircle2,
-  AlertCircle, X, Search, ChevronLeft, ChevronDown, Check, Rocket,
-  Sparkles, Eye, ArrowRight, Heart
+  CheckCircle2, ChevronDown, Plus, ArrowRight,
 } from 'lucide-react';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
-const TEAL = '#12796b';
+
+const WORKPLACE_TYPES = [
+  { id: 'onSite', label: 'لە شوێنی کار' },
+  { id: 'remote', label: 'لە ماڵەوە' },
+  { id: 'hybrid', label: 'تێکەڵ' },
+];
+
+// One titled card per step — a normal (non-technical) person should be able
+// to read the section title and know exactly what to fill in there, instead
+// of a single dense wall of fields. Replaces the old PREVIEW/CHECKLIST
+// all-caps monospace dev-dashboard styling with plain Kurdish.
+function SectionCard({ title, hint, children }) {
+  return (
+    <div className="bg-white rounded-[28px] p-5 sm:p-7 border border-[#e8eeec] shadow-sm space-y-5 text-right">
+      <div>
+        <h3 className="text-sm sm:text-base font-black text-[#111d1a]">{title}</h3>
+        {hint && <p className="text-[11px] text-[#7b8e88] font-bold mt-0.5">{hint}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, help, children }) {
+  return (
+    <div className="space-y-1.5 text-right">
+      <label className="text-xs font-bold text-[#111d1a] block">{label}</label>
+      {children}
+      {help && <p className="text-[10px] text-[#a0afa9] font-medium">{help}</p>}
+    </div>
+  );
+}
+
+const selectClass =
+  'w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3.5 text-xs font-bold text-[#111d1a] outline-none appearance-none cursor-pointer';
+const inputClass =
+  'w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold text-[#111d1a] outline-none';
 
 export const PostJobPage = ({ onBack, onSuccess }) => {
   const { user, token } = useAuth();
-  const { addToast, categories: liveCategories = [] } = useStore();
+  const { addToast, categories: liveCategories = [], workTypes: liveWorkTypes = [] } = useStore();
 
   const [companyName] = useState(user?.company_name || user?.name || 'تیشک تێک');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
-  const [jobType, setJobType] = useState('fullTime'); // fullTime | partTime | contract
-  const [workplaceType, setWorkplaceType] = useState('onSite'); // onSite | remote | hybrid
+  const [jobType, setJobType] = useState('');
+  const [workplaceType, setWorkplaceType] = useState('onSite');
   const [salaryMin, setSalaryMin] = useState(1200000);
   const [salaryMax, setSalaryMax] = useState(1800000);
   const [selectedGov, setSelectedGov] = useState('sulaymaniyah');
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedSubDistrict, setSelectedSubDistrict] = useState('');
+  const [pin, setPin] = useState(null); // { lat, lng, locationName } from the map picker
   const [description, setDescription] = useState('');
   const [skills, setSkills] = useState([]);
   const [skillInput, setSkillInput] = useState('');
-  const [isBoosted, setIsBoosted] = useState(false);
+  const [deadline, setDeadline] = useState('');
+  const [companyReg, setCompanyReg] = useState('');
+  const [companyIndustry, setCompanyIndustry] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Job types come from the admin-managed work_types table (Zera-World
+  // panel → Ish-khwaz → Worktypes) instead of a hardcoded list, so a new
+  // type an admin adds shows up here automatically. Default to the first
+  // active one once they load.
+  useEffect(() => {
+    if (!jobType && liveWorkTypes.length > 0) setJobType(liveWorkTypes[0].id);
+  }, [liveWorkTypes, jobType]);
 
   const currentGovObj = kurdistanGovernorates.find(g => g.id === selectedGov) || kurdistanGovernorates[0];
   const availableDistricts = currentGovObj?.districts || [];
@@ -50,6 +96,10 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
   const removeSkill = (s) => {
     setSkills(prev => prev.filter(x => x !== s));
   };
+
+  const basicsDone = Boolean(title.trim() && category);
+  const locationDone = Boolean(selectedGov);
+  const deadlineDone = Boolean(deadline);
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -79,12 +129,18 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
         district_id: selectedDistrict,
         sub_district_id: selectedSubDistrict,
         location_detail: [currentDistObj?.name_ku, availableSubDistricts.find(s => s.id === selectedSubDistrict)?.name_ku].filter(Boolean).join('، '),
+        location_name: pin?.locationName || '',
+        lat: pin?.lat ?? null,
+        lng: pin?.lng ?? null,
         salary_min: parseInt(salaryMin) || 500000,
         salary_max: parseInt(salaryMax) || 1200000,
         salary_period: 'monthly',
         description: description.trim(),
         required_skills: JSON.stringify(skills),
         company_name: companyName.trim(),
+        deadline: deadline || null,
+        company_reg: companyReg.trim(),
+        company_industry: companyIndustry.trim(),
         // fee_amount intentionally omitted — the backend falls back to the
         // real admin-configured cv_fee_amount setting when it's absent;
         // hardcoding a value here would silently override that setting for
@@ -116,7 +172,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
     >
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 pt-4 sm:pt-6 space-y-6">
 
-        {/* ── Top Bar with Draft Status ───────────────────────── */}
+        {/* ── Top Bar ───────────────────────── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-bold text-[#7b8e88]">
             <span className="w-2 h-2 rounded-full bg-[#12796b]" />
@@ -138,20 +194,18 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
             بڵاوکردنەوەی کار
           </h1>
           <p className="text-xs text-[#7b8e88] font-bold">
-            هەموو خانەکان پێویستن، جگە لە شارەزاییەکان.
+            هەر خانەیەک بە ناونیشانی ڕوون خۆی ڕوونکردووەتەوە — تەنها ناونیشان و بوار پێویستن، ئەوانی تر ئارەزوومەندانەن.
           </p>
         </div>
 
-        {/* ── Main 2-Column Grid (Matching Image 1: POST A JOB - DESKTOP 1400) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-          {/* ──── LEFT COLUMN (Cols 1-4 on Desktop): Live Preview, Boost Card & Checklist ──── */}
-          <div className="lg:col-span-4 space-y-5 order-2 lg:order-1">
+          {/* ──── LEFT COLUMN: Preview + real progress ──── */}
+          <div className="lg:col-span-4 space-y-5 order-2 lg:order-1 lg:sticky lg:top-6">
 
-            {/* Live Job Card Preview */}
             <div className="space-y-2">
-              <span className="text-[10px] font-mono font-black text-[#a0afa9] tracking-widest uppercase block text-right">
-                PREVIEW
+              <span className="text-xs font-black text-[#111d1a] block text-right">
+                ئەمە وایە کارەکەت دەردەکەوێت
               </span>
 
               <div className="bg-white rounded-[24px] border border-[#e8eeec] p-5 shadow-sm space-y-3.5 text-right">
@@ -172,12 +226,12 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 justify-end">
+                <div className="flex items-center gap-1.5 justify-end flex-wrap">
                   <span className="px-2.5 py-1 rounded-xl bg-[#f4f7f6] text-[#4a5854] text-[10px] font-bold">
-                    {workplaceType === 'onSite' ? 'لە شوێن' : workplaceType === 'remote' ? 'لە ماڵەوە' : 'تێکەڵ'}
+                    {WORKPLACE_TYPES.find(w => w.id === workplaceType)?.label}
                   </span>
                   <span className="px-2.5 py-1 rounded-xl bg-[#f4f7f6] text-[#4a5854] text-[10px] font-bold">
-                    {jobType === 'fullTime' ? 'کاتی تەواو' : jobType === 'partTime' ? 'کاتی بەشی' : 'پڕۆژەیی'}
+                    {liveWorkTypes.find(t => t.id === jobType)?.name_ku || '—'}
                   </span>
                 </div>
 
@@ -189,286 +243,272 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
               </div>
             </div>
 
-            {/* Boost Card (Mint Gradient Card) */}
-            <div className="bg-gradient-to-br from-[#d4f7ee] to-[#e4fcf6] border border-[#beece2] rounded-3xl p-5 shadow-sm space-y-3 text-right">
-              <div className="flex items-center gap-1.5 justify-start text-xs font-black text-[#12796b]">
-                <span>بەرزکردنەوەی کار</span>
-                <Rocket className="w-4 h-4 text-[#12796b]" />
-              </div>
-              <p className="text-[11px] text-[#3a7c73] font-medium leading-relaxed">
-                کارە بەرزکراوەکان لە سەرەوەی لیستەکان دەردەکەون و ٤ ئەوەندە زیاتر داواکاری وەردەگرن.
-              </p>
-              <div className="pt-2 flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setIsBoosted(b => !b)}
-                  className={`px-5 py-2.5 rounded-2xl text-xs font-black transition active:scale-95 ${
-                    isBoosted ? 'bg-[#12796b] text-white' : 'bg-[#111d1a] hover:bg-black text-white'
-                  }`}
-                >
-                  {isBoosted ? 'زیادکرا ✓' : 'زیادکردن'}
-                </button>
-                <span className="font-mono font-black text-sm text-[#113d36]">
-                  25,000 IQD
-                </span>
-              </div>
-            </div>
-
-            {/* Checklist Box */}
+            {/* Real progress, tied to actual filled-in state */}
             <div className="bg-white rounded-3xl p-5 border border-[#e8eeec] shadow-sm space-y-3 text-right">
-              <span className="text-[10px] font-mono font-black text-[#a0afa9] tracking-widest uppercase block">
-                CHECKLIST
-              </span>
+              <span className="text-xs font-black text-[#111d1a] block">پێشکەوتنی داواکارییەکە</span>
               <div className="space-y-2 text-xs font-bold text-[#4a5854]">
-                <div className="flex items-center justify-end gap-2 text-[#12796b]">
+                <div className={`flex items-center justify-end gap-2 ${basicsDone ? 'text-[#12796b]' : 'text-[#8a9e98]'}`}>
                   <span>ناونیشان و بوار</span>
-                  <CheckCircle2 className="w-4 h-4 fill-[#12796b] text-white" />
+                  {basicsDone
+                    ? <CheckCircle2 className="w-4 h-4 fill-[#12796b] text-white" />
+                    : <span className="w-4 h-4 rounded-full border border-[#cbd5d1]" />}
                 </div>
-                <div className="flex items-center justify-end gap-2 text-[#12796b]">
+                <div className={`flex items-center justify-end gap-2 ${locationDone ? 'text-[#12796b]' : 'text-[#8a9e98]'}`}>
                   <span>شوێن و مووچە</span>
-                  <CheckCircle2 className="w-4 h-4 fill-[#12796b] text-white" />
+                  {locationDone
+                    ? <CheckCircle2 className="w-4 h-4 fill-[#12796b] text-white" />
+                    : <span className="w-4 h-4 rounded-full border border-[#cbd5d1]" />}
                 </div>
-                <div className="flex items-center justify-end gap-2 text-[#8a9e98]">
-                  <span>کۆتا وادەی داواکاری</span>
-                  <span className="w-4 h-4 rounded-full border border-[#cbd5d1]" />
+                <div className={`flex items-center justify-end gap-2 ${deadlineDone ? 'text-[#12796b]' : 'text-[#8a9e98]'}`}>
+                  <span>کۆتا وادەی داواکاری (ئارەزوومەندانە)</span>
+                  {deadlineDone
+                    ? <CheckCircle2 className="w-4 h-4 fill-[#12796b] text-white" />
+                    : <span className="w-4 h-4 rounded-full border border-[#cbd5d1]" />}
                 </div>
               </div>
             </div>
 
           </div>
 
-          {/* ──── RIGHT COLUMN (Cols 5-12 on Desktop): Form Fields ──── */}
-          <div className="lg:col-span-8 bg-white rounded-[32px] p-6 sm:p-8 border border-[#e8eeec] shadow-sm space-y-6 order-1 lg:order-2">
+          {/* ──── RIGHT COLUMN: the actual form, split into clear steps ──── */}
+          <div className="lg:col-span-8 space-y-5 order-1 lg:order-2">
 
-            {/* Job Title */}
-            <div className="space-y-1.5 text-right">
-              <label className="text-xs font-bold text-[#111d1a]">ناونیشانی کار</label>
-              <input
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                placeholder="پەرەپێدەری وێب — React"
-                className="w-full bg-white border-2 border-[#12796b] rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold text-[#111d1a] outline-none shadow-xs"
-              />
-            </div>
-
-            {/* Category */}
-            <div className="space-y-1.5 text-right">
-              <label className="text-xs font-bold text-[#111d1a]">بوار</label>
-              <div className="relative">
-                <select
-                  value={category}
-                  onChange={e => setCategory(e.target.value)}
-                  className="w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3.5 text-xs font-bold text-[#111d1a] outline-none appearance-none cursor-pointer"
-                >
-                  <option value="" disabled>بوارێک هەڵبژێرە</option>
-                  {liveCategories.map(c => (
-                    <option key={c.id} value={c.id}>{c.name_ku}</option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9e98] pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Job Type Segmented Tabs */}
-            <div className="space-y-1.5 text-right">
-              <label className="text-xs font-bold text-[#111d1a]">جۆری کار</label>
-              <div className="p-1.5 bg-[#f0f4f2] rounded-2xl border border-[#e8eeed] grid grid-cols-3 gap-1">
-                {[
-                  { id: 'contract', label: 'پڕۆژەیی' },
-                  { id: 'partTime', label: 'کاتی بەشی' },
-                  { id: 'fullTime', label: 'کاتی تەواو' },
-                ].map(t => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setJobType(t.id)}
-                    className={`py-2.5 rounded-xl text-xs font-black transition-all ${
-                      jobType === t.id
-                        ? 'bg-white text-[#111d1a] shadow-xs'
-                        : 'text-[#62736e] hover:text-[#111d1a]'
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Workplace Type Segmented Tabs */}
-            <div className="space-y-1.5 text-right">
-              <label className="text-xs font-bold text-[#111d1a]">سنووری کار</label>
-              <div className="p-1.5 bg-[#f0f4f2] rounded-2xl border border-[#e8eeed] grid grid-cols-3 gap-1">
-                {[
-                  { id: 'hybrid', label: 'تێکەڵ' },
-                  { id: 'remote', label: 'لە ماڵەوە' },
-                  { id: 'onSite', label: 'لە شوێن' },
-                ].map(w => (
-                  <button
-                    key={w.id}
-                    type="button"
-                    onClick={() => setWorkplaceType(w.id)}
-                    className={`py-2.5 rounded-xl text-xs font-black transition-all ${
-                      workplaceType === w.id
-                        ? 'bg-white text-[#111d1a] shadow-xs'
-                        : 'text-[#62736e] hover:text-[#111d1a]'
-                    }`}
-                  >
-                    {w.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Salary Range (Min - Max) */}
-            <div className="space-y-1.5 text-right">
-              <label className="text-xs font-bold text-[#111d1a]">مووچەی مانگانە (IQD)</label>
-              <div className="grid grid-cols-2 gap-3">
+            <SectionCard title="١. زانیاری سەرەکی کارەکە" hint="ناوی کار و بوارەکەی بنووسە">
+              <Field label="ناونیشانی کار">
                 <input
-                  type="number"
-                  value={salaryMax}
-                  onChange={e => setSalaryMax(e.target.value)}
-                  placeholder="1,800,000"
-                  className="w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-mono font-bold text-[#111d1a] text-center outline-none focus:border-[#12796b]"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder="نموونە: پەرەپێدەری وێب"
+                  className={inputClass + ' border-2 !border-[#12796b]'}
                 />
-                <input
-                  type="number"
-                  value={salaryMin}
-                  onChange={e => setSalaryMin(e.target.value)}
-                  placeholder="1,200,000"
-                  className="w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-mono font-bold text-[#111d1a] text-center outline-none focus:border-[#12796b]"
-                />
-              </div>
-            </div>
+              </Field>
 
-            {/* City / District / Sub-district — real hierarchy, manual selection only */}
-            <div className="grid grid-cols-3 gap-3">
-              {/* City (Governorate) */}
-              <div className="space-y-1.5 text-right">
-                <label className="text-xs font-bold text-[#111d1a]">شار</label>
+              <Field label="بوار">
                 <div className="relative">
-                  <select
-                    value={selectedGov}
-                    onChange={e => {
-                      setSelectedGov(e.target.value);
-                      setSelectedDistrict('');
-                      setSelectedSubDistrict('');
-                    }}
-                    className="w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none appearance-none cursor-pointer"
-                  >
-                    {kurdistanGovernorates.map(g => (
-                      <option key={g.id} value={g.id}>{g.name_ku}</option>
+                  <select value={category} onChange={e => setCategory(e.target.value)} className={selectClass}>
+                    <option value="" disabled>بوارێک هەڵبژێرە</option>
+                    {liveCategories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name_ku}</option>
                     ))}
                   </select>
                   <ChevronDown className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9e98] pointer-events-none" />
                 </div>
-              </div>
+              </Field>
 
-              {/* Qaza (District) */}
-              <div className="space-y-1.5 text-right">
-                <label className="text-xs font-bold text-[#111d1a]">قەزا</label>
-                <div className="relative">
-                  <select
-                    value={selectedDistrict}
-                    onChange={e => { setSelectedDistrict(e.target.value); setSelectedSubDistrict(''); }}
-                    className="w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none appearance-none cursor-pointer"
-                  >
-                    <option value="">هەموو قەزاکان</option>
-                    {availableDistricts.map(d => (
-                      <option key={d.id} value={d.id}>{d.name_ku}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9e98] pointer-events-none" />
-                </div>
-              </div>
-
-              {/* Nahiya (Sub-district) */}
-              <div className="space-y-1.5 text-right">
-                <label className="text-xs font-bold text-[#111d1a]">ناحیە</label>
-                <div className="relative">
-                  <select
-                    value={selectedSubDistrict}
-                    onChange={e => setSelectedSubDistrict(e.target.value)}
-                    disabled={availableSubDistricts.length === 0}
-                    className="w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3 text-xs font-bold text-[#111d1a] outline-none appearance-none cursor-pointer disabled:opacity-50"
-                  >
-                    <option value="">{availableSubDistricts.length === 0 ? 'ناحیە نییە' : 'هەموو ناحیەکان'}</option>
-                    {availableSubDistricts.map(s => (
-                      <option key={s.id} value={s.id}>{s.name_ku}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9e98] pointer-events-none" />
-                </div>
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-1.5 text-right">
-              <div className="flex items-center justify-between text-xs font-bold text-[#7b8e88]">
-                <span className="font-mono">{description.length}/2000</span>
-                <label className="text-[#111d1a]">وەسفی کار</label>
-              </div>
-              <textarea
-                rows={4}
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                placeholder="مەرجەکان، بەرپرسیارێتییەکان و ئەرکەکانی کار..."
-                className="w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl p-4 text-xs font-medium leading-relaxed text-[#111d1a] outline-none focus:border-[#12796b] resize-none"
-              />
-            </div>
-
-            {/* Skills */}
-            <div className="space-y-2 text-right">
-              <label className="text-xs font-bold text-[#111d1a]">شارەزاییەکان</label>
-              <div className="flex flex-wrap gap-2 justify-end">
-                <div className="flex items-center gap-1.5">
-                  <input
-                    value={skillInput}
-                    onChange={e => setSkillInput(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
-                    placeholder="شارەزایی نوێ..."
-                    className="bg-[#f4f7f6] border border-[#e8eeed] rounded-xl px-3 py-1.5 text-xs font-bold outline-none text-[#111d1a]"
-                  />
-                  <button
-                    type="button"
-                    onClick={addSkill}
-                    className="px-3 py-1.5 rounded-xl bg-[#12796b] text-white text-xs font-bold hover:bg-[#0d5c50] transition"
-                  >
-                    + زیادکردن
-                  </button>
-                </div>
-                {skills.map(s => (
-                  <span
-                    key={s}
-                    className="px-3 py-1.5 rounded-xl bg-[#eaf5f2] border border-[#beece2] text-[#12796b] text-xs font-bold flex items-center gap-1.5"
-                  >
-                    {s}
-                    <button type="button" onClick={() => removeSkill(s)} className="text-[#8a9e98] hover:text-red-500">
-                      ×
+              <Field label="جۆری کات">
+                <div className="p-1.5 bg-[#f0f4f2] rounded-2xl border border-[#e8eeed] grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(liveWorkTypes.length, 1)}, minmax(0,1fr))` }}>
+                  {liveWorkTypes.length === 0 && (
+                    <span className="py-2.5 text-center text-[11px] text-[#8a9e98] font-bold">بارکردن...</span>
+                  )}
+                  {liveWorkTypes.map(t => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setJobType(t.id)}
+                      className={`py-2.5 rounded-xl text-xs font-black transition-all ${
+                        jobType === t.id ? 'bg-white text-[#111d1a] shadow-xs' : 'text-[#62736e] hover:text-[#111d1a]'
+                      }`}
+                    >
+                      {t.name_ku}
                     </button>
-                  </span>
-                ))}
-              </div>
-            </div>
+                  ))}
+                </div>
+              </Field>
 
-            {/* Error Message */}
+              <Field label="شێوازی کارکردن">
+                <div className="p-1.5 bg-[#f0f4f2] rounded-2xl border border-[#e8eeed] grid grid-cols-3 gap-1">
+                  {WORKPLACE_TYPES.map(w => (
+                    <button
+                      key={w.id}
+                      type="button"
+                      onClick={() => setWorkplaceType(w.id)}
+                      className={`py-2.5 rounded-xl text-xs font-black transition-all ${
+                        workplaceType === w.id ? 'bg-white text-[#111d1a] shadow-xs' : 'text-[#62736e] hover:text-[#111d1a]'
+                      }`}
+                    >
+                      {w.label}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            </SectionCard>
+
+            <SectionCard title="٢. شوێنی کار" hint="شار و ناوچەکە هەڵبژێرە، پاشان شوێنی وردی کارەکە لەسەر نەخشەکە دیاری بکە">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Field label="شار">
+                  <div className="relative">
+                    <select
+                      value={selectedGov}
+                      onChange={e => { setSelectedGov(e.target.value); setSelectedDistrict(''); setSelectedSubDistrict(''); }}
+                      className={selectClass}
+                    >
+                      {kurdistanGovernorates.map(g => (
+                        <option key={g.id} value={g.id}>{g.name_ku}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9e98] pointer-events-none" />
+                  </div>
+                </Field>
+
+                <Field label="قەزا">
+                  <div className="relative">
+                    <select
+                      value={selectedDistrict}
+                      onChange={e => { setSelectedDistrict(e.target.value); setSelectedSubDistrict(''); }}
+                      className={selectClass}
+                    >
+                      <option value="">هەموو قەزاکان</option>
+                      {availableDistricts.map(d => (
+                        <option key={d.id} value={d.id}>{d.name_ku}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9e98] pointer-events-none" />
+                  </div>
+                </Field>
+
+                <Field label="ناحیە">
+                  <div className="relative">
+                    <select
+                      value={selectedSubDistrict}
+                      onChange={e => setSelectedSubDistrict(e.target.value)}
+                      disabled={availableSubDistricts.length === 0}
+                      className={selectClass + ' disabled:opacity-50'}
+                    >
+                      <option value="">{availableSubDistricts.length === 0 ? 'ناحیە نییە' : 'هەموو ناحیەکان'}</option>
+                      {availableSubDistricts.map(s => (
+                        <option key={s.id} value={s.id}>{s.name_ku}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9e98] pointer-events-none" />
+                  </div>
+                </Field>
+              </div>
+
+              <Field label="شوێنی وردی کارەکە لەسەر نەخشە (ئارەزوومەندانە)" help="ناونیشان بگەڕێ، لەسەر نەخشەکە کرتە بکە، یان GPS بەکاربهێنە">
+                <JobLocationPicker
+                  lat={pin?.lat}
+                  lng={pin?.lng}
+                  locationName={pin?.locationName}
+                  governorateId={selectedGov}
+                  onChange={setPin}
+                />
+              </Field>
+            </SectionCard>
+
+            <SectionCard title="٣. مووچە" hint="مووچەی مانگانە بە دیناری عێراقی">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="بەلایەنی کەمەوە">
+                  <input
+                    type="number"
+                    value={salaryMin}
+                    onChange={e => setSalaryMin(e.target.value)}
+                    placeholder="1,200,000"
+                    className={inputClass + ' text-center'}
+                  />
+                </Field>
+                <Field label="بەلایەنی زۆرەوە">
+                  <input
+                    type="number"
+                    value={salaryMax}
+                    onChange={e => setSalaryMax(e.target.value)}
+                    placeholder="1,800,000"
+                    className={inputClass + ' text-center'}
+                  />
+                </Field>
+              </div>
+            </SectionCard>
+
+            <SectionCard title="٤. وردەکاری زیاتر" hint="ئەم زانیاریانە یارمەتی کاندیدەکان دەدات بۆ باشتر تێگەیشتن لە کارەکە">
+              <Field label="وەسفی کار">
+                <div className="flex items-center justify-between text-[10px] font-bold text-[#a0afa9] mb-1">
+                  <span className="font-mono">{description.length}/2000</span>
+                </div>
+                <textarea
+                  rows={4}
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  placeholder="مەرجەکان، بەرپرسیارێتییەکان و ئەرکەکانی کار..."
+                  className={inputClass + ' leading-relaxed resize-none'}
+                />
+              </Field>
+
+              <Field label="کۆتا وادەی وەرگرتنی داواکاری">
+                <input
+                  type="date"
+                  value={deadline}
+                  onChange={e => setDeadline(e.target.value)}
+                  min={new Date().toISOString().slice(0, 10)}
+                  className={inputClass}
+                />
+              </Field>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="ژمارەی تۆمارکردنی کۆمپانیا">
+                  <input
+                    value={companyReg}
+                    onChange={e => setCompanyReg(e.target.value)}
+                    placeholder="نموونە: ١٢٣٤٥"
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="بواری کۆمپانیا">
+                  <input
+                    value={companyIndustry}
+                    onChange={e => setCompanyIndustry(e.target.value)}
+                    placeholder="نموونە: تەکنەلۆجیا، بازرگانی..."
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+
+              <Field label="شارەزاییە پێویستەکان">
+                <div className="flex flex-wrap gap-2 justify-end">
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      value={skillInput}
+                      onChange={e => setSkillInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
+                      placeholder="شارەزایی نوێ..."
+                      className="bg-[#f4f7f6] border border-[#e8eeed] rounded-xl px-3 py-1.5 text-xs font-bold outline-none text-[#111d1a]"
+                    />
+                    <button
+                      type="button"
+                      onClick={addSkill}
+                      className="px-3 py-1.5 rounded-xl bg-[#12796b] text-white text-xs font-bold hover:bg-[#0d5c50] transition"
+                    >
+                      + زیادکردن
+                    </button>
+                  </div>
+                  {skills.map(s => (
+                    <span
+                      key={s}
+                      className="px-3 py-1.5 rounded-xl bg-[#eaf5f2] border border-[#beece2] text-[#12796b] text-xs font-bold flex items-center gap-1.5"
+                    >
+                      {s}
+                      <button type="button" onClick={() => removeSkill(s)} className="text-[#8a9e98] hover:text-red-500">
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </Field>
+            </SectionCard>
+
             {errorMsg && (
               <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-bold rounded-2xl text-right">
                 {errorMsg}
               </div>
             )}
 
-            {/* Submit Button */}
-            <div className="pt-4">
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full py-4 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-sm font-black shadow-md active:scale-95 transition flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" />
-                <span>بڵاوکردنەوەی هەلی کار</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="w-full py-4 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-sm font-black shadow-md active:scale-95 transition flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>بڵاوکردنەوەی هەلی کار</span>
+            </button>
 
           </div>
 

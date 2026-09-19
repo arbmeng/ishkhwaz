@@ -97,7 +97,9 @@ export const PlansPage = ({ onBack }) => {
 
   return (
     <div dir="rtl" className="min-h-screen pb-28" style={{ background: BG, color: TXT, fontFamily: NK }}>
-      <div className="sticky top-0 z-30 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3"
+      {/* Mobile-only bar: on lg+ the shared DesktopHeaderNav already provides
+          navigation + the user pill, so this would be a second header. */}
+      <div className="lg:hidden sticky top-0 z-30 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3"
         style={{ background: 'rgba(244,247,246,0.9)', borderBottom: `1px solid ${BORDER}` }}>
         <div className="flex items-center gap-3">
           <button onClick={() => { soundService.playTick?.(); onBack?.(); }}
@@ -128,6 +130,10 @@ export const PlansPage = ({ onBack }) => {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6">
+        <div className="hidden lg:block mb-5 pt-2">
+          <h1 className="text-xl font-black" style={{ color: TXT }}>پلانەکان</h1>
+          <p className="text-xs font-bold mt-1" style={{ color: MUTED }}>کڕینێکی یەکجارە — نەک بەشداریی مانگانە</p>
+        </div>
         {currentTier && Number(currentTier.price) > 0 && (
           <div className="mb-5 rounded-3xl p-5 flex items-center gap-4" style={{ background: CARD, border: `1px solid ${BORDER}` }}>
             <PlanBadge plan={user.plan} size="lg" />

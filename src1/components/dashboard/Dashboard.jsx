@@ -16,7 +16,7 @@ import { TrendChart } from '../ui/TrendChart';
 import {
   Plus, Check, X, Crown, Bell, Edit, Trash2, Camera, MessageCircle,
   FileText, Send, Inbox, Clock, CheckCircle2, XCircle, Undo2, Layers, Palette, Star, Eye,
-  Play, Pause
+  Play, Pause, MapPin, Briefcase, BarChart3, Sparkles
 } from 'lucide-react';
 
 // Shared light theme — matches DesktopHeaderNav, UserProfilePage, DirectoryPage.
@@ -70,6 +70,7 @@ export const Dashboard = ({ onNavigate }) => {
     applications = [],
     freelancers = [],
     invitations = [],
+    categories: liveCategories = [],
     updateCompanyApplicantStatus,
     rateApplication,
     deleteJob,
@@ -94,34 +95,36 @@ export const Dashboard = ({ onNavigate }) => {
   }, [jobs, user]);
 
   const [statusOverrides, setStatusOverrides] = useState({});
-  const [stageOverrides, setStageOverrides] = useState({});
 
   const combinedApplicants = useMemo(() => {
     return (Array.isArray(applications) ? applications : []).map(a => {
       const matchedFl = (Array.isArray(freelancers) ? freelancers : []).find(
         f => String(f.id) === String(a.freelancer_id || a.user_id)
       );
+      // Real category, from the actual job this application belongs to —
+      // not a text-guess off the job title (that used to only ever produce
+      // two fake buckets, 'web' or 'support', for every job regardless of
+      // its real category).
+      const matchedJob = (Array.isArray(jobs) ? jobs : []).find(j => String(j.id) === String(a.job_id));
       const name = a.freelancer_name || matchedFl?.name || 'کاندید';
       return {
         id: a.id,
         freelancer_id: a.freelancer_id || a.user_id || matchedFl?.id,
         freelancer_name: name,
-        job_title: a.job_title || 'هەلی کار',
-        job_category: (a.job_title || '').includes('پشتیگری') ? 'support' : 'web',
+        job_title: a.job_title || matchedJob?.title_ku || 'هەلی کار',
+        job_category: matchedJob?.category || 'cat_other',
         experience_text: matchedFl?.bio || 'ئەزموونی پشتڕاستکراو',
         location_text: a.location || matchedFl?.governorate || '',
         cv_mode_text: a.cv_url ? 'CV بارکراو' : 'پڕۆفایل وەک CV',
         status: statusOverrides[a.id] || a.company_status || 'pending',
         isVIP: Boolean(a.is_vip || matchedFl?.plan === 'pro' || matchedFl?.plan === 'vip'),
         initial: name.trim().charAt(0) || 'ک',
-        currentStage: stageOverrides[a.id] || a.currentStage || 1,
-        stageDates: { 1: 'ئەمڕۆ', 2: 'چاوەڕوان', 3: 'چاوەڕوان', 4: 'چاوەڕوان' },
+        avatar: matchedFl?.avatar || a.avatar || '',
         rawApp: a,
       };
     });
-  }, [applications, freelancers, statusOverrides, stageOverrides]);
+  }, [applications, freelancers, jobs, statusOverrides]);
 
-  const [selectedApplicantId, setSelectedApplicantId] = useState('');
   const [ratingOpenId, setRatingOpenId] = useState(null);
   const [ratedIds, setRatedIds] = useState(new Set());
   const [ratingBusy, setRatingBusy] = useState(false);
@@ -134,21 +137,24 @@ export const Dashboard = ({ onNavigate }) => {
       setRatingOpenId(null);
     }
   };
-  const selectedApplicant = useMemo(() => {
-    return combinedApplicants.find(a => a.id === selectedApplicantId) || combinedApplicants[0];
-  }, [combinedApplicants, selectedApplicantId]);
 
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
   const filteredApplicantsList = useMemo(() => {
     if (selectedCategoryFilter === 'all') return combinedApplicants;
-    if (selectedCategoryFilter === 'web') {
-      return combinedApplicants.filter(a => a.job_title.includes('وێب') || a.job_title.includes('React'));
-    }
-    if (selectedCategoryFilter === 'support') {
-      return combinedApplicants.filter(a => a.job_title.includes('پشتیگری') || a.job_title.includes('تەکنیکی'));
-    }
-    return combinedApplicants;
+    return combinedApplicants.filter(a => a.job_category === selectedCategoryFilter);
   }, [combinedApplicants, selectedCategoryFilter]);
+
+  // Real filter pills — one per category that at least one applicant is
+  // actually in, labelled from the real admin-managed category list
+  // (StoreContext → GET /categories), instead of two fixed fake buckets
+  // ('web'/'support') matched by guessing at substrings in the job title.
+  const applicantCategoryFilters = useMemo(() => {
+    const present = new Set(combinedApplicants.map(a => a.job_category));
+    const items = liveCategories
+      .filter(c => present.has(c.id))
+      .map(c => ({ id: c.id, label: c.name_ku }));
+    return [{ id: 'all', label: 'هەموو' }, ...items];
+  }, [combinedApplicants, liveCategories]);
 
   const [employerSubTab, setEmployerSubTab] = useState('applicants'); // 'applicants' | 'jobs' | 'analytics'
   const [analytics, setAnalytics] = useState({ series: [], totals: { views: 0, applications: 0 } });
@@ -183,18 +189,6 @@ export const Dashboard = ({ onNavigate }) => {
     setStatusOverrides(prev => ({ ...prev, [appId]: 'rejected' }));
     updateCompanyApplicantStatus?.(appId, 'rejected');
     addToast?.({ title: 'ڕەتکرایەوە', message: 'کاندید ڕەتکرایەوە.', type: 'info' });
-  };
-
-  const handleAdvanceStage = () => {
-    if (!selectedApplicant) return;
-    soundService.playSuccess?.();
-    const nextStage = Math.min(4, (selectedApplicant.currentStage || 1) + 1);
-    setStageOverrides(prev => ({ ...prev, [selectedApplicant.id]: nextStage }));
-    addToast?.({
-      title: 'قۆناغ نوێکرایەوە ✓',
-      message: `قۆناغی ${selectedApplicant.freelancer_name} بەرزکرایەوە بۆ قۆناغی ${nextStage}`,
-      type: 'success',
-    });
   };
 
   const handleOpenCv = (applicant) => {
@@ -294,30 +288,41 @@ export const Dashboard = ({ onNavigate }) => {
 
   const statCards = isEmployer
     ? [
-        { value: companyJobs.length, label: 'کاری چالاک', accent: false },
-        { value: combinedApplicants.length, label: 'داواکاری نوێ', accent: true },
-        { value: combinedApplicants.filter(a => a.status === 'accepted').length, label: 'پەسەندکراو', accent: false },
+        { value: companyJobs.length, label: 'کاری چالاک', accent: false, Icon: Briefcase },
+        { value: combinedApplicants.length, label: 'داواکاری نوێ', accent: true, Icon: Send },
+        { value: combinedApplicants.filter(a => a.status === 'accepted').length, label: 'پەسەندکراو', accent: false, Icon: CheckCircle2 },
       ]
     : [
-        { value: sentRequests.length, label: 'داواکارییە نێردراوەکان', accent: false },
-        { value: receivedOffers.length, label: 'ئۆفەرە وەرگیراوەکان', accent: true },
-        { value: sentRequests.filter(r => stageBucket(r.stage) === 'accepted').length, label: 'پەسەندکراو', accent: false },
+        { value: sentRequests.length, label: 'داواکارییە نێردراوەکان', accent: false, Icon: Send },
+        { value: receivedOffers.length, label: 'ئۆفەرە وەرگیراوەکان', accent: true, Icon: Inbox },
+        { value: sentRequests.filter(r => stageBucket(r.stage) === 'accepted').length, label: 'پەسەندکراو', accent: false, Icon: CheckCircle2 },
       ];
+
+  const EMPLOYER_TABS = [
+    { id: 'applicants', label: 'داواکارییەکان', Icon: Send, count: combinedApplicants.length },
+    { id: 'jobs', label: 'کارەکان', Icon: Briefcase, count: companyJobs.length },
+    { id: 'analytics', label: 'شیکاری', Icon: BarChart3, count: null },
+  ];
 
   return (
     <div dir="rtl" className="min-h-screen select-none pb-28 text-right" style={{ background: '#f4f7f6', fontFamily: NK }}>
       <main className="max-w-[1400px] mx-auto px-4 sm:px-8 pt-6 sm:pt-8">
 
-        {/* Greeting + CTA (employer only) */}
+        {/* Greeting + CTA */}
         <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
           <div className="space-y-0.5">
-            <span className="text-xs text-[#7b8e88] font-bold block">بەیانیت باش</span>
+            {!isEmployer && <span className="text-xs text-[#7b8e88] font-bold block">بەیانیت باش</span>}
+            {isEmployer && (
+              <span className="text-xs text-[#12796b] font-black flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" /> داشبۆردی کۆمپانیا
+              </span>
+            )}
             <h1 className="text-2xl sm:text-3xl font-black text-[#111d1a] tracking-tight">{displayName}</h1>
           </div>
           {isEmployer && (
             <button
               onClick={() => { soundService.playTick?.(); onNavigate?.('post_job'); }}
-              className="py-2.5 px-4 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-xs font-black shadow-sm active:scale-95 transition flex items-center gap-1.5"
+              className="py-3 px-5 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-xs sm:text-sm font-black shadow-md active:scale-95 transition flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               <span>بڵاوکردنەوەی کار</span>
@@ -330,50 +335,48 @@ export const Dashboard = ({ onNavigate }) => {
           {statCards.map((s, i) => (
             <div
               key={i}
-              className={`rounded-2xl p-4 sm:p-5 border shadow-2xs text-center space-y-1 ${
-                s.accent ? 'bg-[#d4f7ee] border-[#beece2]' : 'bg-white border-[#e8eeec]'
+              className={`rounded-3xl p-4 sm:p-6 border shadow-2xs space-y-2 sm:space-y-3 ${
+                s.accent ? 'bg-[#12796b] border-[#0d5c50]' : 'bg-white border-[#e8eeec]'
               }`}
             >
-              <div className={`text-2xl sm:text-3xl font-mono font-black ${s.accent ? 'text-[#12796b]' : 'text-[#111d1a]'}`}>
-                {s.value}
+              <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center ${
+                s.accent ? 'bg-white/15' : 'bg-[#eaf5f2]'
+              }`}>
+                <s.Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${s.accent ? 'text-white' : 'text-[#12796b]'}`} />
               </div>
-              <div className={`text-xs ${s.accent ? 'text-[#12796b] font-black' : 'text-[#7b8e88] font-bold'}`}>{s.label}</div>
+              <div>
+                <div className={`text-2xl sm:text-3xl font-mono font-black ${s.accent ? 'text-white' : 'text-[#111d1a]'}`}>
+                  {s.value}
+                </div>
+                <div className={`text-[11px] sm:text-xs ${s.accent ? 'text-white/80 font-bold' : 'text-[#7b8e88] font-bold'}`}>{s.label}</div>
+              </div>
             </div>
           ))}
         </div>
 
         {isEmployer ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="space-y-6">
 
-            {/* ─── Main: applicants / jobs ─── */}
-            <div className="lg:col-span-8 space-y-6 order-1">
-
-              <div className="flex items-center gap-6 text-xs sm:text-sm font-bold border-b border-[#e8eeed]">
-                <button
-                  onClick={() => { soundService.playTick?.(); setEmployerSubTab('applicants'); }}
-                  className={`pb-3 transition flex items-center gap-1.5 ${
-                    employerSubTab === 'applicants' ? 'text-[#111d1a] font-black border-b-2 border-[#111d1a]' : 'text-[#7b8e88] hover:text-[#111d1a]'
-                  }`}
-                >
-                  <span>داواکارییەکان</span>
-                  <span className="font-mono text-xs">({combinedApplicants.length})</span>
-                </button>
-                <button
-                  onClick={() => { soundService.playTick?.(); setEmployerSubTab('jobs'); }}
-                  className={`pb-3 transition ${
-                    employerSubTab === 'jobs' ? 'text-[#111d1a] font-black border-b-2 border-[#111d1a]' : 'text-[#7b8e88] hover:text-[#111d1a]'
-                  }`}
-                >
-                  کارەکان ({companyJobs.length})
-                </button>
-                <button
-                  onClick={() => { soundService.playTick?.(); setEmployerSubTab('analytics'); }}
-                  className={`pb-3 transition ${
-                    employerSubTab === 'analytics' ? 'text-[#111d1a] font-black border-b-2 border-[#111d1a]' : 'text-[#7b8e88] hover:text-[#111d1a]'
-                  }`}
-                >
-                  شیکاری
-                </button>
+              {/* Modern segmented tab switcher — icon + label + live count */}
+              <div className="flex items-center gap-1 bg-white rounded-2xl p-1.5 border border-[#e8eeec] shadow-2xs max-w-xl">
+                {EMPLOYER_TABS.map(t => {
+                  const on = employerSubTab === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => { soundService.playTick?.(); setEmployerSubTab(t.id); }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-xs font-black transition-all ${
+                        on ? 'bg-[#12796b] text-white shadow-xs' : 'text-[#7b8e88] hover:text-[#111d1a]'
+                      }`}
+                    >
+                      <t.Icon className="w-3.5 h-3.5" />
+                      <span>{t.label}</span>
+                      {t.count !== null && (
+                        <span className={`font-mono text-[10px] ${on ? 'text-white/80' : 'text-[#a0afa9]'}`}>({t.count})</span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               {employerSubTab === 'analytics' && (
@@ -386,11 +389,7 @@ export const Dashboard = ({ onNavigate }) => {
               {employerSubTab === 'applicants' && (
                 <>
                   <div className="flex items-center gap-2 flex-wrap">
-                    {[
-                      { id: 'all', label: 'هەموو' },
-                      { id: 'web', label: 'پەرەپێدەری وێب' },
-                      { id: 'support', label: 'پشتیگری تەکنیکی' },
-                    ].map(c => (
+                    {applicantCategoryFilters.map(c => (
                       <button
                         key={c.id}
                         onClick={() => { soundService.playTick?.(); setSelectedCategoryFilter(c.id); }}
@@ -413,84 +412,114 @@ export const Dashboard = ({ onNavigate }) => {
                       </div>
                     ) : (
                       filteredApplicantsList.map((app) => {
-                        const isSelected = selectedApplicantId === app.id;
                         const isAccepted = app.status === 'accepted';
                         const isRejected = app.status === 'rejected';
                         return (
                           <div
                             key={app.id}
-                            onClick={() => { soundService.playTick?.(); setSelectedApplicantId(app.id); }}
-                            className={`p-4 sm:p-5 rounded-2xl border transition-all cursor-pointer shadow-2xs ${
-                              isSelected ? 'bg-[#e8f7f4] border-[#12796b] shadow-xs' : 'bg-white border-[#e8eeec] hover:border-[#12796b]/40'
+                            className={`p-4 sm:p-5 rounded-3xl border shadow-2xs ${
+                              isAccepted ? 'bg-[#f5fbf9] border-[#c1ede3]' :
+                              isRejected ? 'bg-rose-50/40 border-rose-100' :
+                              'bg-white border-[#e8eeec]'
                             }`}
                           >
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                              <div className="flex items-center gap-2 order-2 sm:order-1 w-full sm:w-auto justify-end sm:justify-start">
-                                {isAccepted ? (
-                                  <>
-                                    <span className="px-4 py-2 rounded-xl bg-[#d4f7ee] text-[#12796b] text-xs font-black inline-flex items-center gap-1.5">
-                                      <Check className="w-3.5 h-3.5" /> پەسەندکراو
-                                    </span>
-                                    {!ratedIds.has(app.id) && (
-                                      <button
-                                        onClick={(e) => { e.stopPropagation(); soundService.playTick?.(); setRatingOpenId(ratingOpenId === app.id ? null : app.id); }}
-                                        className="px-3 py-2 rounded-xl bg-white border border-[#e8eeed] text-[#4a5854] hover:bg-[#f8faf9] text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1"
-                                      >
-                                        <Star className="w-3.5 h-3.5" style={{ color: '#f5a524' }} /> هەڵسەنگاندن
-                                      </button>
-                                    )}
-                                  </>
-                                ) : isRejected ? (
-                                  <span className="px-4 py-2 rounded-xl bg-rose-50 text-rose-600 text-xs font-black inline-flex items-center gap-1.5">
-                                    <X className="w-3.5 h-3.5" /> ڕەتکراوە
-                                  </span>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleApproveApplicant(app.id); }}
-                                      className="px-4 py-2 rounded-xl bg-[#111d1a] hover:bg-black text-white text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5"
-                                    >
-                                      <Check className="w-3.5 h-3.5" />
-                                      <span>پەسەندکردن</span>
-                                    </button>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleRejectApplicant(app.id); }}
-                                      className="w-9 h-9 rounded-xl bg-white border border-[#e8eeed] text-[#7b8e88] hover:text-rose-600 hover:border-rose-200 flex items-center justify-center transition active:scale-95"
-                                    >
-                                      <X className="w-4 h-4" />
-                                    </button>
-                                  </>
-                                )}
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleOpenCv(app); }}
-                                  className="px-4 py-2 rounded-xl bg-white border border-[#e8eeed] text-[#4a5854] hover:bg-[#f8faf9] text-xs font-bold shadow-2xs active:scale-95 transition"
-                                >
-                                  بینینی CV
-                                </button>
-                              </div>
-
-                              <div className="flex items-center gap-3.5 order-1 sm:order-2">
-                                <div className="text-right">
-                                  <div className="flex items-center gap-2 flex-wrap justify-end">
-                                    {app.isVIP && (
-                                      <span className="px-2 py-0.5 rounded-full bg-[#12796b] text-white text-[10px] font-black inline-flex items-center gap-0.5">
-                                        <Crown className="w-3 h-3 text-amber-300" /> VIP
-                                      </span>
-                                    )}
-                                    <span className="text-xs text-[#7b8e88] font-bold">{app.job_title}</span>
-                                    <h3 className="text-sm sm:text-base font-black text-[#111d1a]">{app.freelancer_name}</h3>
-                                  </div>
-                                  <div className="text-[11px] text-[#7b8e88] font-medium mt-1">
-                                    {app.experience_text} · {app.location_text} · {app.cv_mode_text}
-                                  </div>
-                                </div>
-                                <div className="w-11 h-11 rounded-2xl bg-[#d4f7ee] border border-[#beece2] text-[#12796b] flex items-center justify-center font-black text-sm shrink-0 shadow-2xs">
+                            {/* Who + what they applied for — name is the headline, job title is a clear pill under it */}
+                            <div className="flex items-start gap-3.5">
+                              {app.avatar ? (
+                                <img
+                                  src={app.avatar}
+                                  alt={app.freelancer_name}
+                                  className="w-14 h-14 rounded-2xl object-cover border border-[#beece2] shrink-0 shadow-2xs"
+                                />
+                              ) : (
+                                <div className="w-14 h-14 rounded-2xl bg-[#d4f7ee] border border-[#beece2] text-[#12796b] flex items-center justify-center font-black text-lg shrink-0 shadow-2xs">
                                   {app.initial}
                                 </div>
+                              )}
+                              <div className="flex-1 min-w-0 text-right">
+                                <div className="flex items-center gap-2 flex-wrap justify-start">
+                                  {app.isVIP && (
+                                    <span className="px-2 py-0.5 rounded-full bg-[#12796b] text-white text-[10px] font-black inline-flex items-center gap-0.5 shrink-0">
+                                      <Crown className="w-3 h-3 text-amber-300" /> VIP
+                                    </span>
+                                  )}
+                                  <h3 className="text-base font-black text-[#111d1a] truncate">{app.freelancer_name}</h3>
+                                </div>
+                                <span className="mt-1.5 inline-block px-2.5 py-1 rounded-full bg-[#f4f7f6] text-[#4a5854] text-[11px] font-bold">
+                                  {app.job_title}
+                                </span>
                               </div>
                             </div>
+
+                            {/* Meta line — experience / location / how they applied */}
+                            <div className="mt-3 flex items-center gap-1.5 flex-wrap justify-start text-[11px] text-[#7b8e88] font-medium">
+                              <span>{app.cv_mode_text}</span>
+                              {app.location_text && (
+                                <>
+                                  <span className="text-[#cbd5d1]">·</span>
+                                  <span className="inline-flex items-center gap-1">{app.location_text}<MapPin className="w-3 h-3" /></span>
+                                </>
+                              )}
+                              <span className="text-[#cbd5d1]">·</span>
+                              <span className="truncate max-w-[200px]">{app.experience_text}</span>
+                            </div>
+
+                            {/* Status — its own clear row, separate from actions, so it reads
+                                at a glance instead of blending into a row of buttons */}
+                            {(isAccepted || isRejected) && (
+                              <div className="mt-3 flex justify-start">
+                                {isAccepted ? (
+                                  <span className="px-3 py-1.5 rounded-full bg-[#12796b] text-white text-[11px] font-black inline-flex items-center gap-1.5">
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> پەسەندکراو
+                                  </span>
+                                ) : (
+                                  <span className="px-3 py-1.5 rounded-full bg-rose-100 text-rose-700 text-[11px] font-black inline-flex items-center gap-1.5">
+                                    <XCircle className="w-3.5 h-3.5" /> ڕەتکراوە
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Actions — full-width row, big clear touch targets */}
+                            <div className="mt-4 pt-4 border-t border-[#f0f4f2] flex items-center gap-2 flex-wrap justify-start">
+                              <button
+                                onClick={() => handleOpenCv(app)}
+                                className="px-4 py-2.5 rounded-xl bg-white border border-[#e8eeed] text-[#4a5854] hover:bg-[#f8faf9] text-xs font-bold shadow-2xs active:scale-95 transition inline-flex items-center gap-1.5"
+                              >
+                                <FileText className="w-3.5 h-3.5" /> بینینی CV
+                              </button>
+
+                              {isAccepted ? (
+                                !ratedIds.has(app.id) && (
+                                  <button
+                                    onClick={() => { soundService.playTick?.(); setRatingOpenId(ratingOpenId === app.id ? null : app.id); }}
+                                    className="px-3 py-2.5 rounded-xl bg-white border border-[#e8eeed] text-[#4a5854] hover:bg-[#f8faf9] text-xs font-bold shadow-2xs active:scale-95 transition flex items-center gap-1"
+                                  >
+                                    <Star className="w-3.5 h-3.5" style={{ color: '#f5a524' }} /> هەڵسەنگاندن
+                                  </button>
+                                )
+                              ) : !isRejected && (
+                                <>
+                                  <button
+                                    onClick={() => handleRejectApplicant(app.id)}
+                                    className="w-10 h-10 rounded-xl bg-white border border-[#e8eeed] text-[#7b8e88] hover:text-rose-600 hover:border-rose-200 flex items-center justify-center transition active:scale-95"
+                                    aria-label="ڕەتکردنەوە"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleApproveApplicant(app.id)}
+                                    className="px-5 py-2.5 rounded-xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-xs font-black shadow-xs active:scale-95 transition flex items-center gap-1.5"
+                                  >
+                                    <Check className="w-3.5 h-3.5" />
+                                    <span>پەسەندکردن</span>
+                                  </button>
+                                </>
+                              )}
+                            </div>
+
                             {ratingOpenId === app.id && (
-                              <div className="mt-3" onClick={(e) => e.stopPropagation()}>
+                              <div className="mt-3">
                                 <StarRatingInput
                                   label={`هەڵسەنگاندنی ${app.freelancer_name}`}
                                   submitting={ratingBusy}
@@ -514,58 +543,73 @@ export const Dashboard = ({ onNavigate }) => {
                       <p className="text-xs font-bold text-[#7b8e88]">هێشتا هیچ کارێکت بڵاونەکردووەتەوە</p>
                     </div>
                   ) : (
-                    companyJobs.map(job => {
-                      const canToggle = job.status === 'active' || job.status === 'paused';
-                      const statusColor =
-                        job.status === 'pending' ? '#c98a1f' :
-                        job.status === 'rejected' ? '#dc2626' :
-                        job.status === 'closed' ? '#7b8e88' :
-                        job.status === 'paused' ? '#c98a1f' :
-                        '#12796b';
-                      const statusLabel =
-                        job.status === 'pending' ? 'چاوەڕوانی پەسەندکردنی ئەدمین' :
-                        job.status === 'rejected' ? 'ڕەتکراوە' :
-                        job.status === 'closed' ? 'بەسەرچووە (کاتی بڵاوکردنەوە تەواوبووە)' :
-                        job.status === 'paused' ? 'ناچالاککراوە' :
-                        'چالاکە';
-                      const isToggling = togglingJobId === job.id;
-                      return (
-                        <div
-                          key={job.id}
-                          onClick={() => { soundService.playTick?.(); setViewingJob(job); }}
-                          className="p-4 rounded-2xl bg-white border border-[#e8eeec] hover:border-[#12796b]/40 shadow-2xs flex items-center justify-between gap-3 cursor-pointer transition"
-                        >
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              onClick={(e) => { e.stopPropagation(); soundService.playTick?.(); setEditingJob(job); }}
-                              className="w-9 h-9 rounded-xl bg-[#f4f7f6] border border-[#e8eeed] text-[#5a6b65] hover:text-[#12796b] flex items-center justify-center shrink-0 transition"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            {canToggle && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {companyJobs.map(job => {
+                        const canToggle = job.status === 'active' || job.status === 'paused';
+                        const statusBg =
+                          job.status === 'pending' ? 'bg-amber-50 text-amber-700' :
+                          job.status === 'rejected' ? 'bg-rose-50 text-rose-600' :
+                          job.status === 'closed' ? 'bg-[#f4f7f6] text-[#7b8e88]' :
+                          job.status === 'paused' ? 'bg-amber-50 text-amber-700' :
+                          'bg-[#d4f7ee] text-[#12796b]';
+                        const statusLabel =
+                          job.status === 'pending' ? 'چاوەڕوانی پەسەندکردن' :
+                          job.status === 'rejected' ? 'ڕەتکراوە' :
+                          job.status === 'closed' ? 'بەسەرچووە' :
+                          job.status === 'paused' ? 'ناچالاککراوە' :
+                          'چالاکە';
+                        const isToggling = togglingJobId === job.id;
+                        const appCount = Number(job.applications_count) || 0;
+                        return (
+                          <div
+                            key={job.id}
+                            onClick={() => { soundService.playTick?.(); setViewingJob(job); }}
+                            className="p-4 sm:p-5 rounded-3xl bg-white border border-[#e8eeec] hover:border-[#12796b]/40 shadow-2xs cursor-pointer transition space-y-3"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="w-11 h-11 rounded-2xl bg-[#eaf5f2] border border-[#d2ede5] text-[#12796b] flex items-center justify-center shrink-0">
+                                <Briefcase className="w-5 h-5" />
+                              </div>
+                              <div className="flex-1 min-w-0 text-right">
+                                <div className="text-sm font-black text-[#111d1a] truncate">{job.title_ku || job.title}</div>
+                                <span className={`mt-1 inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black ${statusBg}`}>
+                                  {statusLabel}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 justify-start text-[11px] text-[#7b8e88] font-bold">
+                              <span>{appCount} داواکاری</span>
+                              <Send className="w-3 h-3" />
+                            </div>
+
+                            <div className="pt-3 border-t border-[#f0f4f2] flex items-center gap-2 justify-start">
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleToggleJobStatus(job); }}
-                                disabled={isToggling}
-                                title={job.status === 'active' ? 'ناچالاککردنی کارەکە' : 'چالاککردنەوەی کارەکە'}
-                                className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition disabled:opacity-50 ${
-                                  job.status === 'active'
-                                    ? 'bg-[#f4f7f6] border-[#e8eeed] text-[#5a6b65] hover:text-amber-600'
-                                    : 'bg-[#e8f7f4] border-[#c1ede3] text-[#12796b] hover:bg-[#d4f7ee]'
-                                }`}
+                                onClick={(e) => { e.stopPropagation(); soundService.playTick?.(); setEditingJob(job); }}
+                                className="w-9 h-9 rounded-xl bg-[#f4f7f6] border border-[#e8eeed] text-[#5a6b65] hover:text-[#12796b] flex items-center justify-center shrink-0 transition"
+                                aria-label="دەستکاریکردن"
                               >
-                                {job.status === 'active' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                                <Edit className="w-4 h-4" />
                               </button>
-                            )}
+                              {canToggle && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleToggleJobStatus(job); }}
+                                  disabled={isToggling}
+                                  title={job.status === 'active' ? 'ناچالاککردنی کارەکە' : 'چالاککردنەوەی کارەکە'}
+                                  className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 transition disabled:opacity-50 ${
+                                    job.status === 'active'
+                                      ? 'bg-[#f4f7f6] border-[#e8eeed] text-[#5a6b65] hover:text-amber-600'
+                                      : 'bg-[#e8f7f4] border-[#c1ede3] text-[#12796b] hover:bg-[#d4f7ee]'
+                                  }`}
+                                >
+                                  {job.status === 'active' ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-right flex-1 min-w-0">
-                            <div className="text-xs font-black text-[#111d1a] truncate">{job.title_ku || job.title}</div>
-                            <span className="text-[10px] font-bold" style={{ color: statusColor }}>
-                              {statusLabel}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })
+                        );
+                      })}
+                    </div>
                   )}
 
                   {companyJobs.length > 0 && (
@@ -579,55 +623,6 @@ export const Dashboard = ({ onNavigate }) => {
                   )}
                 </div>
               )}
-            </div>
-
-            {/* ─── Sidebar: stage timeline for the selected applicant ─── */}
-            <div className="lg:col-span-4 space-y-6 order-2">
-              <div className="bg-white rounded-3xl p-6 border border-[#e8eeec] shadow-2xs space-y-5">
-                <h3 className="text-sm font-black text-[#111d1a] border-b border-[#f4f7f6] pb-3">قۆناغەکان</h3>
-
-                {selectedApplicant ? (
-                  <>
-                    <div className="text-right space-y-0.5">
-                      <h4 className="text-sm font-black text-[#111d1a]">{selectedApplicant.freelancer_name}</h4>
-                      <p className="text-[11px] text-[#7b8e88] font-bold">{selectedApplicant.job_title}</p>
-                    </div>
-
-                    <div className="space-y-4 pt-1">
-                      {[
-                        { n: 1, label: 'داواکاری وەرگیرا' },
-                        { n: 2, label: 'چاوپێکەوتنی یەکەم' },
-                        { n: 3, label: 'تاقیکردنەوەی تەکنیکی' },
-                        { n: 4, label: 'پێشکەشکردنی پێشنیار' },
-                      ].map(({ n, label }) => (
-                        <div key={n} className="flex items-center justify-between text-xs">
-                          <span className="font-mono text-[11px] text-[#7b8e88]">{selectedApplicant.stageDates[n] || ''}</span>
-                          <div className="flex items-center gap-2.5">
-                            <span className="font-bold text-[#111d1a]">{label}</span>
-                            {selectedApplicant.currentStage >= n ? (
-                              <div className="w-5 h-5 rounded-full bg-[#12796b] text-white flex items-center justify-center shadow-xs">
-                                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                              </div>
-                            ) : (
-                              <div className="w-5 h-5 rounded-full border-2 border-stone-300" />
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={handleAdvanceStage}
-                      className="w-full py-3 rounded-2xl bg-white hover:bg-[#f8faf9] border border-[#e8eeed] text-[#111d1a] text-xs font-black shadow-2xs active:scale-95 transition"
-                    >
-                      قۆناغی داهاتوو تەواوبکە
-                    </button>
-                  </>
-                ) : (
-                  <p className="text-xs text-[#7b8e88] font-bold text-center py-6">هیچ داواکارییەک نییە</p>
-                )}
-              </div>
-            </div>
           </div>
         ) : (
           <div className="space-y-5">

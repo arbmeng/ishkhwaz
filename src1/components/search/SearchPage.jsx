@@ -12,6 +12,7 @@ import { FreelancerProfileModal } from '../freelancer/FreelancerProfileModal';
 import { JobDetailModal } from '../freelancer/JobDetailModal';
 import { Monogram } from '../ui/Monogram';
 import { getPlanColor, getContrastColor } from '../../utils/planPresets';
+import { useAuth } from '../../context/AuthContext';
 
 // Brand teal — matches the logo mark and the rest of the light screens
 // (LoginPage, JobFeed, BottomNavbar).
@@ -63,13 +64,18 @@ const formatSalary = (job) => {
 
 export const SearchPage = ({ initialTab = 'companies' }) => {
   const { jobs = [], freelancers = [], categories: liveCategories = [], companies = [], planTiers = [], addToast, savedJobIds = [], toggleSaveJob } = useStore();
+  const { user } = useAuth();
+  // A company account only ever wants to search for candidates to hire —
+  // jobs and other companies aren't relevant to them, so this tab is the
+  // only one they get instead of one they'd have to manually pick every time.
+  const isEmployer = user?.role === 'employer';
   const safeJobs = Array.isArray(jobs) ? jobs : [];
   const liveFreelancersList = Array.isArray(freelancers) ? freelancers : [];
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedGovernorate, setSelectedGovernorate] = useState('all');
-  const [activeTab, setActiveTab] = useState(initialTab); // 'companies', 'jobs', 'freelancers'
+  const [activeTab, setActiveTab] = useState(() => (isEmployer ? 'freelancers' : initialTab)); // 'companies', 'jobs', 'freelancers'
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
   const [initialJobId, setInitialJobId] = useState(null);
@@ -99,8 +105,16 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
   // new sub-path itself and switches without a full remount. Also handles
   // a 4th segment (a freelancer id) so the browser back button correctly
   // closes a deep-linked freelancer profile instead of leaving the app.
+  // Safety net for a company account landing anywhere but 'freelancers' —
+  // covers a stale deep link (/search/jobs), the initial mount, and any
+  // future call site that forgets this restriction.
+  useEffect(() => {
+    if (isEmployer && activeTab !== 'freelancers') setActiveTab('freelancers');
+  }, [isEmployer, activeTab]);
+
   useEffect(() => {
     const handlePopState = () => {
+      if (isEmployer) return;
       const parts = window.location.pathname.split('/');
       const sub = parts[2] || '';
       const freelancerId = parts[3] || null;
@@ -435,7 +449,7 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="گەڕان بەپێی ناوی کۆمپانیا، ناوی کار، فریلانسەر..."
+              placeholder={isEmployer ? 'گەڕان بەپێی ناو، شارەزایی، بوار...' : 'گەڕان بەپێی ناوی کۆمپانیا، ناوی کار، فریلانسەر...'}
               className="w-full bg-white rounded-2xl pr-11 pl-9 py-3.5 text-sm text-stone-900 font-bold placeholder-stone-300 outline-none border border-transparent shadow-[0_2px_16px_rgba(0,0,0,0.05)] focus:border-[#12796b] focus:ring-4 focus:ring-[#12796b]/10 focus:shadow-[0_2px_16px_rgba(0,0,0,0.08)] transition-all"
             />
             {searchTerm && (
@@ -461,7 +475,17 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
           </button>
         </div>
 
-        {/* ── Segmented pill tabs — Companies / Jobs / Freelancers ── */}
+        {/* ── Segmented pill tabs — Companies / Jobs / Freelancers ──
+             A company account only has one relevant tab (candidates), so
+             there's nothing to switch between — skip the control entirely
+             instead of showing a segmented bar with a single option in it. */}
+        {isEmployer ? (
+          <div className="flex items-center gap-1.5 text-xs font-black text-stone-500 px-1">
+            <Users className="w-3.5 h-3.5" style={{ color: TEAL }} />
+            <span>کارخوازان</span>
+            <span className="font-mono text-stone-400">({filteredFreelancers.length})</span>
+          </div>
+        ) : (
         <div className="flex items-center gap-1 bg-stone-100 rounded-full p-1">
           {tabs.map(t => {
             const on = activeTab === t.id;
@@ -478,6 +502,7 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
             );
           })}
         </div>
+        )}
 
         {/* ── My-location quick action + result count ─────────────── */}
         <div className="flex items-center justify-between px-1">
@@ -566,8 +591,12 @@ export const SearchPage = ({ initialTab = 'companies' }) => {
               const theme = cardTheme(tier);
               const badges = [];
               // VIP already gets its own crown badge below — a second
-              // plain plan-name badge would just repeat it.
-              if (tier && !isVip) badges.push({ label: `پلانی ${tier.name_ku}`, bg: '#101314', fg: '#fff' });
+              // plain plan-name badge would just repeat it. The admin-set
+              // tier name (e.g. "پلانی پرۆ") already includes the word
+              // "پلانی" itself — prepending it again used to produce
+              // "پلانی پلانی پرۆ" on the card. Strip that leading word so a
+              // small badge reads as a short, clean "پرۆ" instead.
+              if (tier && !isVip) badges.push({ label: tier.name_ku.replace(/^پلانی\s+/, ''), bg: '#101314', fg: '#fff' });
               if (isBoosted) badges.push({ label: 'بەرزکراوە', bg: '#eafae0', fg: '#2e7a11' });
               return (
                 <ResultRow

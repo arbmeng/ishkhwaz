@@ -8,7 +8,8 @@ import { Monogram } from '../ui/Monogram';
 import { JobDetailModal } from '../freelancer/JobDetailModal';
 import {
   ArrowLeft, MapPin, Phone, Mail, Globe, Briefcase, CheckCircle2,
-  Share2, Send, BadgeCheck, ExternalLink, Sparkles
+  Share2, Send, BadgeCheck, ExternalLink, Sparkles, Copy, Clock3,
+  Users, ShieldCheck, ChevronRight, Search, Building2, Star, X
 } from 'lucide-react';
 
 // Brand teal — matches the logo mark and the rest of the light screens.
@@ -43,6 +44,25 @@ const postedAgo = (iso) => {
   return `${month} مانگ لەمەوپێش`;
 };
 
+const getJobLocation = (job) => {
+  const gov = job?.governorate || job?.governorateName || job?.governorate_id || '';
+  return job?.location_detail || gov || 'کوردستان';
+};
+
+const getJobType = (job) => JOB_TYPE_LABELS[job?.job_type] || job?.job_type || 'کاتی تەواو';
+const getWorkplace = (job) => WORKPLACE_LABELS[job?.workplace_type] || job?.workplace_type || 'لەسەر شوێن';
+
+const isNewJob = (job) => {
+  if (!job?.created_at) return false;
+  const age = Date.now() - new Date(job.created_at).getTime();
+  return age >= 0 && age < 3 * 86400000;
+};
+
+const companyInitials = (name = '') => {
+  const parts = String(name).trim().split(/\\s+/).filter(Boolean);
+  return (parts.slice(0, 2).map(x => x[0]).join('') || 'K').toUpperCase();
+};
+
 const infoRow = (Icon, label, value, mono = false, isLink = false, linkHref = '') => (
   <div key={label} className="flex items-center gap-3 py-3.5 border-b border-stone-100 last:border-b-0">
     <span className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: TEAL_SOFT }}>
@@ -63,6 +83,8 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
   const { applications = [], addToast } = useStore();
   const [activeJobDetailModal, setActiveJobDetailModal] = useState(null);
   const [activeTab, setActiveTab] = useState('about');
+  const [jobQuery, setJobQuery] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const compName = (company.name || company.company_name || '').trim().toLowerCase();
   const compId = company.id ? String(company.id) : null;
@@ -126,7 +148,7 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
     setActiveJobDetailModal(job);
     if (typeof window !== 'undefined') {
       const shareUrl = `/search?company=${encodeURIComponent(company.name || '')}&job=${encodeURIComponent(job.id)}`;
-      try { window.history.pushState({ company: company.name, job: job.id }, '', shareUrl); } catch (e) {}
+      try { window.history.pushState({ company: company.name, job: job.id }, '', shareUrl); } catch (e) { }
     }
   };
 
@@ -135,7 +157,7 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
     setActiveJobDetailModal(null);
     if (typeof window !== 'undefined') {
       const compUrl = `/search?company=${encodeURIComponent(company.name || '')}`;
-      try { window.history.pushState({ company: company.name }, '', compUrl); } catch (e) {}
+      try { window.history.pushState({ company: company.name }, '', compUrl); } catch (e) { }
     }
   };
 
@@ -156,12 +178,21 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
     soundService.playTick?.();
     const companyUrl = `${window.location.origin}/share/company/${encodeURIComponent(company.id || '')}`;
     if (navigator.share) {
-      navigator.share({ title: `${company.name || 'کۆمپانیا'} — ئیش خواز`, url: companyUrl }).catch(() => {});
+      navigator.share({ title: `${company.name || 'کۆمپانیا'} — ئیش خواز`, url: companyUrl }).catch(() => { });
     } else if (navigator.clipboard) {
       navigator.clipboard.writeText(companyUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
       addToast?.({ title: 'کۆپیکرا ✓', message: 'لینکی پڕۆفایلی کۆمپانیا کۆپیکرا.', type: 'success' });
     }
   };
+
+  const filteredJobs = companyJobs.filter(job => {
+    const q = jobQuery.trim().toLowerCase();
+    if (!q) return true;
+    return [job.title_ku, job.title, job.description, job.location_detail, getJobType(job), getWorkplace(job)]
+      .filter(Boolean).join(' ').toLowerCase().includes(q);
+  });
 
   const hasAboutInfo = !!(company.description || company.phone || company.company_phone || company.email || company.company_email || company.regNumber || company.company_reg || company.industry);
   const cleanPhone = (company.phone || company.company_phone || '').replace(/[^0-9+]/g, '');
@@ -171,13 +202,49 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
   const displayIndustry = company.industry || company.company_industry || 'کۆمپانیا و بازرگانی';
   const displayGov = company.governorate || company.governorateName || 'کوردستان';
 
+
+  const premiumStyles = `
+    .company-profile-shell { position: relative; }
+    .company-profile-shell::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(700px 300px at 50% -80px, rgba(18,121,107,.10), transparent 70%),
+        radial-gradient(500px 260px at 100% 45%, rgba(18,121,107,.045), transparent 70%);
+      z-index: -1;
+    }
+    @media (min-width: 1024px) {
+      .company-profile-shell { padding-bottom: 72px; }
+      .company-profile-shell .company-desktop-card {
+        border: 1px solid rgba(231,229,228,.9);
+        box-shadow: 0 18px 60px rgba(15,23,42,.055);
+      }
+      .company-profile-shell .company-job-card {
+        min-height: 250px;
+        display: flex;
+        flex-direction: column;
+      }
+      .company-profile-shell .company-job-card > button:last-child {
+        margin-top: auto;
+      }
+    }
+    @media (min-width: 1440px) {
+      .company-profile-shell { padding-left: 40px; padding-right: 40px; }
+    }
+    @media (max-width: 639px) {
+      .company-profile-shell { overflow-x: hidden; }
+    }
+  `;
   return createPortal((
     <>
+      <style>{premiumStyles}</style>
       <div dir="rtl" className="fixed inset-0 z-[60] overflow-y-auto select-none animate-fadeIn font-vazirmatn"
-        style={{ background: '#f4f7f6', color: '#111', WebkitOverflowScrolling: 'touch' }}
+        style={{ background: 'linear-gradient(180deg,#f8faf9 0%,#f4f7f6 38%,#eef3f1 100%)', color: '#111', WebkitOverflowScrolling: 'touch' }}
       >
         {/* ── BANNER ── */}
-        <div className="relative w-full h-44 sm:h-52 bg-[#0d1a17] overflow-hidden">
+        <div className="relative w-full h-48 sm:h-56 lg:h-72 xl:h-80 bg-[#0d1a17] overflow-hidden">
           {company.cover || company.company_cover ? (
             <>
               {/* Blurred fill so letterboxing (when the uploaded image's
@@ -205,7 +272,7 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
           <button
             onClick={() => { soundService.playTick?.(); if (onBack) onBack(); }}
             aria-label="گەڕانەوە"
-            className="absolute right-4 w-10 h-10 rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.12)] flex items-center justify-center active:scale-95 transition-transform"
+            className="absolute right-4 sm:right-6 lg:right-8 w-10 h-10 rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.12)] flex items-center justify-center active:scale-95 transition-transform"
             style={{ top: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
           >
             <ArrowLeft className="w-4.5 h-4.5 rtl:rotate-180 text-stone-700" />
@@ -213,20 +280,20 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
           <button
             onClick={handleShare}
             aria-label="بەشداریکردن"
-            className="absolute left-4 w-10 h-10 rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.12)] flex items-center justify-center active:scale-95 transition-transform"
+            className="absolute left-4 sm:left-6 lg:left-8 w-10 h-10 rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.12)] flex items-center justify-center active:scale-95 transition-transform"
             style={{ top: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))' }}
           >
             <Share2 className="w-4 h-4 text-stone-700" />
           </button>
         </div>
 
-        <div className="max-w-2xl mx-auto px-4 sm:px-6" style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}>
+        <div className="company-profile-shell w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 xl:px-10" style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}>
           {/* ── IDENTITY ── */}
-          <div className="mt-4 flex items-end justify-between">
+          <div className="mt-4 lg:-mt-10 relative z-10 flex items-end justify-between">
             {company.logo || company.company_logo ? (
-              <img src={company.logo || company.company_logo} alt={company.name} className="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow-md bg-white" />
+              <img src={company.logo || company.company_logo} alt={company.name} className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-3xl object-cover border-4 border-white shadow-md bg-white" />
             ) : (
-              <Monogram name={company.name || 'کۆمپانیا'} textClassName="text-2xl" className="w-20 h-20 rounded-2xl border-4 border-white shadow-md" />
+              <Monogram name={company.name || 'کۆمپانیا'} textClassName="text-2xl lg:text-3xl" className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-3xl border-4 border-white shadow-md" />
             )}
 
             {companyJobs.length > 0 && (
@@ -236,14 +303,14 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
             )}
           </div>
 
-          <div className="mt-3">
+          <div className="mt-3 lg:mt-4">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <h1 className="text-xl font-black text-stone-900">{company.name}</h1>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-stone-900 tracking-tight">{company.name}</h1>
               {company.verified && (
                 <BadgeCheck className="w-[18px] h-[18px]" style={{ color: '#3b82f6' }} title="کۆمپانیای پشکنراو" />
               )}
             </div>
-            <p className="text-xs text-stone-400 font-bold mt-1">
+            <p className="text-xs sm:text-sm text-stone-400 font-bold mt-1">
               {[displayIndustry, displayGov].filter(Boolean).join('، ')}
             </p>
             {ratingSummary.count > 0 && (
@@ -253,14 +320,30 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
             )}
           </div>
 
+          {/* ── TRUST / STATS ── */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 mt-4 lg:mt-5">
+            <div className="rounded-2xl bg-white border border-stone-100 shadow-[0_4px_20px_rgba(0,0,0,0.035)] p-3 text-center">
+              <div className="text-lg font-black text-stone-900">{companyJobs.length}</div>
+              <div className="text-[10px] text-stone-400 font-bold mt-0.5">هەلی کار</div>
+            </div>
+            <div className="rounded-2xl bg-white border border-stone-100 shadow-[0_4px_20px_rgba(0,0,0,0.035)] p-3 text-center">
+              <div className="text-lg font-black text-stone-900">{ratingSummary.count ? ratingSummary.average.toFixed(1) : '—'}</div>
+              <div className="text-[10px] text-stone-400 font-bold mt-0.5">هەڵسەنگاندن</div>
+            </div>
+            <div className="rounded-2xl bg-white border border-stone-100 shadow-[0_4px_20px_rgba(0,0,0,0.035)] p-3 text-center">
+              <div className="text-lg font-black text-stone-900">{memberSinceYear || '—'}</div>
+              <div className="text-[10px] text-stone-400 font-bold mt-0.5">ساڵی چالاکی</div>
+            </div>
+          </div>
+
           {/* ── ACTION ROW ── */}
-          <div className="flex items-center gap-2 mt-4">
+          <div className="flex items-center gap-2 sm:gap-3 mt-4 lg:mt-5">
             <button
               onClick={handleShare}
               className="shrink-0 w-12 h-12 rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] flex items-center justify-center active:scale-95 transition-transform"
               title="هاوبەشکردنی پڕۆفایل"
             >
-              <Share2 className="w-4 h-4 text-stone-500" />
+              {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4 text-stone-500" />}
             </button>
             {cleanPhone && (
               <a
@@ -281,7 +364,7 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
           </div>
 
           {/* ── TABS ── */}
-          <div className="flex items-center gap-5 mt-6 border-b border-stone-200">
+          <div className="flex items-center gap-5 sm:gap-8 lg:gap-10 mt-6 border-b border-stone-200">
             <button
               onClick={() => { soundService.playTick?.(); setActiveTab('about'); }}
               className="pb-3 text-sm font-black -mb-px border-b-2 transition-colors"
@@ -299,9 +382,9 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
           </div>
 
           {/* ── TAB CONTENT ── */}
-          <div className="mt-4">
+          <div className="mt-4 lg:mt-6">
             {activeTab === 'about' && (
-              <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] p-5">
+              <div className="company-desktop-card bg-white rounded-3xl lg:rounded-[2rem] shadow-[0_8px_35px_rgba(0,0,0,0.055)] border border-stone-100 p-5 sm:p-6 lg:p-7">
                 {(company.description || company.bio) && (
                   <p className="text-sm text-stone-600 leading-relaxed pb-3.5 mb-0.5 border-b border-stone-100">{company.description || company.bio}</p>
                 )}
@@ -318,54 +401,107 @@ export const CompanyProfilePage = ({ company, jobs = [], onBack, initialJobId })
             )}
 
             {activeTab === 'jobs' && (
-              companyJobs.length === 0 ? (
-                <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] py-16 text-center">
-                  <p className="text-sm text-stone-400 font-bold">لە ئێستادا هیچ هەلی کاری نوێ بڵاونەکراوەتەوە.</p>
-                </div>
-              ) : (
-                <div className="grid gap-3">
-                  {companyJobs.map(job => {
-                    const isApplied = applications.some(a => String(a.job_id) === String(job.id));
-                    return (
-                      <div
-                        key={job.id}
-                        onClick={() => handleOpenJobDetail(job)}
-                        className="relative bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.1)] transition-all duration-300 p-4 cursor-pointer"
-                      >
-                        <button
-                          onClick={(e) => handleShareJob(job, e)}
-                          className="absolute top-4 left-4 w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center active:scale-90 transition-transform hover:bg-stone-100"
-                        >
-                          <Share2 className="w-3.5 h-3.5 text-stone-400" />
+              <>
+                {companyJobs.length > 0 && (
+                  <div className="space-y-3 mb-4">
+                    <div className="relative">
+                      <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                      <input
+                        value={jobQuery}
+                        onChange={(e) => setJobQuery(e.target.value)}
+                        placeholder="گەڕان لە هەلی کارەکان..."
+                        className="w-full h-12 pr-10 pl-4 rounded-2xl bg-white border border-stone-200 outline-none text-sm font-bold text-stone-800 placeholder:text-stone-400 focus:border-[#12796b] focus:ring-4 focus:ring-[#12796b]/10 transition"
+                      />
+                      {jobQuery && (
+                        <button onClick={() => setJobQuery('')} className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-stone-100 flex items-center justify-center">
+                          <X className="w-3.5 h-3.5 text-stone-500" />
                         </button>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between px-1">
+                      <span className="text-xs text-stone-400 font-bold">{filteredJobs.length} هەلی کار</span>
+                      {filteredJobs.some(isNewJob) && (
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
+                          <Sparkles className="w-3 h-3" /> نوێ
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {filteredJobs.length === 0 ? (
+                  <div className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] py-16 text-center">
+                    <div className="w-14 h-14 mx-auto rounded-2xl bg-stone-50 flex items-center justify-center mb-3">
+                      <Briefcase className="w-6 h-6 text-stone-300" />
+                    </div>
+                    <p className="text-sm text-stone-400 font-bold">{jobQuery ? 'هیچ هەلی کارێک بۆ ئەم گەڕانە نەدۆزرایەوە.' : 'لە ئێستادا هیچ هەلی کاری نوێ بڵاونەکراوەتەوە.'}</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredJobs.map(job => {
+                      const isApplied = applications.some(a => String(a.job_id) === String(job.id));
+                      return (
+                        <div
+                          key={job.id}
+                          onClick={() => handleOpenJobDetail(job)}
+                          className="company-job-card relative bg-white rounded-[1.75rem] border border-stone-100 shadow-[0_4px_24px_rgba(0,0,0,0.045)] hover:shadow-[0_16px_40px_rgba(0,0,0,0.10)] hover:-translate-y-0.5 transition-all duration-300 p-4 cursor-pointer group"
+                        >
+                          <button
+                            onClick={(e) => handleShareJob(job, e)}
+                            className="absolute top-4 left-4 w-8 h-8 rounded-full bg-stone-50 flex items-center justify-center active:scale-90 transition-transform hover:bg-stone-100"
+                          >
+                            <Share2 className="w-3.5 h-3.5 text-stone-400" />
+                          </button>
 
-                        <h3 className="text-sm font-black text-stone-900 pl-9 truncate">{job.title_ku || job.title}</h3>
-                        <p className="text-xs text-stone-400 font-bold mt-1 truncate">
-                          {[JOB_TYPE_LABELS[job.job_type] || job.job_type, WORKPLACE_LABELS[job.workplace_type] || job.workplace_type].filter(Boolean).join(' · ')}
-                        </p>
+                          <div className="flex items-start gap-3 pr-1">
+                            <div className="w-11 h-11 shrink-0 rounded-2xl bg-stone-50 border border-stone-100 flex items-center justify-center overflow-hidden">
+                              {company.logo || company.company_logo ? (
+                                <img src={company.logo || company.company_logo} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-xs font-black" style={{ color: TEAL }}>{companyInitials(company.name)}</span>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-sm font-black text-stone-900 truncate">{job.title_ku || job.title}</h3>
+                                {isNewJob(job) && <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[9px] font-black">نوێ</span>}
+                              </div>
+                              <p className="text-xs text-stone-400 font-bold mt-1 truncate">
+                                {[getJobType(job), getWorkplace(job)].filter(Boolean).join(' · ')}
+                              </p>
+                            </div>
+                          </div>
 
-                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-stone-100">
-                          <span className="text-[11px] text-stone-400 font-bold">{postedAgo(job.created_at)}</span>
-                          {formatSalary(job) && (
-                            <span className="font-mono font-black text-sm text-stone-900" dir="ltr">{formatSalary(job)}</span>
-                          )}
+                          <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-stone-50 text-[10px] text-stone-500 font-bold">
+                              <MapPin className="w-3 h-3" /> {getJobLocation(job)}
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-stone-50 text-[10px] text-stone-500 font-bold">
+                              <Clock3 className="w-3 h-3" /> {postedAgo(job.created_at) || 'نوێ'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-stone-100">
+                            <span className="text-[11px] text-stone-400 font-bold">{postedAgo(job.created_at)}</span>
+                            {formatSalary(job) && (
+                              <span className="font-mono font-black text-sm text-stone-900" dir="ltr">{formatSalary(job)}</span>
+                            )}
+                          </div>
+
+                          <button
+                            disabled={isApplied}
+                            onClick={(e) => { e.stopPropagation(); handleOpenJobDetail(job); }}
+                            className={`mt-3 w-full py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all active:scale-95 ${isApplied ? 'bg-emerald-50 text-emerald-700' : 'text-white'
+                              }`}
+                            style={!isApplied ? { background: TEAL } : {}}
+                          >
+                            {isApplied ? <><CheckCircle2 className="w-3.5 h-3.5" />نێردراوە</> : <><Send className="w-3.5 h-3.5" />ناردنی سیڤی</>}
+                          </button>
                         </div>
-
-                        <button
-                          disabled={isApplied}
-                          onClick={(e) => { e.stopPropagation(); handleOpenJobDetail(job); }}
-                          className={`mt-3 w-full py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition-all active:scale-95 ${
-                            isApplied ? 'bg-emerald-50 text-emerald-700' : 'text-white'
-                          }`}
-                          style={!isApplied ? { background: TEAL } : {}}
-                        >
-                          {isApplied ? <><CheckCircle2 className="w-3.5 h-3.5" />نێردراوە</> : <><Send className="w-3.5 h-3.5" />ناردنی سیڤی</>}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

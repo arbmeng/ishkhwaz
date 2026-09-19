@@ -5,7 +5,7 @@ import { apiService } from '../../services/api';
 import { soundService } from '../../services/soundService';
 import { exportNodeToPdf, safeFilename } from '../../services/karnamaPdf';
 import { getTemplate } from '../../cvTemplates/registry';
-import { ArrowLeft, Plus, Download, Trash2, FileText, Loader2, Send, Palette } from 'lucide-react';
+import { ArrowLeft, Plus, Download, Trash2, FileText, Loader2, Send, Palette, Globe } from 'lucide-react';
 
 const TEAL = '#12796b';
 const TEAL_DEEP = '#0d5c50';
@@ -35,6 +35,8 @@ export const ResumesPage = ({ onBack, onCreateNew, onEditStyle }) => {
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [publicResumeId, setPublicResumeId] = useState(user?.public_resume_id || null);
+  const [settingPublicId, setSettingPublicId] = useState(null);
   const exportRef = useRef(null);
 
   const userTier = planTiers.find(t => t.id === user?.plan);
@@ -57,9 +59,32 @@ export const ResumesPage = ({ onBack, onCreateNew, onEditStyle }) => {
     setDeletingId(null);
     if (res?.success) {
       setResumes(prev => prev.filter(r => r.id !== id));
+      if (publicResumeId === id) setPublicResumeId(null);
       addToast?.({ title: 'سڕایەوە', message: 'سیڤیەکە سڕایەوە.', type: 'info' });
     } else {
       addToast?.({ title: 'سەرنەکەوت', message: res?.message || 'سڕینەوە سەرکەوتوو نەبوو.', type: 'error' });
+    }
+  };
+
+  // Toggles whether this resume is the ONE publicly viewable on the
+  // freelancer's own profile (FreelancerProfileModal's "بینینی CV" button) —
+  // picking a new one automatically un-picks whichever was public before,
+  // since only one can be public at a time.
+  const handleTogglePublic = async (id) => {
+    soundService.playTick?.();
+    const nextId = publicResumeId === id ? null : id;
+    setSettingPublicId(id);
+    const res = await apiService.setPublicResume(nextId, token);
+    setSettingPublicId(null);
+    if (res?.success) {
+      setPublicResumeId(nextId);
+      addToast?.({
+        title: nextId ? 'کرایە گشتی ✓' : 'گشتی نەما',
+        message: nextId ? 'ئێستا کۆمپانیاکان دەتوانن ئەم CV یە ببینن لە پرۆفایلەکەت.' : 'ئیتر هیچ CV یەک لە پرۆفایلەکەت دیار نییە.',
+        type: 'success',
+      });
+    } else {
+      addToast?.({ title: 'سەرنەکەوت', message: res?.message || 'کێشەیەک ڕوویدا.', type: 'error' });
     }
   };
 
@@ -129,8 +154,10 @@ export const ResumesPage = ({ onBack, onCreateNew, onEditStyle }) => {
           <div className="space-y-3">
             {resumes.map(r => {
               const template = getTemplate(r.template_id);
+              const isPublic = publicResumeId === r.id;
               return (
-                <div key={r.id} className="bg-white rounded-3xl border border-stone-200 p-4 flex items-center gap-3">
+                <div key={r.id} className={`bg-white rounded-3xl border p-4 space-y-3 ${isPublic ? 'border-[#12796b]' : 'border-stone-200'}`}>
+                <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: TEAL_SOFT }}>
                     <FileText className="w-5 h-5" style={{ color: TEAL_DEEP }} />
                   </div>
@@ -163,6 +190,19 @@ export const ResumesPage = ({ onBack, onCreateNew, onEditStyle }) => {
                   >
                     {deletingId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                   </button>
+                </div>
+
+                <button
+                  onClick={() => handleTogglePublic(r.id)}
+                  disabled={settingPublicId === r.id}
+                  className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 disabled:opacity-50 ${
+                    isPublic ? 'text-white' : 'bg-stone-50 border border-stone-200 text-stone-500'
+                  }`}
+                  style={isPublic ? { background: TEAL } : {}}
+                >
+                  {settingPublicId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5" />}
+                  {isPublic ? 'دیارە لەسەر پڕۆفایل — کرتە بکە بۆ شاردنەوە' : 'وەک CV ی پرۆفایل دایبنێ'}
+                </button>
                 </div>
               );
             })}

@@ -1,12 +1,13 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { useAuth } from '../../context/AuthContext';
 import { soundService } from '../../services/soundService';
 import { ConfirmationModal } from '../ui/ConfirmationModal';
 import {
-  MapPin, Building2, X, CheckCircle2, Crosshair, Layers,
+  MapPin, Building2, X, CheckCircle2, Layers,
   ZoomIn, ZoomOut, Sparkles, Send, Briefcase, Search,
-  Filter, Navigation, Signal, ChevronLeft, ChevronRight, Loader2, BadgeCheck
+  Filter, Navigation, Signal, ChevronLeft, ChevronRight,
+  Loader2, BadgeCheck, SlidersHorizontal, LocateFixed, Eye
 } from 'lucide-react';
 
 // Haversine distance in km between two lat/lng points
@@ -19,10 +20,6 @@ function distanceKm(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// Kurdish/Arabic-script test — TOWN_ANCHORS/SUBDISTRICT_ANCHORS list Kurdish,
-// English, and Arabic-transliteration variants of the same place at identical
-// coordinates so free-text matching always hits; for DISPLAY we always want the
-// Kurdish spelling, never an English transliteration like "Tekyey Kake Mend".
 const KURDISH_RE = /[؀-ۿ]/;
 
 // ── Kurdistan precise coordinates ──────────────────────────────────
@@ -45,14 +42,9 @@ const CITY_ANCHORS = {
   'پەنجوین':   { lat: 35.6217, lng: 45.9475, zoom: 14 },
 };
 
-// Real jobs store governorate_id as an English slug (matches PostJobPage's GOVS ids),
-// not the Kurdish CITY_ANCHORS name — this maps one to the other so markers land in
-// the job's actual governorate instead of silently defaulting to Sulaymaniyah.
 const GOV_ID_TO_CITY = {
   sulaymaniyah: 'سلێمانی', erbil: 'هەولێر', duhok: 'دهۆک',
   kirkuk: 'کەرکووک', halabja: 'هەڵەبجە',
-  // Legacy values from before Garmian was folded into Sulaymaniyah — kept so
-  // any not-yet-migrated record still resolves to a real place on the map.
   garmian: 'سلێمانی', garmyan: 'سلێمانی', germiyan: 'سلێمانی',
 };
 
@@ -64,23 +56,16 @@ function resolveJobCityName(job) {
   return direct || null;
 }
 
-// Deterministic small jitter so two jobs in the same area don't stack exactly.
 function stableJitter(id) {
   const str = String(id || '');
   let hash = 0;
   for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
   const angle  = (hash % 360) * (Math.PI / 180);
-  const radius = 0.005 + ((hash % 100) / 100) * 0.010; // ~550m–1.6km spread
+  const radius = 0.005 + ((hash % 100) / 100) * 0.010;
   return { dLat: Math.sin(angle) * radius, dLng: Math.cos(angle) * radius };
 }
 
-// District / town level anchors — used both as a fallback position estimate
-// (resolveJobCoords) and as the friendly place-name label shown on markers/popups
-// for jobs without a saved location_name/detail match. Real proximity clustering
-// on the map itself no longer depends on this list (see markerClusterGroup below).
-// All variants: Kurdish + English + Arabic so Nominatim text always matches
 const TOWN_ANCHORS = {
-  // ── Sulaymaniyah governorate districts ───────────────────────────
   'بازیان':          { lat: 35.6028, lng: 45.1481, gov: 'سلێمانی' },
   'bazyan':          { lat: 35.6028, lng: 45.1481, gov: 'سلێمانی' },
   'چەمچەماڵ':        { lat: 35.5311, lng: 44.8322, gov: 'سلێمانی' },
@@ -95,7 +80,6 @@ const TOWN_ANCHORS = {
   'پەنجوین':         { lat: 35.6217, lng: 45.9475, gov: 'سلێمانی' },
   'penjween':        { lat: 35.6217, lng: 45.9475, gov: 'سلێمانی' },
   'penjwin':         { lat: 35.6217, lng: 45.9475, gov: 'سلێمانی' },
-  // ── Erbil governorate districts ──────────────────────────────────
   'شەقڵاوە':         { lat: 36.4007, lng: 44.3283, gov: 'هەولێر' },
   'shaqlawa':        { lat: 36.4007, lng: 44.3283, gov: 'هەولێر' },
   'ئەنکاوە':         { lat: 36.2281, lng: 43.9961, gov: 'هەولێر' },
@@ -105,14 +89,12 @@ const TOWN_ANCHORS = {
   'soran':           { lat: 36.5419, lng: 44.5467, gov: 'هەولێر' },
   'ئاکرێ':           { lat: 36.7425, lng: 43.8933, gov: 'هەولێر' },
   'akre':            { lat: 36.7425, lng: 43.8933, gov: 'هەولێر' },
-  // ── Duhok governorate districts ──────────────────────────────────
   'زاخۆ':            { lat: 37.1461, lng: 42.6847, gov: 'دهۆک' },
   'zakho':           { lat: 37.1461, lng: 42.6847, gov: 'دهۆک' },
 };
-// Max distance (degrees) for GPS proximity → town matching (~13 km)
+
 const TOWN_PROXIMITY_DEG = 0.12;
 
-// Identify which town/district a job belongs to (checks location_name, location_detail, sub_district)
 function resolveJobTownName(job) {
   const haystack = [
     String(job.location_name  || '').toLowerCase(),
@@ -124,16 +106,9 @@ function resolveJobTownName(job) {
   const allKeys = Object.keys(TOWN_ANCHORS);
   const kurdishKeys = allKeys.filter(k => KURDISH_RE.test(k));
 
-  // 1. Direct text match — try Kurdish-script keys first so a job whose address
-  //    happens to contain both the Kurdish and Latin spelling never returns the
-  //    Latin one just because it appears earlier in the object.
   for (const key of kurdishKeys) if (haystack.includes(key.toLowerCase())) return key;
   for (const key of allKeys)     if (haystack.includes(key.toLowerCase())) return key;
 
-  // 2. GPS proximity — if job has exact lat/lng, find nearest town within ~13km.
-  //    Kurdish-script anchors only: every real place already has one, and the
-  //    Latin/Arabic duplicates share identical coordinates, so including them
-  //    would just be an arbitrary tie for which spelling comes back.
   if (typeof job.lat === 'number' && typeof job.lng === 'number' &&
       Math.abs(job.lat) > 0.001 && Math.abs(job.lng) > 0.001) {
     let nearest = null, minDist = Infinity;
@@ -144,22 +119,9 @@ function resolveJobTownName(job) {
     }
     if (nearest) return nearest;
   }
-
   return null;
 }
 
-// The label shown on a job's pin/popup, always in Kurdish. Priority:
-//   1. Known gazetteer town/district match (text or real-GPS proximity) —
-//      TOWN_ANCHORS only lists well-established, unambiguous towns (Bazyan,
-//      Chamchamal, Ranya, …), never a guessed street/neighborhood name we
-//      can't actually stand behind.
-//   2. The job's own saved address text — preferring a Kurdish/Arabic-script
-//      segment over a Latin transliteration when the raw string has both
-//      (Nominatim reverse-geocode results mix languages in one string).
-//   3. Last resort: the parent governorate. This intentionally does NOT try
-//      to guess a specific in-city neighborhood from coordinates alone —
-//      an earlier version did, off a hand-typed, unverifiable list, and it
-//      surfaced at least one outright made-up-looking name to real users.
 function resolveJobDisplayLabel(job) {
   const townName = resolveJobTownName(job);
   if (townName) return townName;
@@ -170,20 +132,15 @@ function resolveJobDisplayLabel(job) {
     const pick = segments.find(s => KURDISH_RE.test(s)) || segments[0];
     if (pick) return pick.length > 22 ? pick.slice(0, 22) + '…' : pick;
   }
-
   return resolveJobCityName(job) || 'کوردستان';
 }
 
-// Resolve exact coordinates for a job — prefer DB lat/lng, then location_name/detail sub-district lookup,
-// then city center + stable jitter.
 function resolveJobCoords(job) {
-  // 1. Exact GPS from DB (set when employer pins location on map)
   if (typeof job.lat === 'number' && typeof job.lng === 'number' &&
       Math.abs(job.lat) > 0.001 && Math.abs(job.lng) > 0.001) {
     return { lat: job.lat, lng: job.lng, precise: true };
   }
 
-  // 2. Sub-district name match from location_name or location_detail
   const townName = resolveJobTownName(job);
   if (townName && TOWN_ANCHORS[townName]) {
     const coords = TOWN_ANCHORS[townName];
@@ -191,14 +148,12 @@ function resolveJobCoords(job) {
     return { lat: coords.lat + dLat * 0.3, lng: coords.lng + dLng * 0.3, precise: false };
   }
 
-  // 3. City center + stable jitter
   const cityName = resolveJobCityName(job);
   const base = (cityName && CITY_ANCHORS[cityName]) || CITY_ANCHORS['سلێمانی'];
   const { dLat, dLng } = stableJitter(job.id);
   return { lat: base.lat + dLat, lng: base.lng + dLng, precise: false };
 }
 
-// Map layer tiles
 const TILE_LAYERS = {
   dark: {
     url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
@@ -217,7 +172,7 @@ const TILE_LAYERS = {
   },
 };
 
-// ── SVG marker HTML generators ─────────────────────────────────────
+// ── SVG marker Generators ─────────────────────────────────────────
 function cityMarkerHtml(name, count, isSelected) {
   const border = isSelected ? '#a3e635' : '#a3e635';
   const bg     = isSelected ? '#1a2e05' : '#0f172a';
@@ -247,7 +202,7 @@ function jobMarkerHtml(company, title, salary, precise, logo) {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" stroke="#a3e635" stroke-width="2" stroke-linecap="round"/></svg>
       </div>`;
   return `
-    <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.7));">
+    <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.7));transition:transform 0.2s ease;">
       <div style="position:relative;background:#0f172a;border:1.5px ${borderStyle} ${borderColor};border-radius:14px;padding:6px 12px 6px 8px;display:flex;align-items:center;gap:8px;white-space:nowrap;font-family:Vazirmatn,sans-serif;max-width:240px;">
         ${precise ? `<div style="position:absolute;top:-5px;left:-5px;width:11px;height:11px;border-radius:50%;background:#a3e635;border:2px solid #0f172a;box-shadow:0 0 6px rgba(163,230,53,0.8);"></div>` : ''}
         ${avatar}
@@ -263,10 +218,6 @@ function jobMarkerHtml(company, title, salary, precise, logo) {
     </div>`;
 }
 
-// Compact place-name pin — shown for a lone (unclustered) job at far zoom, where
-// a full company/title/salary card has no room and looks out of place next to
-// the equally-compact cluster pills. Swaps to the detailed jobMarkerHtml card
-// once you zoom in close enough to actually read it.
 function compactJobMarkerHtml(locName, precise) {
   const borderColor = precise ? '#a3e635' : 'rgba(251,191,36,0.55)';
   const borderStyle = precise ? 'solid' : 'dashed';
@@ -284,8 +235,6 @@ function compactJobMarkerHtml(locName, precise) {
     </div>`;
 }
 
-// Pick the right icon variant for the current zoom — full detailed card once
-// close, compact place-name pin while still zoomed out.
 function buildJobIcon(zoom, { company, title, salary, precise, logo, loc }) {
   if (zoom >= 14) {
     return window.L.divIcon({
@@ -300,7 +249,6 @@ function buildJobIcon(zoom, { company, title, salary, precise, logo, loc }) {
 }
 
 function userMarkerHtml() {
-  // No CSS transform — iconAnchor handles centering
   return `
     <div style="position:relative;width:60px;height:60px;display:flex;align-items:center;justify-content:center;">
       <div style="position:absolute;width:60px;height:60px;border-radius:50%;background:rgba(163,230,53,0.12);border:1.5px solid rgba(163,230,53,0.35);animation:ping 2s infinite ease-out;"></div>
@@ -314,40 +262,81 @@ export const JobMapPage = () => {
   const { jobs = [], applications = [], submitCVApplication } = useStore();
   const { openAuthModal, user } = useAuth();
 
-  const mapContainerRef  = useRef(null);
-  const mapInstanceRef   = useRef(null);
-  const clusterGroupRef  = useRef(null);
-  const userMarkerRef    = useRef(null);
+  const mapContainerRef   = useRef(null);
+  const mapInstanceRef    = useRef(null);
+  const clusterGroupRef   = useRef(null);
+  const userMarkerRef     = useRef(null);
   const accuracyCircleRef = useRef(null);
-  const tileLayerRef     = useRef(null);
+  const tileLayerRef      = useRef(null);
 
-  const [selectedCity, setSelectedCity]     = useState(null);
-  const [activeJob, setActiveJob]           = useState(null);
-  const [zoomLevel, setZoomLevel]           = useState(9);
-  const [mapLayer, setMapLayer]             = useState('dark');
-  const [isLocating, setIsLocating]         = useState(false);
-  const [gpsAccuracy, setGpsAccuracy]       = useState(null);
-  const [searchQuery, setSearchQuery]       = useState('');
-  const [sidebarOpen, setSidebarOpen]       = useState(false);
-  const [isMapReady, setIsMapReady]         = useState(false);
-  const [userLatLng, setUserLatLng]         = useState(null);
-  const [confirmApplyJob, setConfirmApplyJob] = useState(null);
-  const [isSendingCv, setIsSendingCv]       = useState(false);
-  const [appliedJobIds, setAppliedJobIds]   = useState([]);
+  const [selectedCity, setSelectedCity]         = useState(null);
+  const [activeJob, setActiveJob]               = useState(null);
+  const [zoomLevel, setZoomLevel]               = useState(9);
+  const [mapLayer, setMapLayer]                 = useState('dark');
+  const [isLocating, setIsLocating]             = useState(false);
+  const [gpsAccuracy, setGpsAccuracy]           = useState(null);
+  const [searchQuery, setSearchQuery]           = useState('');
+  const [isMapReady, setIsMapReady]             = useState(false);
+  const [userLatLng, setUserLatLng]             = useState(null);
+  const [confirmApplyJob, setConfirmApplyJob]   = useState(null);
+  const [isSendingCv, setIsSendingCv]           = useState(false);
+  const [appliedJobIds, setAppliedJobIds]       = useState([]);
+  
+  // Advanced Filter Options
+  const [onlyPrecise, setOnlyPrecise]           = useState(false);
+  const [maxDistanceKm, setMaxDistanceKm]       = useState(100);
+  const [showFilterPanel, setShowFilterPanel]   = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const validJobs = Array.isArray(jobs) ? jobs.filter(Boolean) : [];
+  const validJobs = useMemo(() => Array.isArray(jobs) ? jobs.filter(Boolean) : [], [jobs]);
 
-  const citiesWithJobs = Object.entries(CITY_ANCHORS).map(([name, coords]) => ({
-    name,
-    ...coords,
-    count: validJobs.filter(j => resolveJobCityName(j) === name).length,
-  })).filter(c => c.count > 0);
+  // City list with job count computation
+  const citiesWithJobs = useMemo(() => {
+    return Object.entries(CITY_ANCHORS).map(([name, coords]) => ({
+      name,
+      ...coords,
+      count: validJobs.filter(j => resolveJobCityName(j) === name).length,
+    })).filter(c => c.count > 0);
+  }, [validJobs]);
+
+  // Filter jobs based on User Criteria
+  const filteredJobs = useMemo(() => {
+    return validJobs.filter((job) => {
+      // Precise location filter
+      if (onlyPrecise) {
+        const { precise } = resolveJobCoords(job);
+        if (!precise) return false;
+      }
+
+      // Text Search Query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const title = String(job.title_ku || job.title || '').toLowerCase();
+        const company = String(job.company_name || job.company || '').toLowerCase();
+        const loc = String(job.location_name || job.location_detail || '').toLowerCase();
+        if (!title.includes(q) && !company.includes(q) && !loc.includes(q)) return false;
+      }
+
+      // Distance Filter
+      if (userLatLng && maxDistanceKm < 100) {
+        const coords = resolveJobCoords(job);
+        const dist = distanceKm(userLatLng.lat, userLatLng.lng, coords.lat, coords.lng);
+        if (dist > maxDistanceKm) return false;
+      }
+
+      return true;
+    });
+  }, [validJobs, onlyPrecise, searchQuery, userLatLng, maxDistanceKm]);
 
   // ── GPS locate ────────────────────────────────────────────────
   const locateUser = useCallback(() => {
     soundService.playTick?.();
     setIsLocating(true);
-    if (!('geolocation' in navigator)) { setIsLocating(false); return; }
+    if (!('geolocation' in navigator)) {
+      setIsLocating(false);
+      alert('جی پی ئێس لەلایەن وێبگەڕەکەتەوە پشتیوانی ناکرێت');
+      return;
+    }
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -356,9 +345,8 @@ export const JobMapPage = () => {
         setUserLatLng({ lat, lng });
         if (!mapInstanceRef.current || !window.L) { setIsLocating(false); return; }
 
-        mapInstanceRef.current.flyTo([lat, lng], 16, { duration: 1.8 });
+        mapInstanceRef.current.flyTo([lat, lng], 15, { duration: 1.8 });
 
-        // Accuracy circle
         if (accuracyCircleRef.current) {
           accuracyCircleRef.current.setLatLng([lat, lng]).setRadius(accuracy);
         } else {
@@ -368,7 +356,6 @@ export const JobMapPage = () => {
           }).addTo(mapInstanceRef.current);
         }
 
-        // User dot marker
         const icon = window.L.divIcon({ className: '', html: userMarkerHtml(), iconSize: [60, 60], iconAnchor: [30, 30] });
         if (userMarkerRef.current) {
           userMarkerRef.current.setLatLng([lat, lng]);
@@ -377,18 +364,15 @@ export const JobMapPage = () => {
         }
         setIsLocating(false);
       },
-      () => setIsLocating(false),
+      (err) => {
+        setIsLocating(false);
+        console.warn('Geolocation Error:', err);
+      },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   }, []);
 
-  // ── Rebuild markers on jobs change ─────────────────────────────
-  // Every job gets a real marker positioned via resolveJobCoords (its true GPS
-  // when the company set one, otherwise a best-effort estimate). A single
-  // Leaflet.markercluster group handles the actual grouping by on-screen
-  // proximity at whatever zoom you're at — no hardcoded town/city gazetteer
-  // needed for this part, so any job shows up near where it really is, at
-  // any zoom, not just once it happens to match one of ~40 known place names.
+  // ── Rebuild markers ───────────────────────────────────────────
   const rebuildMarkers = useCallback(() => {
     if (!mapInstanceRef.current || !window.L || !clusterGroupRef.current) return;
     const map  = mapInstanceRef.current;
@@ -396,9 +380,9 @@ export const JobMapPage = () => {
 
     clusterGroupRef.current.clearLayers();
 
-    validJobs.forEach((job) => {
+    filteredJobs.forEach((job) => {
       const { lat, lng, precise } = resolveJobCoords(job);
-      const loc = resolveJobDisplayLabel(job, lat, lng);
+      const loc = resolveJobDisplayLabel(job);
 
       const company = String(job.company_name || job.companyName || job.company || 'کۆمپانیا');
       const title   = String(job.title_ku || job.title || job.name || 'هەڵی کار');
@@ -416,11 +400,8 @@ export const JobMapPage = () => {
       });
       clusterGroupRef.current.addLayer(marker);
     });
-  }, [jobs]);
+  }, [filteredJobs]);
 
-  // Swap every job marker between the compact pin and the detailed card as the
-  // zoom crosses the threshold — clustering itself is untouched, this only
-  // changes what an already-unclustered marker looks like.
   const refreshJobIcons = useCallback(() => {
     if (!mapInstanceRef.current || !window.L || !clusterGroupRef.current) return;
     const zoom = mapInstanceRef.current.getZoom();
@@ -440,9 +421,6 @@ export const JobMapPage = () => {
       link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
       document.head.appendChild(link);
     }
-    // Base structural CSS only (spiderfy legs etc.) — deliberately skipping
-    // MarkerCluster.Default.css, since our own iconCreateFunction fully replaces
-    // the plugin's default colored-circle skin with our own pill design.
     if (!document.getElementById('markercluster-css')) {
       const link = document.createElement('link');
       link.id = 'markercluster-css'; link.rel = 'stylesheet';
@@ -473,13 +451,8 @@ export const JobMapPage = () => {
       const tile = TILE_LAYERS.dark;
       tileLayerRef.current = window.L.tileLayer(tile.url, { maxZoom: 19, attribution: tile.attribution }).addTo(map);
 
-      // Custom attribution
       window.L.control.attribution({ prefix: '🗺️ Ishkhwaz Maps' }).addTo(map);
 
-      // Real proximity-based clustering — groups markers by actual on-screen
-      // distance at the current zoom, not a hardcoded town/city name list, so
-      // any job (known place or not) clusters and un-clusters correctly at
-      // every zoom level.
       const clusterGroup = window.L.markerClusterGroup({
         maxClusterRadius: 70,
         showCoverageOnHover: false,
@@ -530,10 +503,8 @@ export const JobMapPage = () => {
     };
   }, []);
 
-  // Rebuild markers when jobs change
-  useEffect(() => { if (isMapReady) rebuildMarkers(); }, [jobs, isMapReady, rebuildMarkers]);
+  useEffect(() => { if (isMapReady) rebuildMarkers(); }, [filteredJobs, isMapReady, rebuildMarkers]);
 
-  // ── Switch tile layer ─────────────────────────────────────────
   const switchLayer = (key) => {
     if (!mapInstanceRef.current || !window.L) return;
     if (tileLayerRef.current) tileLayerRef.current.remove();
@@ -543,32 +514,27 @@ export const JobMapPage = () => {
     soundService.playTick?.();
   };
 
-  // ── City select ───────────────────────────────────────────────
   const flyToCity = (name) => {
     soundService.playTick?.();
-    setSelectedCity(name);
+    setSelectedCity(name === selectedCity ? null : name);
     const c = CITY_ANCHORS[name];
     if (c && mapInstanceRef.current) {
       mapInstanceRef.current.flyTo([c.lat, c.lng], c.zoom, { duration: 1.3 });
     }
   };
 
-  const filteredCities = searchQuery
-    ? citiesWithJobs.filter(c => c.name.includes(searchQuery))
-    : citiesWithJobs;
-
-  // ── Jobs for selected city sidebar ────────────────────────────
-  const cityJobs = selectedCity
-    ? validJobs.filter(j => resolveJobCityName(j) === selectedCity)
-    : [];
+  const cityJobs = useMemo(() => {
+    if (!selectedCity) return filteredJobs;
+    return filteredJobs.filter(j => resolveJobCityName(j) === selectedCity);
+  }, [filteredJobs, selectedCity]);
 
   return (
     <div dir="rtl" className="w-full h-full relative overflow-hidden bg-slate-950 font-vazirmatn select-none pb-[72px] md:pb-0">
 
       {/* ── TOP CONTROL BAR ── */}
-      <div className="absolute top-3 right-3 left-3 z-[500] flex items-center gap-2 pointer-events-auto">
+      <div className="absolute top-3 right-3 left-3 z-[500] flex flex-wrap items-center gap-2 pointer-events-auto">
 
-        {/* GPS button */}
+        {/* Location Button */}
         <button onClick={locateUser} disabled={isLocating}
           className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold shrink-0 border shadow-lg transition-all ${
             isLocating
@@ -580,15 +546,35 @@ export const JobMapPage = () => {
           {gpsAccuracy && !isLocating && <span className="text-[9px] opacity-60">±{gpsAccuracy}m</span>}
         </button>
 
-        {/* Zoom indicator */}
-        <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold bg-black/60 border border-white/10 text-white/50 shrink-0 backdrop-blur-md">
-          <ZoomIn className="w-3.5 h-3.5 text-lime-400" />
-          <span>نەخشەی کار</span>
-          <span className="text-white/20 font-mono">z{Math.round(zoomLevel)}</span>
+        {/* Filter Toggle Button */}
+        <button onClick={() => setShowFilterPanel(!showFilterPanel)}
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border backdrop-blur-md transition-all ${
+            showFilterPanel || onlyPrecise || maxDistanceKm < 100
+              ? 'bg-lime-400/20 border-lime-400/50 text-lime-400'
+              : 'bg-black/60 border-white/10 text-white/70 hover:text-white'
+          }`}>
+          <SlidersHorizontal className="w-3.5 h-3.5" />
+          <span>فلتەرەکان</span>
+        </button>
+
+        {/* Search input field */}
+        <div className="relative flex-1 min-w-[140px] max-w-xs">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="گەڕان بۆ کار یان کۆمپانیا..."
+            className="w-full bg-black/60 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-lime-400/50 backdrop-blur-md pl-8"
+          />
+          {searchQuery ? (
+            <X onClick={() => setSearchQuery('')} className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-white/40 cursor-pointer hover:text-white" />
+          ) : (
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30" />
+          )}
         </div>
 
-        {/* City filter chips — scrollable */}
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1">
+        {/* City Filter Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 py-0.5">
           {citiesWithJobs.map(city => (
             <button key={city.name} onClick={() => flyToCity(city.name)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-bold shrink-0 border transition-all ${
@@ -606,6 +592,50 @@ export const JobMapPage = () => {
         </div>
       </div>
 
+      {/* ── ADVANCED FILTER EXPANDABLE POPUP ── */}
+      {showFilterPanel && (
+        <div className="absolute top-16 right-3 left-3 sm:left-auto sm:w-80 z-[501] bg-slate-900/95 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-2xl space-y-3 pointer-events-auto">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+              <Filter className="w-3.5 h-3.5 text-lime-400" /> فلتەرکردنی پێشکەوتوو
+            </span>
+            <X className="w-4 h-4 text-white/40 cursor-pointer hover:text-white" onClick={() => setShowFilterPanel(false)} />
+          </div>
+
+          {/* Toggle Precise Location Only */}
+          <label className="flex items-center justify-between cursor-pointer text-xs text-white/80">
+            <span className="flex items-center gap-1.5">
+              <BadgeCheck className="w-3.5 h-3.5 text-lime-400" /> تەنها شوێنی بێ هەڵە (وردبین)
+            </span>
+            <input
+              type="checkbox"
+              checked={onlyPrecise}
+              onChange={(e) => setOnlyPrecise(e.target.checked)}
+              className="accent-lime-400 rounded cursor-pointer"
+            />
+          </label>
+
+          {/* Distance Filter Slider (if GPS active) */}
+          {userLatLng && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px] text-white/70">
+                <span>دووری (ڕادیۆس):</span>
+                <span className="font-mono text-lime-400">{maxDistanceKm === 100 ? 'هەمووی' : `${maxDistanceKm} کم`}</span>
+              </div>
+              <input
+                type="range"
+                min="5"
+                max="100"
+                step="5"
+                value={maxDistanceKm}
+                onChange={(e) => setMaxDistanceKm(Number(e.target.value))}
+                className="w-full accent-lime-400 cursor-pointer h-1.5 bg-white/10 rounded-lg appearance-none"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── LAYER SWITCHER (top left) ── */}
       <div className="absolute left-3 z-[500] flex flex-col gap-1 pointer-events-auto" style={{ top: 'calc(0.75rem + 52px)' }}>
         <div className="bg-black/70 backdrop-blur-xl border border-white/[0.08] rounded-xl overflow-hidden shadow-xl">
@@ -620,7 +650,6 @@ export const JobMapPage = () => {
           ))}
         </div>
 
-        {/* Precision legend — individual pins can appear at any zoom now */}
         <div className="bg-black/70 backdrop-blur-xl border border-white/[0.08] rounded-xl px-3 py-2 shadow-xl space-y-1.5">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-lime-400 shrink-0" style={{ boxShadow: '0 0 4px rgba(163,230,53,0.8)' }} />
@@ -648,50 +677,71 @@ export const JobMapPage = () => {
         </button>
       </div>
 
-      {/* ── CITY JOB SIDEBAR (desktop) ── */}
-      {selectedCity && cityJobs.length > 0 && (
-        <div className="absolute top-16 right-3 bottom-6 z-[500] w-72 flex flex-col gap-2 pointer-events-auto">
-          <div className="bg-black/80 backdrop-blur-xl border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full max-h-[440px]">
-            <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-              <div>
-                <div className="text-xs font-black text-white/70">{selectedCity}</div>
-                <div className="text-[10px] text-white/30">{cityJobs.length} هەلی کار</div>
-              </div>
-              <button onClick={() => setSelectedCity(null)} className="text-white/20 hover:text-white/60 transition-colors">
-                <X className="w-4 h-4" />
-              </button>
+      {/* ── SIDEBAR LIST PANEL (desktop/tablet) ── */}
+      <div className={`absolute top-20 right-3 bottom-6 z-[500] w-80 transition-all duration-300 pointer-events-auto ${sidebarCollapsed ? 'translate-x-[340px]' : 'translate-x-0'}`}>
+        <div className="bg-black/85 backdrop-blur-2xl border border-white/[0.08] rounded-2xl overflow-hidden shadow-2xl flex flex-col h-full">
+          <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between shrink-0">
+            <div>
+              <div className="text-xs font-black text-white/80">{selectedCity ? selectedCity : 'هەموو کارەکان'}</div>
+              <div className="text-[10px] text-lime-400/80 font-mono">{cityJobs.length} هەلی کار دۆزرایەوە</div>
             </div>
-            <div className="overflow-y-auto flex-1 p-2 space-y-1.5 scrollbar-none">
-              {cityJobs.map(job => (
+            <button onClick={() => setSidebarCollapsed(true)} className="text-white/30 hover:text-white p-1 rounded-lg bg-white/5">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="overflow-y-auto flex-1 p-2 space-y-2 scrollbar-none">
+            {cityJobs.length === 0 ? (
+              <div className="p-8 text-center text-xs text-white/30">هیچ کارێک بەم فلتەرانە نەدۆزرایەوە</div>
+            ) : (
+              cityJobs.map(job => (
                 <button key={job.id}
                   onClick={() => {
                     soundService.playTick?.();
-                    // Use the job's actual resolved coordinates, not just the city center
-                    const { lat: jLat, lng: jLng } = resolveJobCoords(job);
+                    const { lat: jLat, lng: jLng, precise } = resolveJobCoords(job);
                     setActiveJob({
                       ...job,
                       _company: job.company_name || 'کۆمپانیا',
                       _title: job.title_ku || job.title || 'کار',
                       _salary: job.salary_min ? `${Number(job.salary_min).toLocaleString()} IQD` : '',
-                      _loc: job.location_detail || job.location_name || selectedCity || 'سلێمانی',
+                      _loc: resolveJobDisplayLabel(job),
+                      _precise: precise,
                       _lat: jLat, _lng: jLng,
                     });
                     mapInstanceRef.current?.flyTo([jLat, jLng], 16, { duration: 1.2 });
                   }}
-                  className="w-full text-right bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.05] hover:border-lime-400/20 rounded-xl p-3 transition-all">
-                  <div className="text-xs font-black text-white/70 truncate">{job.title_ku || job.title || 'کار'}</div>
-                  <div className="text-[10px] text-white/30 truncate mt-0.5">{job.company_name || 'کۆمپانیا'}</div>
-                  {job.salary_min && <div className="text-[10px] text-lime-400/60 mt-0.5 font-mono">{Number(job.salary_min).toLocaleString()} IQD</div>}
+                  className={`w-full text-right border rounded-xl p-3 transition-all ${
+                    activeJob?.id === job.id
+                      ? 'bg-lime-400/10 border-lime-400/40 shadow-lg'
+                      : 'bg-white/[0.02] hover:bg-white/[0.06] border-white/[0.05]'
+                  }`}>
+                  <div className="text-xs font-black text-white/80 truncate">{job.title_ku || job.title || 'کار'}</div>
+                  <div className="text-[10px] text-white/40 truncate mt-0.5">{job.company_name || 'کۆمپانیا'}</div>
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/[0.04]">
+                    <span className="text-[9px] text-white/30 flex items-center gap-1">
+                      <MapPin className="w-2.5 h-2.5 text-lime-400/60" /> {resolveJobDisplayLabel(job)}
+                    </span>
+                    {job.salary_min && (
+                      <span className="text-[9px] font-mono text-lime-400 font-bold">{Number(job.salary_min).toLocaleString()} IQD</span>
+                    )}
+                  </div>
                 </button>
-              ))}
-            </div>
+              ))
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Toggle Open Sidebar Handle */}
+      {sidebarCollapsed && (
+        <button onClick={() => setSidebarCollapsed(false)} className="absolute top-20 right-3 z-[500] p-2.5 rounded-xl bg-black/80 border border-white/10 text-lime-400 backdrop-blur-md shadow-2xl pointer-events-auto">
+          <ChevronLeft className="w-4 h-4" />
+        </button>
       )}
 
       {/* ── JOB DETAIL BOTTOM SHEET ── */}
       {activeJob && (
-        <div className="absolute bottom-4 right-3 left-3 sm:left-auto sm:right-4 sm:max-w-sm z-[600] pointer-events-auto">
+        <div className="absolute bottom-4 right-3 left-3 sm:left-auto sm:right-4 sm:max-w-sm z-[600] pointer-events-auto animate-in slide-in-from-bottom-5">
           <div className="bg-[#0d1117]/95 backdrop-blur-2xl border border-lime-400/15 rounded-2xl shadow-2xl overflow-hidden"
             style={{ boxShadow: '0 25px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(163,230,53,0.08)' }}>
 
@@ -726,11 +776,6 @@ export const JobMapPage = () => {
                     {activeJob._salary} / مانگ
                   </span>
                 )}
-                {activeJob.job_type && (
-                  <span className="text-[10px] font-bold bg-white/[0.03] border border-white/[0.05] rounded-lg px-2.5 py-1.5 text-white/30">
-                    {activeJob.job_type === 'fullTime' ? 'کاتی تەواو' : 'پارەیی'}
-                  </span>
-                )}
                 {activeJob._precise ? (
                   <span className="flex items-center gap-1 text-[10px] font-black bg-lime-400/8 border border-lime-400/15 rounded-lg px-2.5 py-1.5 text-lime-400">
                     <BadgeCheck className="w-3 h-3" />شوێنی وردبن
@@ -751,22 +796,6 @@ export const JobMapPage = () => {
               {activeJob.description && (
                 <p className="text-[11px] text-white/35 leading-relaxed line-clamp-2">{activeJob.description}</p>
               )}
-
-              {/* Skills */}
-              {activeJob.required_skills && (() => {
-                const skills = typeof activeJob.required_skills === 'string'
-                  ? JSON.parse(activeJob.required_skills || '[]')
-                  : (activeJob.required_skills || []);
-                return skills.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {skills.slice(0, 5).map((sk, i) => (
-                      <span key={i} className="text-[9px] font-bold bg-white/[0.04] border border-white/[0.06] rounded-lg px-2 py-1 text-white/40">
-                        {sk}
-                      </span>
-                    ))}
-                  </div>
-                ) : null;
-              })()}
             </div>
 
             {/* Actions */}
@@ -801,7 +830,7 @@ export const JobMapPage = () => {
         </div>
       )}
 
-      {/* ── Send-CV confirmation ── */}
+      {/* ── Send-CV Confirmation Modal ── */}
       <ConfirmationModal
         isOpen={!!confirmApplyJob}
         title="ناردنی سیڤی"
@@ -826,7 +855,7 @@ export const JobMapPage = () => {
         }}
       />
 
-      {/* ── GPS accuracy indicator ── */}
+      {/* ── GPS Accuracy Indicator Footer ── */}
       {gpsAccuracy && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[500] flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/70 border border-lime-400/20 backdrop-blur-md pointer-events-none">
           <Signal className="w-3 h-3 text-lime-400" />

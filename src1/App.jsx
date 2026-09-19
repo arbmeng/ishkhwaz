@@ -322,8 +322,8 @@ function MainAppContent() {
     if (activeTab === 'post_job') {
       return (
         <PostJobPage
-          onBack={() => setActiveTab('home')}
-          onSuccess={() => setActiveTab('home')}
+          onBack={() => setActiveTab('my_company_dashboard')}
+          onSuccess={() => setActiveTab('my_company_dashboard')}
         />
       );
     }
