@@ -12,6 +12,7 @@ import { JobMapPage } from './components/map/JobMapPage';
 import { SplashOnboarding } from './components/onboarding/SplashOnboarding';
 import { RegisterProfileChoicePage } from './components/auth/RegisterProfileChoicePage';
 import { LoginPage } from './components/auth/LoginPage';
+import LandingPage from './components/landing/LandingPage';
 import { ConnectAuthorizePage } from './components/auth/ConnectAuthorizePage';
 import { AuthModal } from './components/auth/AuthModal';
 import { AccountBlockedModal } from './components/auth/AccountBlockedModal';
@@ -63,7 +64,12 @@ function MainAppContent() {
   // The brief branded splash plays on every cold open (like a native app) —
   // only the 3-step onboarding carousel inside it is gated to first-time-ever,
   // via the same 'ishkhwaz_splash_seen' flag, checked inside SplashOnboarding.
-  const [showSplash, setShowSplash] = useState(true);
+  // The landing page is the front door now, so the old first-visit carousel
+  // is retired: mark it seen up front so the splash is only the brief brand flash.
+  const [showSplash, setShowSplash] = useState(() => {
+    try { localStorage.setItem('ishkhwaz_splash_seen', 'true'); } catch { /* private mode */ }
+    return true;
+  });
 
   // Force Clean Pristine Green & White Theme
   useEffect(() => {
@@ -127,8 +133,7 @@ function MainAppContent() {
       // visit after that), never wherever the user happened to be when they
       // last closed it.
       if (!target) {
-        if (user) return 'home';
-        return 'login'; // the login page is the site's front door
+        return user ? 'home' : 'landing'; // the landing page is the site's front door
       }
     }
     return 'login';
@@ -185,7 +190,7 @@ function MainAppContent() {
       else if (tabId === 'job_view') path = `/dashboard/jobs/${encodeURIComponent(params?.jobId ?? viewJobId ?? '')}`;
       else if (tabId === 'job_detail') path = `/jobs/${encodeURIComponent(params?.jobId ?? viewJobId ?? '')}`;
       else if (tabId === 'plans') path = '/plans';
-      else if (tabId === 'home') path = '/';
+      else if (tabId === 'home' || tabId === 'landing') path = '/';
       else if (tabId === 'post_job') path = '/post-job';
       else if (tabId === 'karnama_cv') path = '/cv';
       else if (tabId === 'resumes') path = '/resumes';
@@ -220,7 +225,7 @@ function MainAppContent() {
   // now requires login to view, so it's excluded below even though 'search'
   // itself is public. /install is public too — a link people share before
   // they even have an account.
-  const PUBLIC_TABS = ['register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'job_detail', 'verify_email', 'forgot_password', 'reset_password'];
+  const PUBLIC_TABS = ['landing', 'register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'job_detail', 'verify_email', 'forgot_password', 'reset_password'];
   useEffect(() => {
     if (!user) {
       if (activeTab === 'search' && initialShareLinkQuery) {
@@ -278,7 +283,7 @@ function MainAppContent() {
   // goes straight home (or back to their shared link), same as a returning
   // phone login would.
   useEffect(() => {
-    if (user && activeTab === 'login') {
+    if (user && (activeTab === 'login' || activeTab === 'landing')) {
       if (needsProfileCompletion) {
         setActiveTab('register');
       } else {
@@ -321,7 +326,7 @@ function MainAppContent() {
   // normal header/bottom-nav chrome — only the auth pages themselves, and a
   // logged-out user on anything else (which the guard above already redirects
   // to /login before this even renders), hide it.
-  const isAuthOrRegisterPage = activeTab === 'register' || activeTab === 'login' || activeTab === 'install_app' || activeTab === 'connect' || activeTab === 'verify_email' || activeTab === 'forgot_password' || activeTab === 'reset_password' || (!user && !PUBLIC_TABS.includes(activeTab));
+  const isAuthOrRegisterPage = activeTab === 'landing' || activeTab === 'register' || activeTab === 'login' || activeTab === 'install_app' || activeTab === 'connect' || activeTab === 'verify_email' || activeTab === 'forgot_password' || activeTab === 'reset_password' || (!user && !PUBLIC_TABS.includes(activeTab));
 
   // Determine active view by selected tab (Register, Login, Home, Search, Requests, Map, Profile)
   const renderTabContent = () => {
@@ -337,6 +342,10 @@ function MainAppContent() {
           }}
         />
       );
+    }
+
+    if (activeTab === 'landing') {
+      return <LandingPage onNavigate={(path) => setActiveTab(path === '/register' ? 'register' : 'login')} />;
     }
 
     if (activeTab === 'login') {

@@ -10,7 +10,7 @@ const TEAL = '#12796b';
 //  - mouse drag-to-scroll (touch keeps its native swipe), snapping to the cards
 // Works in both LTR and RTL (arrows are physical: left button scrolls left).
 // Drop-in for `<div className="flex gap-3 overflow-x-auto ...">`: `className` goes on the scroller.
-export const HScroll = ({ children, className = '', bar = true, arrows = true, step = 0.85 }) => {
+export const HScroll = ({ children, className = '', bar = true, arrows = true, step = 0.85, fade = 'from-[#f6f8f7]' }) => {
   const ref = useRef(null);
   const drag = useRef(null);
   const dragMoved = useRef(false);
@@ -104,8 +104,8 @@ export const HScroll = ({ children, className = '', bar = true, arrows = true, s
 
       {arrows && (
         <>
-          <div aria-hidden="true" className={`pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-[#f6f8f7] to-transparent transition-opacity duration-200 ${st.left ? 'opacity-100' : 'opacity-0'}`} />
-          <div aria-hidden="true" className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[#f6f8f7] to-transparent transition-opacity duration-200 ${st.right ? 'opacity-100' : 'opacity-0'}`} />
+          <div aria-hidden="true" className={`pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r ${fade} to-transparent transition-opacity duration-200 ${st.left ? 'opacity-100' : 'opacity-0'}`} />
+          <div aria-hidden="true" className={`pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l ${fade} to-transparent transition-opacity duration-200 ${st.right ? 'opacity-100' : 'opacity-0'}`} />
           <button type="button" aria-label="بۆ لای چەپ" onClick={() => go(-1)} tabIndex={st.left ? 0 : -1}
             className={`${arrowCls} left-1 ${st.left ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             <ChevronLeft className="w-4 h-4" style={{ color: TEAL }} />
