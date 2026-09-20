@@ -115,7 +115,6 @@ function ScrollButton({ target, children, className = '' }) {
 export default function LandingPage({ onNavigate }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState(0);
-  const [showInstallHelp, setShowInstallHelp] = useState(false);
   const { canInstall, installed, install } = useInstallPrompt();
 
   const stats = useMemo(() => [
@@ -130,8 +129,9 @@ export default function LandingPage({ onNavigate }) {
   };
 
   const handleInstall = async () => {
+    // Chrome/Android can install straight away; everyone else gets the step-by-step page.
     const worked = await install();
-    if (!worked) setShowInstallHelp(true);
+    if (!worked) navigate('/install');
   };
 
   return (
@@ -273,9 +273,8 @@ export default function LandingPage({ onNavigate }) {
 
       <footer className="ish-footer"><div className="ish-container"><div className="ish-footer-grid"><div><div className="ish-brand"><img src="/logo-flat.png" alt="ئیش خواز" /><div><strong style={{ color: 'white' }}>ئیش خواز</strong><span style={{ color: '#78918b' }}>کار لە کوردستان</span></div></div><p>پلاتفۆرمێکی نوێ بۆ پەیوەندیکردنی کارخوازان و کۆمپانیاکان، بە ئەزموونێکی سادە و مۆدێرن بۆ کوردستان.</p></div><div><h4>بەستەرەکان</h4><div className="ish-footer-links">{NAV_ITEMS.map(x => <button key={x.id} onClick={() => scrollToId(x.id)}>{x.label}</button>)}</div></div><div><h4>دەستپێکردن</h4><div className="ish-footer-links"><button onClick={() => navigate('/register')}>تۆمارکردن</button><button onClick={() => navigate('/login')}>چوونەژوورەوە</button><button onClick={handleInstall}>دابەزاندنی PWA</button></div></div></div><div className="ish-footer-bottom"><span>© {new Date().getFullYear()} ئیش خواز. هەموو مافەکان پارێزراون.</span><span>دروستکراوە بۆ کار لە کوردستان</span></div></div></footer>
 
-      {!installed && <div className="ish-install"><span>{canInstall ? 'ئیش خواز وەک ئەپ دابەزێنە' : 'ئیش خواز لە مۆبایل بەکاربهێنە'}</span><button onClick={handleInstall}>{canInstall ? 'دابەزاندن' : 'ڕێنمایی'}</button></div>}
+      {!installed && <div className="ish-install"><span>ئیش خواز وەک ئەپ دابەزێنە</span><button onClick={handleInstall}>{canInstall ? 'دابەزاندن' : 'چۆن؟'}</button></div>}
 
-      {showInstallHelp && <div className="ish-modal-backdrop" onClick={() => setShowInstallHelp(false)}><div className="ish-modal" onClick={e => e.stopPropagation()}><div className="ish-modal-head"><h3 style={{ margin: 0 }}>دابەزاندنی ئیش خواز</h3><button className="ish-close" onClick={() => setShowInstallHelp(false)} aria-label="داخستن"><X size={17} /></button></div><p>ئەگەر دوگمەی دابەزاندن لە وێبگەڕەکەتدا نیشان نەدرا، دەتوانیت لە مێنیوی وێبگەڕەکە هەڵبژێریت:</p><ol><li>لە Chrome یان Edge مێنیوی سێ خاڵ بکەرەوە.</li><li>هەڵبژاردەی <b>Install app</b> یان <b>Add to Home screen</b> بدۆزەرەوە.</li><li>دڵنیابە و ئیش خواز وەک ئەپ زیاد بکە.</li></ol><button className="ish-btn ish-primary" style={{ width: '100%' }} onClick={() => setShowInstallHelp(false)}>باشە</button></div></div>}
     </div>
   );
 }

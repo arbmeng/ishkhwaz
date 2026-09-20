@@ -345,7 +345,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'landing') {
-      return <LandingPage onNavigate={(path) => setActiveTab(path === '/register' ? 'register' : 'login')} />;
+      return <LandingPage onNavigate={(path) => setActiveTab(path === '/register' ? 'register' : path === '/install' ? 'install_app' : 'login')} />;
     }
 
     if (activeTab === 'login') {
@@ -361,7 +361,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'install_app') {
-      return <InstallPage />;
+      return <InstallPage onBack={() => setActiveTab(user ? 'home' : 'landing')} />;
     }
 
     if (activeTab === 'connect') {
