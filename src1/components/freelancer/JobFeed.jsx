@@ -198,14 +198,14 @@ const PremiumUpgradeBanner = ({ onNavigate, planName }) => (
   <section className="relative overflow-hidden rounded-[30px] bg-[#0b1714] shadow-[0_18px_55px_rgba(7,35,29,0.18)]">
     <div className="absolute inset-0 opacity-70" style={{ background: 'radial-gradient(circle at 85% 15%, rgba(48,180,157,.30), transparent 32%), radial-gradient(circle at 10% 90%, rgba(18,121,107,.22), transparent 34%)' }} />
     <div className="absolute inset-0 opacity-[0.055]" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.8) 1px, transparent 1px)', backgroundSize: '14px 14px' }} />
-    <div className="relative p-5 sm:p-7"><div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-      <div className="max-w-2xl">
+    <div className="relative p-5"><div className="flex flex-col gap-5">
+      <div className="min-w-0">
         <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white/10 border border-white/10 text-[10px] font-black text-[#b7eee3]"><Crown className="w-3.5 h-3.5" />KARNAMA PRO</div>
-        <h3 className="mt-4 text-2xl sm:text-3xl font-black tracking-tight text-white">بۆ هەر کارێک، سیڤییەکی تایبەت.</h3>
-        <p className="mt-2 text-xs sm:text-sm leading-6 font-bold text-white/55">چەند سیڤییەکی جیاواز دروست بکە و بۆ هەر هەلی کارێک ئەوەی گونجاوترە هەڵبژێرە.{planName ? ` پلانەکەی تۆ: ${planName}` : ''}</p>
-        <div className="flex flex-wrap gap-2 mt-5">{[['Pro','تا ٣ سیڤی'],['Pro+','تا ٦ سیڤی'],['Smart','ئامادەتر بۆ داواکاری']].map(([title,sub]) => <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-2.5"><div className="text-[10px] font-black text-white">{title}</div><div className="text-[9px] font-bold text-white/45 mt-0.5">{sub}</div></div>)}</div>
+        <h3 className="mt-4 text-xl font-black leading-snug tracking-tight text-white">بۆ هەر کارێک، سیڤییەکی تایبەت.</h3>
+        <p className="mt-2 text-xs leading-6 font-bold text-white/55">چەند سیڤییەکی جیاواز دروست بکە و بۆ هەر هەلی کارێک ئەوەی گونجاوترە هەڵبژێرە.{planName ? ` پلانەکەی تۆ: ${planName}` : ''}</p>
+        <div className="grid grid-cols-3 gap-1.5 mt-4">{[['Pro','تا ٣ سیڤی'],['Pro+','تا ٦ سیڤی'],['Smart','ئامادەتر بۆ داواکاری']].map(([title,sub]) => <div key={title} className="min-w-0 rounded-xl border border-white/10 bg-white/[0.06] px-2 py-2 text-center"><div className="text-[10px] font-black text-white">{title}</div><div className="text-[9px] leading-4 font-bold text-white/45 mt-0.5">{sub}</div></div>)}</div>
       </div>
-      <button onClick={() => onNavigate?.('plans')} className="group shrink-0 w-full lg:w-auto min-w-[210px] rounded-2xl bg-white px-5 py-4 text-xs font-black text-[#0b1714] shadow-[0_12px_28px_rgba(0,0,0,.18)] transition-all hover:-translate-y-0.5 active:scale-[0.98]"><span className="flex items-center justify-center gap-2">بەرزکردنەوەی پلان<ArrowUpRight className="w-4 h-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></span><span className="block text-[9px] text-stone-400 mt-1">سیڤییەکانت بە شێوەیەکی زیرەک بەکاربهێنە</span></button>
+      <button onClick={() => onNavigate?.('plans')} className="group w-full rounded-2xl bg-white px-4 py-3.5 text-xs font-black text-[#0b1714] shadow-[0_12px_28px_rgba(0,0,0,.18)] transition-all hover:-translate-y-0.5 active:scale-[0.98]"><span className="flex items-center justify-center gap-2">بەرزکردنەوەی پلان<ArrowUpRight className="w-4 h-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></span><span className="block text-[9px] text-stone-400 mt-1">سیڤییەکانت بە شێوەیەکی زیرەک بەکاربهێنە</span></button>
     </div></div>
   </section>
 );
@@ -515,7 +515,7 @@ export const JobFeed = ({ onNavigate }) => {
     );
   };
 
-  const JobPhotoCard = ({ job }) => {
+  const JobPhotoCard = ({ job, wide = false }) => {
     const isApplied = applications.some(a => String(a.job_id) === String(job.id));
     const isSaved   = savedJobIds.includes(job.id);
     const company   = job.company_name || job.companyName || job.company || 'کۆمپانیا';
@@ -533,9 +533,9 @@ export const JobFeed = ({ onNavigate }) => {
 
     return (
       <div onClick={() => { soundService.playTick?.(); onNavigate?.('job_detail', { jobId: job.id }); }}
-        className="bg-white rounded-[28px] border border-stone-100/90 shadow-[0_4px_20px_rgba(20,45,40,0.055)] hover:shadow-[0_18px_40px_rgba(20,45,40,0.12)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer overflow-hidden group"
+        className="flex flex-col h-full bg-white rounded-[28px] border border-stone-100/90 shadow-[0_4px_20px_rgba(20,45,40,0.055)] hover:shadow-[0_18px_40px_rgba(20,45,40,0.12)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer overflow-hidden group"
         style={isBoosted ? { boxShadow: `0 0 0 2px ${TEAL}, 0 2px 16px rgba(0,0,0,0.05)` } : {}}>
-        <div className="relative h-40 sm:h-44">
+        <div className={`relative shrink-0 ${wide ? 'h-40 sm:h-52' : 'h-32 sm:h-36'}`}>
           <CoverArt seed={job.category || company} cover={job.company_cover} className="w-full h-full" />
 
           <button onClick={e => { e.stopPropagation(); toggleSaveJob(job.id); }}
@@ -565,8 +565,8 @@ export const JobFeed = ({ onNavigate }) => {
           )}
         </div>
 
-        <div className="p-4 pt-6">
-          <h3 className="text-sm font-black text-stone-900 truncate group-hover:text-stone-600 transition-colors">{title}</h3>
+        <div className="p-4 pt-6 flex-1 flex flex-col">
+          <h3 className="text-sm font-black leading-6 text-stone-900 line-clamp-2 group-hover:text-stone-600 transition-colors">{title}</h3>
           <div className="flex items-center gap-1 text-[11px] text-stone-400 font-bold mt-1 truncate">
             <span className="truncate">{company}</span>
             {Number(job.company_verified) === 1 && <BadgeCheck className="w-3 h-3 shrink-0" style={{ color: TEAL }} title="کۆمپانیای پشکنراو" />}
@@ -582,7 +582,7 @@ export const JobFeed = ({ onNavigate }) => {
             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-stone-400 truncate"><MapPin className="w-3 h-3 shrink-0" />{govBase}</span>
           </div>
 
-          <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center justify-between mt-2 mb-3">
             <span className="font-mono font-black text-sm text-stone-900">{salary}</span>
             <div className="flex items-center gap-2.5">
               {isNew && <span className="w-1.5 h-1.5 rounded-full" style={{ background: TEAL }} title="نوێ بڵاوکراوەتەوە" />}
@@ -597,7 +597,7 @@ export const JobFeed = ({ onNavigate }) => {
           <button
             onClick={e => { e.stopPropagation(); soundService.playTick?.(); onNavigate?.('job_detail', { jobId: job.id }); }}
             disabled={isApplied}
-            className={`mt-3 w-full py-2.5 rounded-xl text-[11px] font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 ${
+            className={`mt-auto w-full py-2.5 rounded-xl text-[11px] font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 ${
               isApplied ? 'bg-emerald-50 text-emerald-700' : 'text-white'
             }`}
             style={!isApplied ? { background: TEAL } : {}}>
@@ -794,7 +794,7 @@ export const JobFeed = ({ onNavigate }) => {
               </Reveal>
 
               {isInitialLoading ? (
-                <div className="space-y-3">{Array.from({length:5}).map((_,i)=><div key={i} className="h-44 rounded-[24px] bg-white border border-stone-100 animate-pulse"/>)}</div>
+                <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(250px,1fr))]">{Array.from({length:6}).map((_,i)=><div key={i} className="h-72 rounded-[24px] bg-white border border-stone-100 animate-pulse"/>)}</div>
               ) : pagedJobs.length===0 ? (
                 <div className="rounded-[28px] bg-white border border-stone-100 py-20 text-center">
                   <Briefcase className="w-12 h-12 mx-auto text-stone-200 mb-3"/>
@@ -802,8 +802,13 @@ export const JobFeed = ({ onNavigate }) => {
                   <p className="mt-1 text-xs font-bold text-stone-300">پاڵاوتنەکان بگۆڕە و دووبارە هەوڵ بدەوە</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {pagedJobs.map((job,i)=><div key={job.id} style={{animationDelay:`${Math.min(i,8)*35}ms`}} className="animate-fadeIn"><JobPhotoCard job={job}/></div>)}
+                <div className="grid gap-4 grid-flow-dense [grid-template-columns:repeat(auto-fill,minmax(250px,1fr))]">
+                  {pagedJobs.map((job,i)=>{
+                    const wide = !!(job.boosted_until && new Date(job.boosted_until) > new Date());
+                    return (
+                      <div key={job.id} style={{animationDelay:`${Math.min(i,8)*35}ms`}} className={`animate-fadeIn min-w-0 ${wide ? 'sm:col-span-2' : ''}`}><JobPhotoCard job={job} wide={wide}/></div>
+                    );
+                  })}
                 </div>
               )}
 
