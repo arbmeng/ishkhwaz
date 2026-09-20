@@ -128,8 +128,7 @@ function MainAppContent() {
       // last closed it.
       if (!target) {
         if (user) return 'home';
-        const isFirstEverVisit = localStorage.getItem('ishkhwaz_splash_seen') !== 'true';
-        return isFirstEverVisit ? 'register' : 'login';
+        return 'login'; // the login page is the site's front door
       }
     }
     return 'login';
@@ -347,6 +346,7 @@ function MainAppContent() {
           onNavigateRegister={() => setActiveTab('register')}
           onLoginSuccess={() => goToPendingShareLinkOrHome()}
           onForgotPassword={() => setActiveTab('forgot_password')}
+          onGuest={() => setActiveTab('home')}
         />
       );
     }

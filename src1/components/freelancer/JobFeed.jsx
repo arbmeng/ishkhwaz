@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { HScroll } from '../ui/HScroll';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { FreelancerProfileModal } from './FreelancerProfileModal';
@@ -718,7 +719,7 @@ export const JobFeed = ({ onNavigate }) => {
 
               {/* Category rail */}
               <Reveal>
-                <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-1 px-1 pb-1">
+                <HScroll bar={false} className="flex gap-2 -mx-1 px-1 pb-1">
                   {CATEGORIES.map(cat=>{
                     const Icon=CATEGORY_ICONS[cat.id]||Briefcase;
                     const active=selectedCategory===cat.id;
@@ -728,12 +729,12 @@ export const JobFeed = ({ onNavigate }) => {
                       <Icon className="w-3.5 h-3.5"/>{cat.nameKu}
                     </button>
                   })}
-                </div>
+                </HScroll>
               </Reveal>
 
               {/* Filters */}
               <Reveal>
-                <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
+                <HScroll bar={false} className="flex gap-2 pb-1">
                   {[{value:'all',label:'هەموو' },...Object.entries(JOB_TYPE_LABELS).map(([value,label])=>({value,label}))].map(t=>
                     <button key={t.value} onClick={()=>setJobTypeFilter(t.value)}
                       className={`shrink-0 px-4 py-2.5 rounded-full text-[11px] font-black ${jobTypeFilter===t.value?'text-white':'bg-white border border-stone-100 text-stone-500'}`}
@@ -743,7 +744,7 @@ export const JobFeed = ({ onNavigate }) => {
                   <DropdownChip label="شار" value={govFilter}
                     options={[{value:'all',label:'هەموو شارەکان'},...Object.entries(GOV_LABELS).map(([value,label])=>({value,label}))]}
                     onChange={setGovFilter}/>
-                </div>
+                </HScroll>
               </Reveal>
 
               {/* Personalized rail */}
@@ -758,7 +759,7 @@ export const JobFeed = ({ onNavigate }) => {
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2"><Sparkles className="w-4 h-4" style={{color:TEAL}}/><h2 className="text-sm font-black">پێشنیاری تایبەت بۆ تۆ</h2></div>
                     </div>
-                    <div className="flex gap-3 overflow-x-auto scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0">
+                    <HScroll className="flex gap-3 -mx-3 px-3 sm:mx-0 sm:px-0 pb-1">
                       {recommended.jobs.slice(0,6).map(job=>{
                         const company=job.company_name||job.companyName||'کۆمپانیا';
                         const saved=savedJobIds.includes(job.id);
@@ -780,7 +781,7 @@ export const JobFeed = ({ onNavigate }) => {
                           </div>
                         </article>
                       })}
-                    </div>
+                    </HScroll>
                   </section>
                 </Reveal>
               )}
@@ -849,11 +850,11 @@ export const JobFeed = ({ onNavigate }) => {
             </Reveal>
 
             <Reveal>
-              <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
+              <HScroll bar={false} className="flex gap-2 pb-1">
                 {CATEGORIES.map(cat=>{const Icon=CATEGORY_ICONS[cat.id]||Briefcase;const active=selectedCategory===cat.id;return <button key={cat.id} onClick={()=>setSelectedCategory(cat.id)}
                   className={`shrink-0 px-4 py-2.5 rounded-full flex items-center gap-2 text-xs font-black ${active?'text-white':'bg-white border border-stone-100 text-stone-500'}`} style={active?{background:TEAL}:{}}><Icon className="w-3.5 h-3.5"/>{cat.nameKu}</button>})}
                 <button onClick={()=>setVerifiedOnly(v=>!v)} className={`shrink-0 px-4 py-2.5 rounded-full text-xs font-black border ${verifiedOnly?'text-white border-transparent':'bg-white border-stone-100 text-stone-500'}`} style={verifiedOnly?{background:TEAL}:{}}><BadgeCheck className="inline w-3.5 h-3.5 ml-1"/>پشتڕاستکراو</button>
-              </div>
+              </HScroll>
             </Reveal>
 
             <Reveal>

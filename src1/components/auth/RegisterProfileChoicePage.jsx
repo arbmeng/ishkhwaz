@@ -4,6 +4,7 @@ import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { compressImageFile } from '../../utils/image';
 import { signInWithProvider } from '../../services/supabaseClient';
+import { AuthBrandPanel, AUTH_PAD_LG } from './AuthBrandPanel';
 
 // No brand-logo icon in lucide-react — real Google "G" mark, standard 4-color SVG.
 const GoogleIcon = () => (
@@ -354,12 +355,20 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
   };
 
   return (
-    <div dir="rtl" className="min-h-[100dvh] font-vazirmatn flex flex-col justify-between px-3 py-3 sm:px-6 sm:py-5 select-none relative overflow-x-hidden" style={{ background: 'linear-gradient(180deg,#f4f8f7 0%,#f9fbfa 100%)', color: '#111' }}>
+    <div dir="rtl" className={`min-h-[100dvh] font-vazirmatn flex flex-col justify-between px-3 py-3 sm:px-6 sm:py-5 select-none relative overflow-x-hidden premium-register-shell ${AUTH_PAD_LG}`} style={{ background: 'linear-gradient(180deg,#f4f8f7 0%,#f9fbfa 100%)', color: '#111' }}>
 
-      {/* 1. TOP HEADER — icon-only back button, segmented step progress (Hidden on Completion) */}
+      {/* Premium background atmosphere */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+        <div className="reg-orb reg-orb-a" />
+        <div className="reg-orb reg-orb-b" />
+        <div className="reg-grid" />
+      </div>
+
+      <AuthBrandPanel variant="register" />
+
       {step <= TOTAL_STEPS && (
         <header
-          className="max-w-[520px] mx-auto w-full flex items-center gap-3 pb-3 sticky top-0 z-20 bg-[#f6f9f8]/90 backdrop-blur-xl pt-1"
+          className="max-w-[600px] mx-auto w-full flex items-center gap-3 pb-3 sticky top-0 z-20 bg-[#f6f9f8]/90 backdrop-blur-xl pt-1"
           style={{ paddingTop: 'max(1.5rem, calc(env(safe-area-inset-top) + 1rem))' }}
         >
           <button
@@ -379,14 +388,14 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
             ))}
           </div>
 
-          <span className="text-xs font-mono font-bold text-slate-400 shrink-0">
-            {step}/{TOTAL_STEPS}
+          <span className="text-xs font-bold text-slate-500 shrink-0">
+            <span className="hidden sm:inline">هەنگاوی </span><span className="font-mono">{step}</span><span className="hidden sm:inline"> لە </span><span className="sm:hidden">/</span><span className="font-mono">{TOTAL_STEPS}</span>
           </span>
         </header>
       )}
 
       {/* 2. MAIN BODY CONTENT */}
-      <main className="max-w-[520px] mx-auto w-full my-auto py-4 sm:py-7 space-y-6">
+      <main className="max-w-[600px] mx-auto w-full my-auto py-4 sm:py-7 space-y-6">
 
         {/* STEP 1: CHOOSE PROFILE */}
         {step === 1 && (
@@ -1012,7 +1021,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
       {/* Terms of Service Modal */}
       {showTermsModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-md">
-          <div className="w-full max-w-[520px] max-h-[88dvh] overflow-hidden bg-white rounded-[28px] p-5 sm:p-6 space-y-4 text-right shadow-2xl ring-1 ring-black/5">
+          <div className="w-full max-w-[600px] max-h-[88dvh] overflow-hidden bg-white rounded-[28px] p-5 sm:p-6 space-y-4 text-right shadow-2xl ring-1 ring-black/5">
             <h3 className="text-base font-black text-slate-900">📄 مەرجەکانی بەکارهێنانی ئیش خواز</h3>
             <div className="text-xs text-slate-600 space-y-2 max-h-60 overflow-y-auto leading-relaxed">
               <p>١. بەکارهێنانی سەکۆی ئیش خواز دەبێت بەپێی یاساکانی هەرێمی کوردستان بێت.</p>
@@ -1029,7 +1038,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
       {/* Privacy Policy Modal */}
       {showPrivacyModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-md">
-          <div className="w-full max-w-[520px] max-h-[88dvh] overflow-hidden bg-white rounded-[28px] p-5 sm:p-6 space-y-4 text-right shadow-2xl ring-1 ring-black/5">
+          <div className="w-full max-w-[600px] max-h-[88dvh] overflow-hidden bg-white rounded-[28px] p-5 sm:p-6 space-y-4 text-right shadow-2xl ring-1 ring-black/5">
             <h3 className="text-base font-black text-slate-900">🔒 سیاسەتی تایبەتمەندی زانیارییەکان</h3>
             <div className="text-xs text-slate-600 space-y-2 max-h-60 overflow-y-auto leading-relaxed">
               <p>١. زانیارییە کەسییەکانت (ژمارەی مۆبایل و سیڤی) 100% پارێزراون.</p>
@@ -1043,6 +1052,16 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         </div>
       )}
 
+      <style>{`
+        .premium-register-shell{isolation:isolate}
+        .reg-orb{position:absolute;border-radius:9999px;filter:blur(4px)}
+        .reg-orb-a{width:460px;height:460px;right:-230px;top:-210px;background:radial-gradient(circle,rgba(18,121,107,.15),transparent 67%);animation:regFloat 12s ease-in-out infinite}
+        .reg-orb-b{width:380px;height:380px;left:-220px;bottom:-200px;background:radial-gradient(circle,rgba(18,121,107,.08),transparent 67%);animation:regFloat 15s ease-in-out infinite reverse}
+        .reg-grid{position:absolute;inset:0;opacity:.22;background-image:linear-gradient(rgba(18,121,107,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(18,121,107,.045) 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(to bottom,black,transparent 78%)}
+        @keyframes regFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(14px,20px,0)}}
+        @media (max-width:1279px){.reg-orb-a{width:330px;height:330px}.reg-grid{background-size:36px 36px}}
+        @media (prefers-reduced-motion:reduce){.reg-orb{animation:none!important}}
+`}</style>
     </div>
   );
 };
