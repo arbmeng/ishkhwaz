@@ -12,7 +12,7 @@ const TEAL_SOFT = '#e7f4f1';
 // don't invent ones later without checking first.
 export const AboutModal = ({ onClose }) => {
   return (
-    <div dir="rtl" className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 select-none animate-fadeIn" style={{ fontFamily: NK }}>
+    <div dir="rtl" className="safe-top fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 select-none animate-fadeIn" style={{ fontFamily: NK }}>
       <div className="relative w-full max-w-md bg-white border border-[#e8eeec] rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 my-auto max-h-[90vh] overflow-y-auto text-right">
 
         <button

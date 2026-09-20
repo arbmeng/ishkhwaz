@@ -1,4 +1,5 @@
 import React from 'react';
+import { PageHeader } from './PageHeader';
 import { useAuth } from '../../context/AuthContext';
 import { ArrowRight, LogIn, Search, Send, ShieldCheck, MessageCircle, Briefcase, Users, PlusCircle, Wallet, BadgeCheck } from 'lucide-react';
 
@@ -57,16 +58,7 @@ export const HowItWorksPage = ({ onBack }) => {
 
   return (
     <div dir="rtl" className="min-h-screen pb-16" style={{ background: '#f4f7f6', fontFamily: NK }}>
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#e8eeed] px-4 sm:px-8 py-4 flex items-center gap-3"
-        style={{ paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 8px))' }}>
-        <button
-          onClick={onBack}
-          className="w-10 h-10 rounded-2xl bg-white border border-[#e8eeed] flex items-center justify-center text-[#111d1a] shrink-0 active:scale-90 transition-transform shadow-2xs"
-        >
-          <ArrowRight className="w-5 h-5" />
-        </button>
-        <h1 className="text-base font-black text-[#111d1a]">چۆنیەتی کارکردنی ئیش خواز</h1>
-      </div>
+      <PageHeader title="چۆنیەتی کارکردنی ئیش خواز" onBack={onBack} />
 
       <div className="max-w-2xl mx-auto px-4 sm:px-8 pt-8 space-y-8">
         <div className="text-center space-y-2">

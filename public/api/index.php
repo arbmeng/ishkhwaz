@@ -88,6 +88,8 @@ use PHPMailer\PHPMailer\Exception as PHPMailerException;
 // chars by sanitize()) — 900,000 was sized for just one image and was
 // silently rejecting exactly that combination with "Request too large."
 define('MAX_INPUT_LENGTH', 4000000); // Max request body size in bytes
+// What kind of employer/sector a job belongs to (حکوومی / تایبەت / بازرگانی / ڕێکخراو / تێکەڵ).
+define('JOB_SECTORS', ['government', 'private', 'commercial', 'ngo', 'mixed']);
 define('RATE_LIMIT_WINDOW', 60);    // Rate limit window in seconds
 define('RATE_LIMIT_MAX',    30);    // Max requests per window per IP
 
@@ -482,13 +484,17 @@ function sendVerificationEmail(string $toEmail, string $name, string $token): bo
     return sendAppEmail($toEmail, $subject, $body, $alt);
 }
 
-function sendPasswordResetEmail(string $toEmail, string $name, string $token): bool {
+function sendPasswordResetEmail(string $toEmail, string $name, string $token, ?string $otp = null): bool {
     $link = 'https://ishkhwaz.zeraworld.com/reset-password?token=' . urlencode($token);
+    $otpBlock = $otp === null ? '' : '<p style="color:#4a5854;line-height:1.8;">کۆدی پشتڕاستکردنەوەت (لە ئەپەکەدا بینووسە، ماوەی ١٠ خولەک کاردەکات):</p>'
+        . '<p style="text-align:center;margin:18px 0;"><span dir="ltr" style="display:inline-block;background:#fff;border:2px dashed #12796b;border-radius:12px;padding:12px 26px;font-size:30px;letter-spacing:8px;font-weight:bold;color:#0d5c50;font-family:monospace;">' . $otp . '</span></p>'
+        . '<p style="color:#4a5854;line-height:1.8;">یان ئەم بەستەرەی خوارەوە بەکاربێنە:</p>';
     $subject = 'گەڕاندنەوەی وشەی نهێنی — ئیش خواز';
     $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
     $body = <<<HTML
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f4f7f6;">
       <h2 style="color:#111d1a;">سڵاو {$safeName} 👋</h2>
+      {$otpBlock}
       <p style="color:#4a5854;line-height:1.8;">داواکارییەک کرا بۆ گەڕاندنەوەی وشەی نهێنی هەژمارەکەت لەسەر ئیش خواز. کرتە لەسەر دوگمەی خوارەوە بکە بۆ دانانی وشەی نهێنی نوێ:</p>
       <p style="text-align:center;margin:28px 0;">
         <a href="{$link}" style="background:#12796b;color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;display:inline-block;">دانانی وشەی نهێنی نوێ</a>
@@ -496,7 +502,7 @@ function sendPasswordResetEmail(string $toEmail, string $name, string $token): b
       <p style="color:#9faea9;font-size:12px;">ئەم بەستەرە تەنها بۆ ماوەی ١ کاتژمێر کاردەکات. ئەگەر داوات نەکردووە، ئەم ئیمەیلە پشتگوێ بخە — وشەی نهێنیت ناگۆڕدرێت.</p>
     </div>
     HTML;
-    $alt = "سڵاو {$name}، بۆ گەڕاندنەوەی وشەی نهێنیت، ئەم بەستەرە بکەرەوە:\n{$link}";
+    $alt = "سڵاو {$name}، " . ($otp !== null ? "کۆدی پشتڕاستکردنەوەت: {$otp}\n" : '') . "بۆ گەڕاندنەوەی وشەی نهێنیت، ئەم بەستەرە بکەرەوە:\n{$link}";
 
     return sendAppEmail($toEmail, $subject, $body, $alt);
 }
@@ -1607,6 +1613,12 @@ foreach ([
     // by any live code path; that field only ever mattered per-application,
     // via applications.cv_url/resume_id). NULL means "no public CV set".
     "ALTER TABLE users ADD COLUMN public_resume_id VARCHAR(40) NULL",
+    "ALTER TABLE jobs ADD COLUMN sector VARCHAR(20) NULL",
+    // Emailed 6-digit reset code (stored only as an HMAC, 10 min life, max 5 wrong tries) —
+    // see /auth/forgot-password and /auth/verify-reset-otp.
+    "ALTER TABLE users ADD COLUMN password_reset_otp_hash VARCHAR(64) NULL",
+    "ALTER TABLE users ADD COLUMN password_reset_otp_expires VARCHAR(32) NULL",
+    "ALTER TABLE users ADD COLUMN password_reset_otp_attempts INT DEFAULT 0",
 ] as $migration) {
     try { $pdo->exec($migration); } catch (Exception $e) { /* already applied */ }
 }
@@ -2131,14 +2143,23 @@ if (preg_match('#/auth/forgot-password$#', $uri) && $method === 'POST') {
         jsonErr(400, 'ئەم هەژمارە هیچ ئیمەیلێکی تۆمارکراوی نییە. تکایە پەیوەندی بە پشتیوانی بکە.');
     }
 
-    $token = bin2hex(random_bytes(32));
-    $expires = date('Y-m-d H:i:s', time() + 3600); // 1 hour
-    $pdo->prepare('UPDATE users SET password_reset_token = ?, password_reset_expires = ? WHERE id = ?')
-        ->execute([$token, $expires, $user['id']]);
+    // The code lives 10 minutes, so "sent at" is expires - 600: don't let this be used to spam an
+    // inbox — a new code only after the form's own 60 s resend timer.
+    if (!empty($user['password_reset_otp_expires']) && strtotime($user['password_reset_otp_expires']) - 600 > time() - 60) {
+        jsonErr(429, 'کۆدێکی نوێ تازە نێردراوە. تکایە ١ خولەک چاوەڕوان بە پێش داواکردنی کۆدێکی تر.');
+    }
 
-    sendPasswordResetEmail($user['email'], $user['name'], $token);
+    $token = bin2hex(random_bytes(32));
+    $expires = date('Y-m-d H:i:s', time() + 3600); // 1 hour (the emailed link)
+    $otp = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $otpHash = hash_hmac('sha256', $user['id'] . ':' . $otp, TOKEN_SECRET);
+    $otpExpires = date('Y-m-d H:i:s', time() + 600); // 10 minutes
+    $pdo->prepare('UPDATE users SET password_reset_token = ?, password_reset_expires = ?, password_reset_otp_hash = ?, password_reset_otp_expires = ?, password_reset_otp_attempts = 0 WHERE id = ?')
+        ->execute([$token, $expires, $otpHash, $otpExpires, $user['id']]);
+
+    sendPasswordResetEmail($user['email'], $user['name'], $token, $otp);
     logActivity($pdo, $user['id'], 'password_reset_requested');
-    echo json_encode(['success' => true, 'message' => 'بەستەری گەڕاندنەوەی وشەی نهێنیمان بۆ ئیمەیلەکەت نارد.']);
+    echo json_encode(['success' => true, 'message' => 'کۆدی ٦ ژمارەیی بۆ ئیمەیلی هەژمارەکەت نێردرا. ماوەی ١٠ خولەک کاردەکات.']);
     exit(0);
 }
 
@@ -2168,11 +2189,55 @@ if (preg_match('#/auth/reset-password$#', $uri) && $method === 'POST') {
     }
 
     $hashed = hashPassword($newPassword);
-    $pdo->prepare('UPDATE users SET password = ?, password_reset_token = NULL, password_reset_expires = NULL WHERE id = ?')
+    $pdo->prepare('UPDATE users SET password = ?, password_reset_token = NULL, password_reset_expires = NULL, password_reset_otp_hash = NULL, password_reset_otp_expires = NULL, password_reset_otp_attempts = 0 WHERE id = ?')
         ->execute([$hashed, $row['id']]);
 
     logActivity($pdo, $row['id'], 'password_reset_completed');
     echo json_encode(['success' => true, 'message' => 'وشەی نهێنیت بە سەرکەوتوویی گۆڕدرا. ئێستا دەتوانیت بچیتە ژوورەوە.']);
+    exit(0);
+}
+
+// ================================================================
+// 2f. Auth: Verify reset code  POST /auth/verify-reset-otp  { phone, otp }
+//     (public — trades the 6-digit code emailed by /auth/forgot-password for a
+//     short-lived reset token that /auth/reset-password accepts, exactly like
+//     the token inside the email link. Single use; 5 wrong tries burn the code.)
+// ================================================================
+if (preg_match('#/auth/verify-reset-otp$#', $uri) && $method === 'POST') {
+    if (!rateLimitCheck($pdo, $clientIp, 'verify_reset_otp')) jsonErr(429, 'زۆر جار هەوڵت دا. کەمێک چاوەڕوان بە.');
+
+    $input = safeJson();
+    $phone = sanitize($input['phone'] ?? '', 100);
+    $otp   = preg_replace('/\D/', '', (string)($input['otp'] ?? ''));
+    $bad   = 'کۆدەکە هەڵەیە یان بەسەرچووە.';
+    if ($phone === '' || strlen($otp) !== 6) jsonErr(400, $bad);
+
+    $normalizedPhone = normalizePhone($phone);
+    $stmt = $pdo->prepare('SELECT id, password_reset_otp_hash, password_reset_otp_expires, password_reset_otp_attempts FROM users WHERE phone = ? OR phone = ? OR email = ?');
+    $stmt->execute([$normalizedPhone, '0' . $normalizedPhone, $phone]);
+    $user = $stmt->fetch();
+
+    if (!$user || empty($user['password_reset_otp_hash']) || empty($user['password_reset_otp_expires'])
+        || strtotime($user['password_reset_otp_expires']) < time()) {
+        jsonErr(400, $bad);
+    }
+    if ((int)$user['password_reset_otp_attempts'] >= 5) {
+        $pdo->prepare('UPDATE users SET password_reset_otp_hash = NULL, password_reset_otp_expires = NULL, password_reset_otp_attempts = 0 WHERE id = ?')->execute([$user['id']]);
+        jsonErr(400, 'زۆر جار کۆدی هەڵەت نووسی. تکایە کۆدێکی نوێ داوا بکە.');
+    }
+
+    $expected = hash_hmac('sha256', $user['id'] . ':' . $otp, TOKEN_SECRET);
+    if (!hash_equals($user['password_reset_otp_hash'], $expected)) {
+        $pdo->prepare('UPDATE users SET password_reset_otp_attempts = COALESCE(password_reset_otp_attempts, 0) + 1 WHERE id = ?')->execute([$user['id']]);
+        jsonErr(400, $bad);
+    }
+
+    // Right code: consume it and hand back a fresh reset token (15 min).
+    $resetToken = bin2hex(random_bytes(32));
+    $pdo->prepare('UPDATE users SET password_reset_token = ?, password_reset_expires = ?, password_reset_otp_hash = NULL, password_reset_otp_expires = NULL, password_reset_otp_attempts = 0 WHERE id = ?')
+        ->execute([$resetToken, date('Y-m-d H:i:s', time() + 900), $user['id']]);
+    logActivity($pdo, $user['id'], 'password_reset_otp_verified');
+    echo json_encode(['success' => true, 'reset_token' => $resetToken]);
     exit(0);
 }
 
@@ -2852,7 +2917,7 @@ if (preg_match('#/jobs$#', $uri) && $method === 'GET') {
 
     $stmt = $pdo->prepare(
         "SELECT j.*,
-                (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id) AS applications_count,
+                (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id AND a.payment_status <> 'awaiting_payment') AS applications_count,
                 (SELECT verified FROM users u WHERE u.id = j.company_id) AS company_verified,
                 (SELECT ROUND(AVG(TIMESTAMPDIFF(SECOND, a.created_at, a.accepted_at) / 3600), 1)
                    FROM applications a WHERE a.company_id = j.company_id AND a.accepted_at IS NOT NULL) AS company_avg_response_hours
@@ -2977,7 +3042,7 @@ if (preg_match('#/jobs$#', $uri) && $method === 'POST') {
             governorate_id, district_id, sub_district_id, location_detail, location_name, lat, lng,
             salary_min, salary_max, salary_period,
             description, required_skills, fee_amount, deadline,
-            company_reg, company_industry,
+            company_reg, company_industry, sector,
             status, created_at
         ) VALUES (
             ?, ?, ?, ?, ?, ?, ?,
@@ -2985,7 +3050,7 @@ if (preg_match('#/jobs$#', $uri) && $method === 'POST') {
             ?, ?, ?, ?, ?, ?, ?,
             ?, ?, ?,
             ?, ?, ?, ?,
-            ?, ?,
+            ?, ?, ?,
             ?, ?
         )
     ')->execute([
@@ -3016,6 +3081,7 @@ if (preg_match('#/jobs$#', $uri) && $method === 'POST') {
         !empty($input['deadline']) ? sanitize($input['deadline'], 20) : null,
         sanitize($input['company_reg'] ?? '', 100),
         sanitize($input['company_industry'] ?? '', 100),
+        in_array($input['sector'] ?? '', JOB_SECTORS, true) ? $input['sector'] : null,
         // A regular employer's posting waits for admin review before it's
         // visible to anyone browsing; admin/owner posting one themselves
         // (they're the approver) skips the queue — there's no one else to
@@ -3083,7 +3149,7 @@ if (preg_match('#(?<!admin)/jobs/update$#', $uri) && $method === 'POST') {
             title_ku = ?, company_logo = ?, company_cover = ?, category = ?, job_type = ?, workplace_type = ?,
             governorate_id = ?, district_id = ?, sub_district_id = ?, location_detail = ?, lat = ?, lng = ?, location_name = ?,
             salary_min = ?, salary_max = ?,
-            description = ?, required_skills = ?, deadline = ?
+            description = ?, required_skills = ?, deadline = ?, sector = ?
         WHERE id = ?
     ')->execute([
         sanitize($input['title_ku'] ?? $input['title'] ?? $existing['title_ku'], 200),
@@ -3104,6 +3170,7 @@ if (preg_match('#(?<!admin)/jobs/update$#', $uri) && $method === 'POST') {
         sanitize($input['description'] ?? $existing['description'] ?? '', 3000),
         $skills,
         !empty($input['deadline']) ? sanitize($input['deadline'], 20) : $existing['deadline'],
+        in_array($input['sector'] ?? '', JOB_SECTORS, true) ? $input['sector'] : ($existing['sector'] ?? null),
         $jobId,
     ]);
 
@@ -3631,6 +3698,81 @@ if (preg_match('#/applications$#', $uri) && $method === 'POST') {
 
     logActivity($pdo, $authUser['id'], 'application_submitted', $jobId);
     echo json_encode(['success' => true, 'application_id' => $appId, 'used_plan_credit' => $hasCredit]);
+    exit(0);
+}
+
+// ================================================================
+// Applications: pay the CV fee with Zera Payment  POST /applications/zerapay
+//   For freelancers with no plan credit left. The application is created in
+//   'awaiting_payment' (invisible to the company: GET /applications only shows
+//   payment_status = 'approved') and the hosted payment page is returned;
+//   /webhooks/zera-payment moves it forward from there.
+// ================================================================
+if (preg_match('#/applications/zerapay$#', $uri) && $method === 'POST') {
+    if (!rateLimitCheck($pdo, $clientIp, 'apply')) jsonErr(429, 'Too many requests.');
+
+    $authUser = requireAuth($pdo);
+    $input    = safeJson();
+    $jobId    = sanitize($input['job_id'] ?? '', 50);
+    if (empty($jobId)) jsonErr(400, 'ناسنامەی کارەکە پێویستە.');
+
+    $jobStmt = $pdo->prepare("SELECT id, company_id, company_name, title_ku, fee_amount FROM jobs WHERE id = ? AND status = 'active'");
+    $jobStmt->execute([$jobId]);
+    $job = $jobStmt->fetch();
+    if (!$job) jsonErr(404, 'ئیشەکە نەدۆزرایەوە.');
+    if ($job['company_id'] === $authUser['id']) jsonErr(400, 'ناتوانیت سیڤی بۆ هەلی کاری خۆت بنێریت.');
+
+    // Anyone with a credit (or an admin/owner) applies the normal way — nothing to pay.
+    $isPlanExempt = in_array($authUser['role'] ?? null, ['admin', 'owner'], true);
+    if ($isPlanExempt || (int)($authUser['plan_credits'] ?? 0) > 0) {
+        jsonErr(400, 'کریدیتت هەیە — بێ پارەدان دەتوانیت سیڤی بنێریت.');
+    }
+
+    $dup = $pdo->prepare('SELECT id, payment_status FROM applications WHERE job_id = ? AND freelancer_id = ?');
+    $dup->execute([$jobId, $authUser['id']]);
+    $existing = $dup->fetch();
+    if ($existing) {
+        // An earlier attempt that was never paid is just abandoned — replace it.
+        // Anything else (in review, approved, ...) is a real application already.
+        if (($existing['payment_status'] ?? '') !== 'awaiting_payment') jsonErr(400, 'پێشتر سیڤیت ناردووە بۆ ئەم کارە.');
+        $pdo->prepare('DELETE FROM applications WHERE id = ?')->execute([$existing['id']]);
+    }
+
+    $resumeId = null;
+    if (!empty($input['resume_id'])) {
+        $resStmt = $pdo->prepare('SELECT id FROM resumes WHERE id = ? AND user_id = ?');
+        $resStmt->execute([sanitize($input['resume_id'], 40), $authUser['id']]);
+        if ($resStmt->fetch()) $resumeId = sanitize($input['resume_id'], 40);
+    }
+
+    $feeAmount = (int)($job['fee_amount'] ?? getSetting($pdo, 'cv_fee_amount', '2500'));
+    $appId = 'app_' . time() . rand(10, 99);
+
+    $payment = createZeraPayment($feeAmount, $appId, (string)($authUser['name'] ?? ''), (string)($authUser['phone'] ?? ''));
+    if (!$payment['ok']) {
+        $message = match ($payment['reason']) {
+            'no_wallet' => 'هیچ جۆرە قیستەیەکی چالاک لە دەروازەی پارەدان دانەمەزراوە — تکایە دواتر هەوڵبدەرەوە.',
+            default => 'ناتوانرێت پەیوەندی بە دەروازەی پارەدان بکرێت. تکایە دواتر هەوڵبدەرەوە.',
+        };
+        jsonErr(502, $message);
+    }
+
+    $pdo->prepare('
+        INSERT INTO applications (id, job_id, job_title, company_name, company_id, freelancer_id, freelancer_name, freelancer_phone, cover_letter, cv_url, resume_id, payment_method, payment_tx_id, status, payment_status, fee_paid, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ')->execute([
+        $appId, $jobId, $job['title_ku'], $job['company_name'], $job['company_id'],
+        $authUser['id'], $authUser['name'], $authUser['phone'],
+        sanitize($input['cover_letter'] ?? '', 2000),
+        sanitize($input['cv_url'] ?? '', 800000),
+        $resumeId,
+        'ZeraPayment', $payment['transactionId'],
+        'awaiting_payment', 'awaiting_payment', $feeAmount,
+        date('Y-m-d H:i:s'),
+    ]);
+
+    logActivity($pdo, $authUser['id'], 'application_payment_started', $jobId);
+    echo json_encode(['success' => true, 'application_id' => $appId, 'paymentUrl' => $payment['paymentUrl']]);
     exit(0);
 }
 
@@ -4235,8 +4377,10 @@ if (preg_match('#/applications/.*?/company-status$#', $uri) && $method === 'POST
     $app = $app->fetch();
     if (!$app) jsonErr(404, 'Application not found.');
 
+    // accepted_at is only meaningful for an acceptance — a rejection (or a reset
+    // to pending) used to stamp it with "now" as well.
     $pdo->prepare('UPDATE applications SET company_status = ?, accepted_at = ? WHERE id = ?')
-        ->execute([$status, date('Y-m-d H:i:s'), $appId]);
+        ->execute([$status, $status === 'accepted' ? date('Y-m-d H:i:s') : null, $appId]);
 
     if ($status !== 'pending' && $app['freelancer_id']) {
         $label = $status === 'accepted' ? 'وەرگیرایت! 🎉' : 'ڕەتکرایەوە';
@@ -5347,6 +5491,44 @@ if (preg_match('#/karnama/status$#', $uri) && $method === 'GET') {
     exit(0);
 }
 
+// What Zera Payment telling us about a CV application's fee does to that application.
+// Mirrors what an admin approving/rejecting the payment by hand does (POST /applications/{id}/verify).
+function applyApplicationPaymentResult(PDO $pdo, array $app, string $zeraStatus): void {
+    $paymentStatus = $app['payment_status'] ?? '';
+
+    // The customer uploaded proof: it is now genuinely waiting on review.
+    if ($zeraStatus === 'SUBMITTED') {
+        if ($paymentStatus === 'awaiting_payment') {
+            $pdo->prepare("UPDATE applications SET status = 'pending_payment_verification', payment_status = 'pending' WHERE id = ?")->execute([$app['id']]);
+        }
+        return;
+    }
+
+    // APPROVED / REJECTED: only once, and only for an unfinished payment (webhooks are retried).
+    if (!in_array($paymentStatus, ['awaiting_payment', 'pending'], true)) return;
+
+    $now = date('Y-m-d H:i:s');
+    if ($zeraStatus === 'APPROVED') {
+        $pdo->prepare("UPDATE applications SET status = 'active', payment_status = 'approved', verified_at = ? WHERE id = ?")->execute([$now, $app['id']]);
+        if (!empty($app['company_id'])) {
+            notifyUser($pdo, $app['company_id'], 'سیڤی نوێ چاوەڕوانە 📄',
+                "سیڤی {$app['freelancer_name']} بۆ \"{$app['job_title']}\" پشکنرا و ئامادەیە بۆ بڕیاردان", '/dashboard');
+            pusherTrigger(['private-user-' . $app['company_id']], 'new-application', ['application_id' => $app['id'], 'job_id' => $app['job_id']]);
+        }
+        if (!empty($app['freelancer_id'])) {
+            notifyUser($pdo, $app['freelancer_id'], 'پارەدانەکەت پەسەندکرا ✓',
+                "سیڤیت بۆ \"{$app['job_title']}\" نێردرا بۆ کۆمپانیا", '/cvs');
+        }
+    } else {
+        $pdo->prepare("UPDATE applications SET status = 'rejected', payment_status = 'rejected', verified_at = ? WHERE id = ?")->execute([$now, $app['id']]);
+        if (!empty($app['freelancer_id'])) {
+            notifyUser($pdo, $app['freelancer_id'], 'پارەدانەکەت پەسەند نەکرا',
+                "پارەدانی سیڤیت بۆ \"{$app['job_title']}\" پەسەند نەکرا — تکایە پەیوەندی بە پشتیوانی بکە", '/cvs');
+        }
+    }
+    notifyAdmins($pdo, 'application_' . ($zeraStatus === 'APPROVED' ? 'approved' : 'rejected'), ['id' => $app['id'], 'company_id' => $app['company_id'] ?? null]);
+}
+
 // ================================================================
 // Zera Payment webhook  POST /webhooks/zera-payment
 // Fires when a plan purchase's payment is approved or rejected on Zera
@@ -5372,6 +5554,16 @@ if (preg_match('#/webhooks/zera-payment$#', $uri) && $method === 'POST') {
         // actionable here, but we still return 200 so Zera Payment doesn't
         // retry a webhook we deliberately have nothing to do with.
         echo json_encode(['success' => true, 'ignored' => true]);
+        exit(0);
+    }
+
+    // A CV application's fee (externalReference is the application id) — see POST /applications/zerapay.
+    if (str_starts_with($purchaseId, 'app_')) {
+        $appRow = $pdo->prepare('SELECT * FROM applications WHERE id = ?');
+        $appRow->execute([$purchaseId]);
+        $appRow = $appRow->fetch();
+        if ($appRow) applyApplicationPaymentResult($pdo, $appRow, $zeraStatus);
+        echo json_encode(['success' => true]);
         exit(0);
     }
 

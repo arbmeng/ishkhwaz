@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useStore } from '../../context/StoreContext';
 import { compressImageFile } from '../../utils/image';
 import { soundService } from '../../services/soundService';
+import { JOB_SECTORS } from '../../data/jobSectors';
 import { X, Sparkles, Upload, Save, Loader2, Camera, MapPin, Search, Crosshair, CheckCircle2 } from 'lucide-react';
 
 const GOVS = [
@@ -27,6 +28,7 @@ export const EditJobModal = ({ isOpen, onClose, job }) => {
   const [photo, setPhoto]               = useState('');
   const [category, setCategory]         = useState('');
   const [jobType, setJobType]           = useState('fullTime');
+  const [sector, setSector]             = useState('');
   const [workplaceType, setWorkplaceType] = useState('onSite');
   const [governorateId, setGovernorateId] = useState('sulaymaniyah');
   const [locationDetail, setLocationDetail] = useState('');
@@ -57,6 +59,7 @@ export const EditJobModal = ({ isOpen, onClose, job }) => {
       setPhoto(job.company_logo || '');
       setCategory(job.category || '');
       setJobType(job.job_type || 'fullTime');
+      setSector(job.sector || '');
       setWorkplaceType(job.workplace_type || 'onSite');
       setGovernorateId(job.governorate_id || 'sulaymaniyah');
       setLocationDetail(job.location_detail || '');
@@ -252,6 +255,7 @@ export const EditJobModal = ({ isOpen, onClose, job }) => {
       company_logo: photo,
       category,
       job_type: jobType,
+      sector: sector || undefined,
       workplace_type: workplaceType,
       governorate_id: governorateId,
       location_detail: locationDetail.trim(),
@@ -272,7 +276,7 @@ export const EditJobModal = ({ isOpen, onClose, job }) => {
   const labelCls = "block text-xs font-black text-slate-700 mb-1.5 uppercase tracking-wider";
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn overflow-y-auto font-vazirmatn">
+    <div className="safe-top fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn overflow-y-auto font-vazirmatn">
 
       <div className="relative w-full max-w-2xl max-h-[92vh] flex flex-col bg-white border border-slate-200 rounded-3xl shadow-2xl my-auto text-right overflow-hidden select-none">
 
@@ -337,6 +341,18 @@ export const EditJobModal = ({ isOpen, onClose, job }) => {
                   {categories.map(c => (
                     <option key={c.id} value={c.id}>{c.icon} {c.name_ku}</option>
                   ))}
+                </select>
+              </div>
+
+              <div>
+                <label className={labelCls}>جۆری کەرت</label>
+                <select
+                  value={sector}
+                  onChange={(e) => setSector(e.target.value)}
+                  className={inputCls}
+                >
+                  <option value="">دیارینەکراوە</option>
+                  {JOB_SECTORS.map(sec => <option key={sec.id} value={sec.id}>{sec.label}</option>)}
                 </select>
               </div>
 

@@ -8,10 +8,10 @@ import { signInWithProvider } from '../../services/supabaseClient';
 // No brand-logo icon in lucide-react — real Google "G" mark, standard 4-color SVG.
 const GoogleIcon = () => (
   <svg className="w-4 h-4" viewBox="0 0 48 48" aria-hidden="true">
-    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/>
-    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
-    <path fill="#4CAF50" d="M24 44c5.5 0 10.5-2.1 14.3-5.6l-6.6-5.6C29.6 34.7 27 35.5 24 35.5c-5.2 0-9.6-3.5-11.2-8.2l-6.5 5C9.6 39.6 16.3 44 24 44z"/>
-    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.6 5.6C40.7 36.6 44 30.9 44 24c0-1.3-.1-2.7-.4-3.5z"/>
+    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
+    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+    <path fill="#4CAF50" d="M24 44c5.5 0 10.5-2.1 14.3-5.6l-6.6-5.6C29.6 34.7 27 35.5 24 35.5c-5.2 0-9.6-3.5-11.2-8.2l-6.5 5C9.6 39.6 16.3 44 24 44z" />
+    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.6 5.6C40.7 36.6 44 30.9 44 24c0-1.3-.1-2.7-.4-3.5z" />
   </svg>
 );
 import {
@@ -336,10 +336,10 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
 
   const governorates = ['سلێمانی', 'هەولێر', 'دهۆک', 'هەڵەبجە', 'کەرکووک'];
 
-  const inputCls = "w-full rounded-2xl bg-slate-50 border border-slate-200 focus:border-[#12796b] focus:bg-white outline-none transition-all text-xs text-slate-900 placeholder:text-slate-400";
+  const inputCls = "w-full rounded-2xl bg-white/85 border border-slate-200/90 focus:border-[#12796b] focus:bg-white focus:shadow-[0_0_0_4px_rgba(18,121,107,.08),0_8px_24px_rgba(15,23,42,.04)] outline-none transition-all text-xs text-slate-900 placeholder:text-slate-400";
   const labelCls = "text-xs font-bold text-slate-700 block mb-1.5";
-  const primaryBtnCls = "w-full py-4 rounded-2xl text-white font-black text-sm active:scale-[0.97] transition-all disabled:opacity-60";
-  const primaryBtnStyle = { background: TEAL, boxShadow: `0 8px 20px ${TEAL}40` };
+  const primaryBtnCls = "group relative w-full py-4 rounded-2xl text-white font-black text-sm active:scale-[0.985] hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-60 disabled:pointer-events-none shadow-[0_12px_28px_rgba(18,121,107,.16)]";
+  const primaryBtnStyle = { background: `linear-gradient(135deg, ${TEAL} 0%, ${TEAL_DEEP} 100%)`, boxShadow: `0 12px 28px ${TEAL}2b, inset 0 1px 0 rgba(255,255,255,.16)` };
   const chipActiveCls = (active) => `border transition-all ${active ? 'text-white' : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'}`;
   const chipActiveStyle = (active) => active ? { background: TEAL, borderColor: TEAL } : undefined;
 
@@ -354,17 +354,17 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
   };
 
   return (
-    <div dir="rtl" className="min-h-screen font-vazirmatn flex flex-col justify-between p-4 sm:p-6 select-none relative" style={{ background: '#f7faf9', color: '#111' }}>
+    <div dir="rtl" className="min-h-[100dvh] font-vazirmatn flex flex-col justify-between px-3 py-3 sm:px-6 sm:py-5 select-none relative overflow-x-hidden" style={{ background: 'linear-gradient(180deg,#f4f8f7 0%,#f9fbfa 100%)', color: '#111' }}>
 
       {/* 1. TOP HEADER — icon-only back button, segmented step progress (Hidden on Completion) */}
       {step <= TOTAL_STEPS && (
         <header
-          className="max-w-md mx-auto w-full flex items-center gap-3 pb-3"
+          className="max-w-[520px] mx-auto w-full flex items-center gap-3 pb-3 sticky top-0 z-20 bg-[#f6f9f8]/90 backdrop-blur-xl pt-1"
           style={{ paddingTop: 'max(1.5rem, calc(env(safe-area-inset-top) + 1rem))' }}
         >
           <button
             onClick={goBack}
-            className="w-9 h-9 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-700 shrink-0 active:scale-95 transition-all"
+            className="w-10 h-10 rounded-2xl bg-white/90 border border-slate-200/80 shadow-[0_6px_20px_rgba(15,23,42,.05)] flex items-center justify-center text-slate-700 shrink-0 active:scale-95 hover:bg-white hover:-translate-y-0.5 transition-all duration-200"
           >
             <ArrowLeft className="w-4 h-4 rtl:rotate-180" />
           </button>
@@ -373,7 +373,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
             {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
               <div
                 key={i}
-                className="h-1.5 flex-1 rounded-full transition-all duration-500"
+                className="h-1.5 flex-1 rounded-full transition-all duration-500 shadow-inner"
                 style={{ background: i < step ? TEAL : '#e2e8e5' }}
               />
             ))}
@@ -386,7 +386,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
       )}
 
       {/* 2. MAIN BODY CONTENT */}
-      <main className="max-w-md mx-auto w-full my-auto py-4 space-y-6">
+      <main className="max-w-[520px] mx-auto w-full my-auto py-4 sm:py-7 space-y-6">
 
         {/* STEP 1: CHOOSE PROFILE */}
         {step === 1 && (
@@ -709,7 +709,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
                   placeholder="باسێک لە ئەزموون، ئامراز و حەزەکانت بنووسە..."
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  className="w-full rounded-3xl bg-slate-50 border border-slate-200 focus:border-[#12796b] focus:bg-white outline-none p-4 text-xs text-slate-900 placeholder:text-slate-400 font-medium transition-all"
+                  className="w-full rounded-3xl bg-white/85 border border-slate-200/90 focus:border-[#12796b] focus:bg-white focus:shadow-[0_0_0_4px_rgba(18,121,107,.08),0_8px_24px_rgba(15,23,42,.04)] outline-none p-4 text-xs text-slate-900 placeholder:text-slate-400 font-medium transition-all"
                 />
               </div>
 
@@ -1011,15 +1011,15 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
 
       {/* Terms of Service Modal */}
       {showTermsModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 space-y-4 text-right shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-md">
+          <div className="w-full max-w-[520px] max-h-[88dvh] overflow-hidden bg-white rounded-[28px] p-5 sm:p-6 space-y-4 text-right shadow-2xl ring-1 ring-black/5">
             <h3 className="text-base font-black text-slate-900">📄 مەرجەکانی بەکارهێنانی ئیش خواز</h3>
             <div className="text-xs text-slate-600 space-y-2 max-h-60 overflow-y-auto leading-relaxed">
               <p>١. بەکارهێنانی سەکۆی ئیش خواز دەبێت بەپێی یاساکانی هەرێمی کوردستان بێت.</p>
               <p>٢. بڵاوکردنەوەی هەلی کاری ناڕاست یان وێنەی نەشیاو قەدەغەیە و ئەژمێرەکە ڕاستەوخۆ دەبەسترێت.</p>
               <p>٣. گواستنەوەی سیڤی تەنها لەڕێگەی جزدانی فەرمی ئیش خواز ئەنجام دەدرێت.</p>
             </div>
-            <button onClick={() => setShowTermsModal(false)} className="w-full py-3 rounded-2xl text-white font-black text-sm" style={{ background: TEAL }}>
+            <button onClick={() => setShowTermsModal(false)} className="w-full py-3.5 rounded-2xl text-white font-black text-sm hover:-translate-y-0.5 active:scale-[.985] transition-all" style={{ background: TEAL }}>
               تێگەیشتم ✓
             </button>
           </div>
@@ -1028,15 +1028,15 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
 
       {/* Privacy Policy Modal */}
       {showPrivacyModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-white rounded-3xl p-6 space-y-4 text-right shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-md">
+          <div className="w-full max-w-[520px] max-h-[88dvh] overflow-hidden bg-white rounded-[28px] p-5 sm:p-6 space-y-4 text-right shadow-2xl ring-1 ring-black/5">
             <h3 className="text-base font-black text-slate-900">🔒 سیاسەتی تایبەتمەندی زانیارییەکان</h3>
             <div className="text-xs text-slate-600 space-y-2 max-h-60 overflow-y-auto leading-relaxed">
               <p>١. زانیارییە کەسییەکانت (ژمارەی مۆبایل و سیڤی) 100% پارێزراون.</p>
               <p>٢. تەنها ئەو کۆمپانیایانەی کار بڵاودەکەنەوە مافی بینینی سیڤییەکەت هەیە بەپێی داواکاری.</p>
               <p>٣. هیچ زانیارییەک بە لایەنی سێیەم نادرێت.</p>
             </div>
-            <button onClick={() => setShowPrivacyModal(false)} className="w-full py-3 rounded-2xl text-white font-black text-sm" style={{ background: TEAL }}>
+            <button onClick={() => setShowPrivacyModal(false)} className="w-full py-3.5 rounded-2xl text-white font-black text-sm hover:-translate-y-0.5 active:scale-[.985] transition-all" style={{ background: TEAL }}>
               تێگەیشتم ✓
             </button>
           </div>

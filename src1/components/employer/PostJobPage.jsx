@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { JOB_SECTORS } from '../../data/jobSectors';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { apiService } from '../../services/api';
@@ -56,6 +57,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [jobType, setJobType] = useState('');
+  const [sector, setSector] = useState(''); // حکوومی / تایبەت / بازرگانی ...
   const [workplaceType, setWorkplaceType] = useState('onSite');
   const [salaryMin, setSalaryMin] = useState(1200000);
   const [salaryMax, setSalaryMax] = useState(1800000);
@@ -97,7 +99,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
     setSkills(prev => prev.filter(x => x !== s));
   };
 
-  const basicsDone = Boolean(title.trim() && category);
+  const basicsDone = Boolean(title.trim() && category && sector);
   const locationDone = Boolean(selectedGov);
   const deadlineDone = Boolean(deadline);
 
@@ -108,6 +110,10 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
     }
     if (!category) {
       setErrorMsg('بوار پێویستە.');
+      return;
+    }
+    if (!sector) {
+      setErrorMsg('جۆری کەرت هەڵبژێرە (حکوومی، تایبەت، بازرگانی ...).');
       return;
     }
     if (!token) {
@@ -123,6 +129,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
         title_ku: title.trim(),
         title: title.trim(),
         category: category,
+        sector,
         job_type: jobType,
         workplace_type: workplaceType,
         governorate_id: selectedGov,
@@ -293,6 +300,27 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
                   </select>
                   <ChevronDown className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8a9e98] pointer-events-none" />
                 </div>
+              </Field>
+
+              <Field label="جۆری کەرت">
+                <div className="flex flex-wrap gap-2">
+                  {JOB_SECTORS.map(sec => (
+                    <button
+                      key={sec.id}
+                      type="button"
+                      onClick={() => setSector(sec.id)}
+                      aria-pressed={sector === sec.id}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-black border transition-all ${
+                        sector === sec.id
+                          ? 'bg-[#12796b] border-[#12796b] text-white shadow-xs'
+                          : 'bg-white border-[#e4eae7] text-[#62736e] hover:border-[#12796b]/40 hover:text-[#111d1a]'
+                      }`}
+                    >
+                      {sec.label}
+                    </button>
+                  ))}
+                </div>
+                {!sector && <p className="mt-1.5 text-[10px] font-bold text-[#8a9e98]">پێویستە — ئەم هەلە کارە لە چ کەرتێکە؟</p>}
               </Field>
 
               <Field label="جۆری کات">

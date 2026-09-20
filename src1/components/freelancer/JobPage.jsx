@@ -4,11 +4,15 @@ import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { readFileAsDataUri } from '../../utils/file';
 import { apiService } from '../../services/api';
+import { PageHeader } from '../layout/PageHeader';
+import { JobDescription } from './JobDescription';
+import { sectorLabel } from '../../data/jobSectors';
+import { useScrollLock } from '../../utils/useScrollLock';
 import {
   ArrowRight, Heart, Bookmark, Share2, BadgeCheck, Check, CheckCircle2,
   Send, Copy, IdCard, Upload, FileText, Loader2, AlertCircle, Zap, Crown,
   Phone, Mail, Calendar, Eye, Users, Briefcase, X, Sparkles, ShieldCheck,
-  ChevronRight, Info
+  ChevronRight, Info, CreditCard
 } from 'lucide-react';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
@@ -118,9 +122,10 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
     return () => { cancelled = true; };
   }, [isOpen, user, token]);
 
-  // Opening a job (or moving between the apply steps) starts at the top —
-  // the list you came from leaves its scroll offset behind otherwise.
-  useEffect(() => { window.scrollTo(0, 0); }, [job?.id, step]);
+  // Opening a job starts at the top — the list you came from leaves its scroll offset behind otherwise.
+  useEffect(() => { window.scrollTo(0, 0); }, [job?.id]);
+  // While any apply dialog is open the page behind it is frozen.
+  useScrollLock(step !== 'detail');
 
   if (!job) {
     return (
@@ -175,6 +180,8 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
   // claiming "VIP" here was misleading (every free-tier user saw it, then
   // got confused when a later application suddenly demanded real payment).
   const freeCreditsLeft = Number(user?.plan_credits) || 0;
+  // Pro / VIP / free-with-credits (and admin/owner) apply with a credit — no payment step at all.
+  const hasCredit = freeCreditsLeft > 0 || user?.role === 'admin' || user?.role === 'owner';
 
   const handleCopyFastpay = () => {
     soundService.playTick?.();
@@ -220,6 +227,8 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
       addToast?.({ title: 'سیڤیەک هەڵبژێرە', message: 'تکایە یەکێک لە سیڤییەکانت هەڵبژێرە.', type: 'warning' });
       return;
     }
+    // A credit pays for it: send straight away. Only people without one see the payment step.
+    if (hasCredit) { handleFinalSubmit(true); return; }
     setStep('fastpay');
   };
 
@@ -255,6 +264,26 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
   };
 
 
+  // No credit: pay this application's fee with ZeraPay (hosted payment page), then the
+  // server credits the application when Zera Payment confirms it.
+  const handleZeraPay = async () => {
+    if (hasAlreadyApplied || isSubmitting) return;
+    soundService.playTick?.();
+    setIsSubmitting(true);
+    const res = await apiService.applyWithZeraPay({
+      job_id: job.id,
+      cover_letter: coverLetter.trim(),
+      cv_url: cvMode === 'upload' && cvFile ? cvFile.dataUri : (user?.cv_url || undefined),
+      resume_id: cvMode === 'resume' ? selectedResumeId : undefined,
+    }, token);
+    if (res?.success && res.paymentUrl) {
+      window.location.href = res.paymentUrl;
+      return;
+    }
+    setIsSubmitting(false);
+    addToast?.({ title: 'پارەدان دەستپێنەکرا', message: res?.message || 'تکایە دووبارە هەوڵبدەرەوە.', type: 'warning' });
+  };
+
   const handleOpenPlans = () => {
     soundService.playTick?.();
     onNavigate?.('plans');
@@ -282,743 +311,586 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
       addToast?.({ title: 'کۆپیکرا ✓', message: 'لینکی کارەکە کۆپیکرا.', type: 'success' });
     }
   };
+  const detailStats = [
+    ['مووچە', salaryText, 'text-[#12796b]'],
+    ['جۆری کار', jobType, 'text-[#111d1a]'],
+    ['شێوازی کار', workplace, 'text-[#111d1a]'],
+    ['بینین', viewCount.toLocaleString(), 'text-[#111d1a]'],
+  ];
 
   return (
     <div
       dir="rtl"
-      className="min-h-screen pb-24 lg:pb-10 font-vazirmatn"
-      style={{ fontFamily: NK, background: '#f4f7f6' }}
+      className="min-h-[100dvh] w-full bg-[#f3f6f5] text-[#111d1a]"
+      style={{ fontFamily: NK }}
     >
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".pdf,.doc,.docx"
-        onChange={handleFileChange}
-        className="hidden"
-      />
+      {/* Premium page shell */}
+      <div className="min-h-[100dvh]">
+        {/* Header — the shared page header; save/share stay available on desktop as a toolbar row */}
+        <PageHeader
+          title={title}
+          onBack={() => { soundService.playTick?.(); onClose(); }}
+          actions={[
+            { icon: Bookmark, label: 'پاشەکەوتکردن', onClick: () => { soundService.playTick?.(); toggleSaveJob(job.id); }, active: isSaved },
+            { icon: Share2, label: 'هاوبەشکردن', onClick: handleShare },
+          ]}
+        />
 
-      {/* Page container — centered column on desktop under the shared header */}
-      <div className="bg-[#f4f7f6] w-full max-w-2xl mx-auto min-h-screen lg:min-h-0 lg:my-6 lg:rounded-[28px] lg:border lg:border-[#e8eeec] lg:shadow-sm lg:overflow-hidden flex flex-col justify-between">
+        {/* Hero */}
+        <section className="relative overflow-hidden bg-[#101b18] text-white">
+          <div className="pointer-events-none absolute -right-28 -top-32 h-96 w-96 rounded-full bg-[#12796b]/25 blur-3xl" />
+          <div className="pointer-events-none absolute -left-28 -bottom-44 h-[430px] w-[430px] rounded-full bg-[#43c8ad]/10 blur-3xl" />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.045]"
+            style={{
+              backgroundImage:
+                'linear-gradient(rgba(255,255,255,.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.8) 1px, transparent 1px)',
+              backgroundSize: '36px 36px',
+            }}
+          />
 
-        {/* ══════════════════════════════════════════════════════════════
-            SCREEN 1: JOB DETAIL
-        ══════════════════════════════════════════════════════════════ */}
-        {step === 'detail' && (
-          <div className="flex-1 flex flex-col justify-between">
-            {/* Top Bar */}
-            <div
-              className="bg-white px-5 sm:px-6 border-b border-[#e8eeec] flex items-center justify-between shrink-0 sticky top-0 z-30 lg:static"
-              style={{
-                paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 12px))',
-                paddingBottom: '14px',
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    soundService.playTick?.();
-                    toggleSaveJob(job.id);
-                  }}
-                  className={`w-10 h-10 rounded-2xl flex items-center justify-center border transition active:scale-95 ${
-                    isSaved ? 'bg-[#d4f7ee] border-[#b4eedf] text-[#12796b]' : 'bg-[#f4f7f6] border-[#e8eeed] text-[#5a6b65]'
-                  }`}
-                  aria-label="پاشەکەوتکردن"
-                >
-                  <Bookmark className={`w-4.5 h-4.5 ${isSaved ? 'fill-[#12796b]' : ''}`} />
-                </button>
-
-                <button
-                  onClick={handleShare}
-                  className="w-10 h-10 rounded-2xl bg-[#f4f7f6] border border-[#e8eeed] flex items-center justify-center text-[#5a6b65] transition active:scale-95"
-                  aria-label="هاوبەشکردن"
-                >
-                  <Share2 className="w-4.5 h-4.5" />
-                </button>
-              </div>
-
-              <button
-                onClick={onClose}
-                className="w-10 h-10 rounded-2xl bg-[#f4f7f6] hover:bg-[#eaf5f2] border border-[#e8eeed] flex items-center justify-center text-[#111d1a] transition active:scale-95"
-                aria-label="داخستن"
-              >
-                <ArrowRight className="w-5 h-5 rtl:rotate-0" />
-              </button>
-            </div>
-
-            {/* Scrollable Content */}
-            <div className="p-5 sm:p-6 space-y-5 flex-1 overflow-y-auto">
-              {/* Company & Title Header */}
-              <div className="text-right space-y-3">
-                <div className="flex items-center justify-end gap-3">
-                  <div>
-                    <div className="flex items-center justify-end gap-1.5 font-bold text-xs text-[#111d1a]">
-                      <BadgeCheck className="w-4 h-4 text-[#12796b]" />
-                      <span>{companyName}</span>
-                    </div>
-                    <div className="text-[11px] text-[#7b8e88] font-bold mt-0.5">
-                      {district ? `${gov}، ${district}` : gov}
-                    </div>
+          <div className="relative mx-auto w-full max-w-[1480px] px-4 py-8 sm:px-6 sm:py-10 lg:px-10 lg:py-14">
+            <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+              <div className="min-w-0">
+                <div className="mb-5 flex items-center gap-4">
+                  <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-2xl border border-white/10 bg-white/10 shadow-xl sm:h-20 sm:w-20">
+                    {companyLogo ? (
+                      <img
+                        src={companyLogo}
+                        alt={companyName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl font-black">{initial}</span>
+                    )}
                   </div>
 
-                  {companyLogo ? (
-                    <img
-                      src={companyLogo}
-                      alt={companyName}
-                      className="w-13 h-13 rounded-2xl object-cover border border-[#beece2] shadow-xs shrink-0 bg-white"
-                    />
-                  ) : (
-                    <div className="w-13 h-13 rounded-2xl bg-[#d4f7ee] border border-[#beece2] flex items-center justify-center text-[#12796b] font-black text-xl shadow-xs shrink-0">
-                      {initial}
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate text-sm font-black">{companyName}</span>
+                      <BadgeCheck className="h-4 w-4 shrink-0 text-[#73dec7]" />
                     </div>
-                  )}
+                    <div className="mt-1 text-xs font-bold text-white/50">
+                      {district ? `${gov} • ${district}` : gov}
+                    </div>
+                  </div>
                 </div>
 
-                <h1 className="text-xl sm:text-2xl font-black text-[#111d1a] tracking-tight leading-snug">
-                  {title}
-                </h1>
-
-                {/* Badges */}
-                <div className="flex items-center gap-2 justify-end flex-wrap pt-1">
+                <div className="mb-4 flex flex-wrap gap-2">
                   {isBoosted && (
-                    <span className="px-3 py-1 rounded-full bg-[#12796b] text-white text-xs font-black inline-flex items-center gap-1 shadow-2xs">
-                      <Sparkles className="w-3 h-3" /> بەرزکراوە
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#12796b] px-3 py-1.5 text-[10px] font-black">
+                      <Sparkles className="h-3 w-3" />
+                      بەرزکراوە
                     </span>
                   )}
                   {isNew && (
-                    <span className="px-3 py-1 rounded-full bg-[#d4f7ee] text-[#12796b] text-xs font-black">
+                    <span className="rounded-full bg-[#d4f7ee] px-3 py-1.5 text-[10px] font-black text-[#126b5e]">
                       نوێ
                     </span>
                   )}
-                  <span className="px-3 py-1 rounded-full bg-white text-[#5a6b65] text-xs font-bold border border-[#e8eeed]">
-                    {jobType}
+                  <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[10px] font-black text-white/80">
+                    {categoryName}
                   </span>
                 </div>
-              </div>
 
-              {/* 2x2 Key Info Grid */}
-              <div className="grid grid-cols-2 gap-3 text-right">
-                <div className="bg-white rounded-2xl p-4 border border-[#e8eeec] shadow-2xs space-y-1">
-                  <span className="text-[11px] font-bold text-[#7b8e88] block">جۆری کار</span>
-                  <span className="text-sm font-black text-[#111d1a] block">{workplace}</span>
-                </div>
+                <h1 className="max-w-4xl text-3xl font-black leading-[1.15] tracking-[-0.035em] sm:text-4xl lg:text-5xl">
+                  {title}
+                </h1>
 
-                <div className="bg-white rounded-2xl p-4 border border-[#e8eeec] shadow-2xs space-y-1">
-                  <span className="text-[11px] font-bold text-[#7b8e88] block">مووچەی مانگانە</span>
-                  <span className="text-sm font-mono font-black text-[#12796b] block">{salaryText}</span>
-                </div>
-
-                <div className="bg-white rounded-2xl p-4 border border-[#e8eeec] shadow-2xs space-y-1">
-                  <span className="text-[11px] font-bold text-[#7b8e88] block">بینین</span>
-                  <span className="text-sm font-mono font-black text-[#111d1a] block">{viewCount}</span>
-                </div>
-
-                <div className="bg-white rounded-2xl p-4 border border-[#e8eeec] shadow-2xs space-y-1">
-                  <span className="text-[11px] font-bold text-[#7b8e88] block">سێکتۆر</span>
-                  <span className="text-sm font-black text-[#111d1a] block">{categoryName}</span>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {[gov, workplace, jobType, sectorLabel(job.sector)].filter(Boolean).map((item) => (
+                    <span
+                      key={item}
+                      className="rounded-xl border border-white/10 bg-white/[0.07] px-3 py-2 text-[10px] font-bold text-white/70"
+                    >
+                      {item}
+                    </span>
+                  ))}
                 </div>
               </div>
 
-              {/* About Job */}
-              {(job.description || skills.length > 0) && (
-                <div className="bg-white rounded-2xl p-5 border border-[#e8eeec] shadow-2xs text-right space-y-2.5">
-                  <h3 className="text-xs font-black text-[#111d1a]">دەربارەی کار</h3>
-                  {job.description && (
-                    <p className="text-xs leading-relaxed text-[#5a6b65] font-medium whitespace-pre-line">
-                      {job.description}
-                    </p>
-                  )}
-
-                  {/* Skills pills */}
-                  {skills.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 justify-end pt-2">
-                      {skills.map((s, idx) => (
-                        <span
-                          key={idx}
-                          className="px-3 py-1 rounded-xl bg-[#f4f7f6] text-[#4a5854] text-[11px] font-bold border border-[#e8eeed]"
-                        >
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+              <div className="grid shrink-0 grid-cols-2 gap-2 sm:min-w-[330px]">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm">
+                  <div className="text-[10px] font-bold text-white/40">مووچە</div>
+                  <div className="mt-1 text-lg font-black text-white">{salaryText}</div>
                 </div>
-              )}
-            </div>
-
-            {/* Bottom Action Bar */}
-            <div
-              className="p-4 bg-white border-t border-[#e8eeec] flex items-center gap-3 shrink-0"
-              style={{
-                paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 14px))',
-              }}
-            >
-              <button
-                onClick={() => {
-                  soundService.playTick?.();
-                  toggleSaveJob(job.id);
-                }}
-                className={`w-13 h-13 rounded-2xl border flex items-center justify-center transition active:scale-95 shrink-0 ${
-                  isSaved ? 'bg-[#d4f7ee] border-[#b4eedf] text-[#12796b]' : 'bg-[#f4f7f6] border-[#e8eeed] text-[#5a6b65]'
-                }`}
-                aria-label="پاشەکەوتکردن"
-              >
-                <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-[#12796b]' : ''}`} />
-              </button>
-
-              <button
-                onClick={handleStartApply}
-                disabled={hasAlreadyApplied}
-                className="flex-1 py-4 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-xs sm:text-sm font-black shadow-[0_4px_14px_rgba(18,121,107,0.3)] active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-50"
-              >
-                {hasAlreadyApplied ? 'پێشتر داواکارییت ناردووە' : `داواکاری بنێرە · ${CV_FEE_DISPLAY}`}
-              </button>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm">
+                  <div className="text-[10px] font-bold text-white/40">بینین</div>
+                  <div className="mt-1 flex items-center gap-2 text-lg font-black text-white">
+                    <Eye className="h-4 w-4 text-[#73dec7]" />
+                    {viewCount.toLocaleString()}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        )}
+        </section>
 
-        {/* ══════════════════════════════════════════════════════════════
-            SCREEN 2: APPLY 1/3 · CV MODE
-        ══════════════════════════════════════════════════════════════ */}
-        {step === 'cv_mode' && (
-          <div className="flex-1 flex flex-col justify-between">
-            {/* Top Bar with Step Progress */}
-            <div
-              className="bg-white px-5 sm:px-6 border-b border-[#e8eeec] space-y-3 shrink-0"
-              style={{
-                paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 12px))',
-                paddingBottom: '14px',
-              }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-black text-[#12796b]">1/3</span>
-                <button
-                  onClick={() => setStep('detail')}
-                  className="w-9 h-9 rounded-2xl bg-[#f4f7f6] hover:bg-[#eaf5f2] border border-[#e8eeed] flex items-center justify-center text-[#111d1a] transition active:scale-95"
-                  aria-label="گەڕانەوە"
-                >
-                  <ArrowRight className="w-4.5 h-4.5 rtl:rotate-0" />
-                </button>
-              </div>
+        {/* Main content */}
+        <main className="mx-auto w-full max-w-[1480px] px-3 py-4 pb-28 sm:px-6 sm:py-6 lg:px-10 lg:py-8 lg:pb-12">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_390px]">
+            {/* Left */}
+            <div className="min-w-0 space-y-5">
+              <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {detailStats.map(([label, value, valueClass]) => (
+                  <div
+                    key={label}
+                    className="rounded-2xl border border-[#e2eae7] bg-white p-4 shadow-[0_8px_25px_rgba(17,29,26,.035)]"
+                  >
+                    <div className="mb-1.5 text-[10px] font-bold text-[#87948f]">{label}</div>
+                    <div className={`truncate text-sm font-black ${valueClass}`}>{value}</div>
+                  </div>
+                ))}
+              </section>
 
-              {/* 3-segment progress indicator */}
-              <div className="flex gap-1.5">
-                <div className="h-1.5 flex-1 rounded-full bg-[#12796b]" />
-                <div className="h-1.5 flex-1 rounded-full bg-[#e0eae6]" />
-                <div className="h-1.5 flex-1 rounded-full bg-[#e0eae6]" />
-              </div>
+              <section className="rounded-3xl border border-[#e2eae7] bg-white p-5 shadow-[0_8px_30px_rgba(17,29,26,.04)] sm:p-7">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="mb-1 text-[10px] font-black text-[#12796b]">JOB DETAILS</div>
+                    <h2 className="text-xl font-black">دەربارەی هەلی کار</h2>
+                  </div>
+                  <div className="hidden rounded-xl bg-[#edf8f5] px-3 py-2 text-[10px] font-black text-[#12796b] sm:block">
+                    {categoryName}
+                  </div>
+                </div>
+
+                <JobDescription
+                  text={job.description ||
+                    job.description_ku ||
+                    job.details ||
+                    'زانیارییەکانی ئەم هەلی کارە لەلایەن دامەزرێنەرەوە دیاری نەکراون.'}
+                />
+              </section>
+
+              <section className="rounded-3xl border border-[#e2eae7] bg-white p-5 shadow-[0_8px_30px_rgba(17,29,26,.04)] sm:p-7">
+                <div className="mb-5 flex items-center justify-between">
+                  <h2 className="text-xl font-black">تواناکانی پێویست</h2>
+                  <span className="text-[10px] font-bold text-[#87948f]">{skills.length} تواناکە</span>
+                </div>
+
+                {skills.length > 0 ? (
+                  <div className="flex flex-wrap gap-2.5">
+                    {skills.map((skill, index) => (
+                      <span
+                        key={`${String(skill)}-${index}`}
+                        className="rounded-xl border border-[#d4ece5] bg-[#eff9f6] px-3.5 py-2.5 text-xs font-black text-[#146e61]"
+                      >
+                        {String(skill)}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-[#f7f9f8] p-5 text-sm font-bold text-[#7d8b86]">
+                    تواناکانی تایبەت بۆ ئەم کارە دیاری نەکراون.
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-3xl border border-[#e2eae7] bg-white p-5 shadow-[0_8px_30px_rgba(17,29,26,.04)] sm:p-7">
+                <div className="mb-6">
+                  <div className="mb-1 text-[10px] font-black text-[#12796b]">HOW IT WORKS</div>
+                  <h2 className="text-xl font-black">چۆن داواکاری بکەیت؟</h2>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {[
+                    ['١', 'CV هەڵبژێرە', 'CV ـی پرۆفایل، CV ـی دروستکراو یان فایلێکی نوێ هەڵبژێرە.'],
+                    ['٢', 'پێداچوونەوە', 'زانیارییەکانت پشکنینەوە بکە و ئەگەر پێویست بوو نامە زیاد بکە.'],
+                    ['٣', 'داواکاری بنێرە', 'داواکارییەکەت بنێرە و دۆخی داواکارییەکە بەدواداچوون بکە.'],
+                  ].map(([num, heading, body]) => (
+                    <div key={num} className="rounded-2xl bg-[#f7faf9] p-4">
+                      <div className="mb-4 grid h-9 w-9 place-items-center rounded-xl bg-[#dff5ef] text-xs font-black text-[#12796b]">
+                        {num}
+                      </div>
+                      <div className="text-sm font-black">{heading}</div>
+                      <div className="mt-1.5 text-xs font-medium leading-6 text-[#7b8984]">{body}</div>
+                    </div>
+                  ))}
+                </div>
+              </section>
             </div>
 
-            {/* Scrollable Content */}
-            <div className="p-5 sm:p-6 space-y-5 flex-1 overflow-y-auto text-right">
-              <div className="space-y-1">
-                <h2 className="text-xl font-black text-[#111d1a]">CV چۆن بنێریت؟</h2>
-                <p className="text-xs text-[#7b8e88] font-bold">
-                  پڕۆفایلەکەت وەک CV بنێرە، یان فایلێکی دەرەکی باربکە.
-                </p>
-              </div>
-
-              {/* Option 1: Profile as CV */}
-              <div
-                onClick={() => {
-                  soundService.playTick?.();
-                  setCvMode('profile');
-                }}
-                className={`p-4 sm:p-5 rounded-2xl border-2 transition-all cursor-pointer relative shadow-2xs ${
-                  cvMode === 'profile'
-                    ? 'bg-[#e8f7f4] border-[#12796b]'
-                    : 'bg-white border-[#e8eeec] hover:border-[#12796b]/40'
-                }`}
-              >
-                {cvMode === 'profile' && (
-                  <div className="absolute top-4 left-4 w-5 h-5 rounded-full bg-[#12796b] text-white flex items-center justify-center shadow-xs">
-                    <Check className="w-3.5 h-3.5" />
-                  </div>
-                )}
-
-                <div className="flex items-start justify-end gap-3.5 pr-1">
-                  <div>
-                    <h4 className="text-sm font-black text-[#111d1a]">پڕۆفایلم وەک CV</h4>
-                    <p className="text-[11px] text-[#5a6b65] font-medium mt-1 leading-relaxed">
-                      ئەزموون، شارەزایی و زانیاری پەیوەندی ئێستا لە پڕۆفایلەکەتدا.
+            {/* Desktop application card */}
+            <aside className="hidden lg:block">
+              <div className="sticky top-24 space-y-4">
+                <section className="overflow-hidden rounded-3xl border border-[#e2eae7] bg-white shadow-[0_14px_40px_rgba(17,29,26,.07)]">
+                  <div className="bg-[#101b18] p-6 text-white">
+                    <div className="mb-2 inline-flex rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[9px] font-black text-white/60">
+                      KARNAMA
+                    </div>
+                    <h2 className="text-xl font-black">ئامادەی داواکارییت؟</h2>
+                    <p className="mt-2 text-xs font-medium leading-6 text-white/50">
+                      بە چەند هەنگاوێکی سادە CV ـەکەت هەڵبژێرە و داواکارییەکەت بنێرە.
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-xl bg-[#12796b] text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <IdCard className="w-5 h-5" />
-                  </div>
-                </div>
-              </div>
 
-              {/* Option 2: Upload a file */}
-              <div
-                onClick={() => {
-                  soundService.playTick?.();
-                  setCvMode('upload');
-                  fileInputRef.current?.click();
-                }}
-                className={`p-4 sm:p-5 rounded-2xl border-2 transition-all cursor-pointer relative shadow-2xs ${
-                  cvMode === 'upload'
-                    ? 'bg-[#e8f7f4] border-[#12796b]'
-                    : 'bg-white border-[#e8eeec] hover:border-[#12796b]/40'
-                }`}
-              >
-                {cvMode === 'upload' && (
-                  <div className="absolute top-4 left-4 w-5 h-5 rounded-full bg-[#12796b] text-white flex items-center justify-center shadow-xs">
-                    <Check className="w-3.5 h-3.5" />
-                  </div>
-                )}
-
-                <div className="flex items-start justify-end gap-3.5 pr-1">
-                  <div>
-                    <h4 className="text-sm font-black text-[#111d1a]">
-                      {cvFile ? cvFile.name : 'فایلێک باربکە'}
-                    </h4>
-                    <p className="text-[11px] text-[#5a6b65] font-medium mt-1">
-                      {cvFile ? 'فایل بە سەرکەوتوویی دیاریکرا' : 'PDF یان Word تا ٥ مێگابایت.'}
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 rounded-xl bg-[#f4f7f6] text-[#4a5854] border border-[#e8eeed] flex items-center justify-center shrink-0">
-                    <Upload className="w-5 h-5" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Option 3: Pick a saved resume (only if the freelancer has any) */}
-              {resumes.length > 0 && (
-                <div
-                  onClick={() => {
-                    soundService.playTick?.();
-                    setCvMode('resume');
-                  }}
-                  className={`p-4 sm:p-5 rounded-2xl border-2 transition-all cursor-pointer relative shadow-2xs ${
-                    cvMode === 'resume'
-                      ? 'bg-[#e8f7f4] border-[#12796b]'
-                      : 'bg-white border-[#e8eeec] hover:border-[#12796b]/40'
-                  }`}
-                >
-                  {cvMode === 'resume' && (
-                    <div className="absolute top-4 left-4 w-5 h-5 rounded-full bg-[#12796b] text-white flex items-center justify-center shadow-xs">
-                      <Check className="w-3.5 h-3.5" />
-                    </div>
-                  )}
-
-                  <div className="flex items-start justify-end gap-3.5 pr-1">
-                    <div>
-                      <h4 className="text-sm font-black text-[#111d1a]">سیڤیەکی پاشەکەوتکراو</h4>
-                      <p className="text-[11px] text-[#5a6b65] font-medium mt-1 leading-relaxed">
-                        یەکێک لە سیڤییە دیزاینکراوەکانت هەڵبژێرە، گونجاوترین بۆ ئەم کارە.
-                      </p>
-                    </div>
-                    <div className="w-10 h-10 rounded-xl bg-[#12796b] text-white flex items-center justify-center shrink-0 shadow-xs">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                  </div>
-
-                  {cvMode === 'resume' && (
-                    <div className="mt-4 space-y-2" onClick={e => e.stopPropagation()}>
-                      {resumes.map(r => (
-                        <div
-                          key={r.id}
-                          onClick={() => {
-                            soundService.playTick?.();
-                            setSelectedResumeId(r.id);
-                          }}
-                          className={`flex items-center justify-between gap-2 p-3 rounded-xl border cursor-pointer transition ${
-                            selectedResumeId === r.id
-                              ? 'bg-white border-[#12796b]'
-                              : 'bg-[#f8faf9] border-[#e8eeed]'
-                          }`}
-                        >
-                          <span className="text-xs font-bold text-[#111d1a] truncate flex-1 text-right">{r.title}</span>
-                          {selectedResumeId === r.id && <Check className="w-4 h-4 text-[#12796b] shrink-0" />}
+                  <div className="p-5">
+                    {hasAlreadyApplied ? (
+                      <div className="rounded-2xl border border-[#c9ece3] bg-[#effaf7] p-4">
+                        <div className="flex items-center gap-2 text-sm font-black text-[#126b5e]">
+                          <CheckCircle2 className="h-5 w-5" />
+                          داواکاری نێردراوە
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+                        <p className="mt-2 text-xs font-bold leading-6 text-[#66817a]">
+                          پێشتر بۆ ئەم هەلی کارە داواکاری ناردوویت.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => onNavigate?.('my_applications')}
+                          className="mt-4 w-full rounded-xl bg-[#111d1a] py-3 text-xs font-black text-white"
+                        >
+                          داواکارییەکانم ببینە
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleStartApply}
+                          className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-[#12796b] px-5 py-4 text-sm font-black text-white shadow-[0_10px_25px_rgba(18,121,107,.2)] transition hover:bg-[#0d5c50] active:scale-[.99]"
+                        >
+                          <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+                          <Send className="relative h-4 w-4" />
+                          <span className="relative">ئێستا داواکاری بکە</span>
+                        </button>
 
+                        <div className="mt-3 grid grid-cols-2 gap-2">
+                          <div className="rounded-xl bg-[#f6f9f8] p-3">
+                            <div className="text-[9px] font-bold text-[#87948f]">کرێ</div>
+                            <div className="mt-1 text-sm font-black text-[#111d1a]">{CV_FEE_DISPLAY}</div>
+                          </div>
+                          <div className="rounded-xl bg-[#f6f9f8] p-3">
+                            <div className="text-[9px] font-bold text-[#87948f]">کریدیتی بەخۆڕایی</div>
+                            <div className="mt-1 text-sm font-black text-[#12796b]">
+                              {freeCreditsLeft.toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
 
-              {/* ═══════════════════════════════════════════════════════════
-                  PREMIUM UPGRADE EXPERIENCE
-                  Designed as a high-end subscription moment, not a basic ad.
-              ═══════════════════════════════════════════════════════════ */}
-              <section className="relative overflow-hidden rounded-[28px] border border-[#1f4039] bg-[#0b1714] text-white shadow-[0_20px_55px_rgba(8,30,25,0.22)]">
-                {/* Ambient glow */}
-                <div className="absolute -top-20 -right-16 w-48 h-48 rounded-full bg-[#27c5a6]/20 blur-3xl pointer-events-none" />
-                <div className="absolute -bottom-24 -left-16 w-52 h-52 rounded-full bg-[#12796b]/20 blur-3xl pointer-events-none" />
-                <div className="absolute inset-0 opacity-[0.045] pointer-events-none"
-                  style={{
-                    backgroundImage:
-                      'radial-gradient(circle at 1px 1px, rgba(255,255,255,.9) 1px, transparent 0)',
-                    backgroundSize: '18px 18px'
-                  }}
-                />
-
-                <div className="relative p-4 sm:p-5">
-                  {/* Header */}
-                  <div className="flex items-start justify-between gap-3">
                     <button
                       type="button"
                       onClick={() => {
                         soundService.playTick?.();
-                        onNavigate?.('plans');
+                        toggleSaveJob(job.id);
                       }}
-                      className="shrink-0 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-[10px] font-black text-white transition active:scale-95"
+                      className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border py-3.5 text-xs font-black transition ${
+                        isSaved
+                          ? 'border-[#b8e8dc] bg-[#effaf7] text-[#12796b]'
+                          : 'border-[#e2eae7] bg-white text-[#5b6964] hover:bg-[#f7faf9]'
+                      }`}
                     >
-                      هەموو پلانەکان
+                      <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
+                      {isSaved ? 'پاشەکەوتکراوە' : 'پاشەکەوتکردن'}
                     </button>
 
-                    <div className="text-right">
-                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#d4f7ee]/10 border border-[#d4f7ee]/15 text-[#a8f1df] text-[9px] font-black mb-2">
-                        <Sparkles className="w-3 h-3" />
-                        KARNAMA PRO
-                      </div>
-                      <h3 className="text-base sm:text-lg font-black tracking-tight">
-                        CV ـەکەت بۆ هەر کارێک تایبەت بکە
-                      </h3>
-                      <p className="mt-1 text-[10px] sm:text-[11px] leading-relaxed text-white/55 font-medium">
-                        یەک CV بۆ هەموو کارەکان نییە. هەڵبژاردەی زیاتر،
-                        پڕۆفایلی پیشەیی‌تر و دەرفەتی زیاتر بۆ پیشاندانی تواناکانت.
-                      </p>
+                    <div className="mt-5 flex items-start gap-2 border-t border-[#edf1ef] pt-5 text-[10px] font-bold leading-5 text-[#84918c]">
+                      <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#12796b]" />
+                      زانیارییەکانی داواکارییەکەت بە شێوەی پارێزراو بەڕێوەدەبرێن.
                     </div>
                   </div>
+                </section>
 
-                  {/* Feature strip */}
-                  <div className="grid grid-cols-3 gap-2 mt-4">
-                    <div className="rounded-2xl bg-white/[0.055] border border-white/[0.07] p-2.5 text-right">
-                      <div className="w-7 h-7 rounded-lg bg-[#27c5a6]/15 text-[#8be8d4] flex items-center justify-center mb-2">
-                        <FileText className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="text-[11px] font-black">CV ـی زیاتر</div>
-                      <div className="text-[9px] text-white/40 mt-0.5">بۆ ئامانجی جیاواز</div>
+                {!hasAlreadyApplied && (
+                  <section className="overflow-hidden rounded-3xl bg-[#101b18] p-5 text-white shadow-[0_14px_40px_rgba(17,29,26,.08)]">
+                    <div className="flex items-center gap-2 text-[#83e5d0]">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="text-[10px] font-black">KARNAMA PRO</span>
                     </div>
+                    <h3 className="mt-2 text-base font-black">CV ـەکانت بۆ هەر کارێک ڕێکبخە</h3>
+                    <p className="mt-1 text-[10px] font-medium leading-5 text-white/45">
+                      بۆ هەر هەلی کارێک CV ـی گونجاو هەڵبژێرە و پڕۆفایلی پیشەیی‌تر دروست بکە.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleOpenPlans}
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[10px] font-black text-[#111d1a]"
+                    >
+                      <Crown className="h-4 w-4 text-[#12796b]" />
+                      {isProPlusPlan ? 'پلانەکەت بەڕێوەبەرە' : isProPlan ? 'بەرزکردنەوە بۆ Pro+' : 'بینینی پلانەکان'}
+                      <ChevronRight className="h-4 w-4 text-[#12796b]" />
+                    </button>
+                  </section>
+                )}
+              </div>
+            </aside>
+          </div>
+        </main>
 
-                    <div className="rounded-2xl bg-white/[0.055] border border-white/[0.07] p-2.5 text-right">
-                      <div className="w-7 h-7 rounded-lg bg-[#27c5a6]/15 text-[#8be8d4] flex items-center justify-center mb-2">
-                        <Eye className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="text-[11px] font-black">بینینی کۆمپانیا</div>
-                      <div className="text-[9px] text-white/40 mt-0.5">CV ـی هەڵبژێردراو</div>
-                    </div>
+        {/* Mobile bottom CTA */}
+        {step === 'detail' && !hasAlreadyApplied && (
+          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#dfe8e4] bg-white/95 p-3 backdrop-blur-xl lg:hidden" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+            <button
+              type="button"
+              onClick={handleStartApply}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#12796b] py-4 text-sm font-black text-white shadow-[0_8px_25px_rgba(18,121,107,.22)] active:scale-[.99]"
+            >
+              <Send className="h-4 w-4" />
+              ئێستا داواکاری بکە
+            </button>
+          </div>
+        )}
 
-                    <div className="rounded-2xl bg-white/[0.055] border border-white/[0.07] p-2.5 text-right">
-                      <div className="w-7 h-7 rounded-lg bg-[#27c5a6]/15 text-[#8be8d4] flex items-center justify-center mb-2">
-                        <Zap className="w-3.5 h-3.5" />
-                      </div>
-                      <div className="text-[11px] font-black">ئامادەی کار</div>
-                      <div className="text-[9px] text-white/40 mt-0.5">خێراتر و ڕێکخراوتر</div>
-                    </div>
-                  </div>
+        {/* Step 1 — CV selection */}
+        {step === 'cv_mode' && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-5">
+            <div className="max-h-[94dvh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-[30px] bg-white p-5 shadow-2xl sm:rounded-[30px] sm:p-7">
+              <div className="mb-6 flex items-start justify-between gap-4">
+                <div>
+                  <div className="mb-2 text-[10px] font-black text-[#12796b]">STEP 1 OF 3</div>
+                  <h2 className="text-2xl font-black">CV ـەکەت هەڵبژێرە</h2>
+                  <p className="mt-1 text-xs font-medium leading-6 text-[#7b8984]">
+                    ئەو CV ـە هەڵبژێرە کە زۆرترین گونجاوی بۆ ئەم کارە هەیە.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStep('detail')}
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f4f7f6] text-[#65736e]"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
 
-                  {/* Plan comparison */}
-                  <div className="mt-4 grid grid-cols-2 gap-2.5">
-                    <div className="rounded-2xl border border-[#27c5a6]/35 bg-[#12796b]/15 p-3 text-right">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="px-2 py-1 rounded-lg bg-[#27c5a6]/15 text-[#8be8d4] text-[9px] font-black">
-                          ٣ CV
-                        </span>
-                        <span className="text-sm font-black">Pro</span>
-                      </div>
-                      <div className="mt-2 text-[10px] text-white/55 font-medium">
-                        بۆ کارە سەرەکییەکان و چەند جۆرێکی پیشە
-                      </div>
-                    </div>
+              <div className="mb-6 flex gap-1.5">
+                <div className="h-1.5 flex-1 rounded-full bg-[#12796b]" />
+                <div className="h-1.5 flex-1 rounded-full bg-[#e1e9e6]" />
+                <div className="h-1.5 flex-1 rounded-full bg-[#e1e9e6]" />
+              </div>
 
-                    <div className="relative rounded-2xl border border-[#d8b66a]/55 bg-gradient-to-br from-[#8f6a1d]/20 to-[#d8b66a]/5 p-3 text-right overflow-hidden">
-                      <div className="absolute top-0 left-0 px-2 py-1 rounded-br-xl rounded-tl-2xl bg-[#d8b66a] text-[#1d1608] text-[8px] font-black">
-                        PRO+
-                      </div>
-                      <div className="flex items-center justify-between gap-2 pt-1">
-                        <span className="px-2 py-1 rounded-lg bg-[#d8b66a]/15 text-[#f2d98d] text-[9px] font-black">
-                          ٦ CV
-                        </span>
-                        <span className="text-sm font-black">Pro+</span>
-                      </div>
-                      <div className="mt-2 text-[10px] text-white/55 font-medium">
-                        بۆ کۆمپانیای جیاواز و هەلی کارێکی زۆرتر
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Strong CTA */}
-                  <button
-                    type="button"
+              <div className="grid gap-3">
+                {[
+                  ['profile', IdCard, 'CV ـی پرۆفایل', 'زانیارییەکانی پرۆفایلی Karnama بەکاربهێنە.'],
+                  ['upload', Upload, 'بارکردنی CV', 'PDF یان Word تا ٥MB.'],
+                  ...(resumes.length
+                    ? [['resume', FileText, 'CV ـی دروستکراو', `${resumes.length} CV ـت بەردەستە.`]]
+                    : []),
+                ].map(([mode, Icon, heading, body]) => (
+                  <div
+                    key={mode}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => {
                       soundService.playTick?.();
-                      onNavigate?.('plans');
+                      setCvMode(mode);
                     }}
-                    className="group relative w-full mt-4 overflow-hidden rounded-2xl bg-white text-[#0b1714] py-3.5 px-4 shadow-[0_10px_28px_rgba(0,0,0,.22)] hover:shadow-[0_14px_34px_rgba(0,0,0,.3)] active:scale-[0.99] transition"
+                    className={`relative cursor-pointer rounded-2xl border-2 p-4 transition ${
+                      cvMode === mode
+                        ? 'border-[#12796b] bg-[#eaf8f5]'
+                        : 'border-[#e5ece9] bg-white hover:border-[#bdddd5]'
+                    }`}
                   >
-                    <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-[#d4f7ee]/70 to-transparent" />
-                    <span className="relative flex items-center justify-center gap-2">
-                      <Crown className="w-4 h-4 text-[#12796b]" />
-                      <span className="text-xs font-black">
-                        {isProPlusPlan
-                          ? 'پلانەکەت بەڕێوەبەرە'
-                          : isProPlan
-                            ? 'بەرزکردنەوە بۆ Pro+'
-                            : 'بەرزکردنەوەی پلان'}
-                      </span>
-                      <ChevronRight className="w-4 h-4 rtl:rotate-180 text-[#12796b]" />
-                    </span>
-                  </button>
+                    {cvMode === mode && (
+                      <div className="absolute left-4 top-4 grid h-5 w-5 place-items-center rounded-full bg-[#12796b] text-white">
+                        <Check className="h-3 w-3" />
+                      </div>
+                    )}
 
-                  <div className="flex items-center justify-center gap-1.5 mt-2.5 text-[9px] text-white/35 font-medium">
-                    <ShieldCheck className="w-3 h-3" />
-                    <span>دەتوانیت پلانەکەت لە بەشی پلانەکان بگۆڕیت</span>
+                    <div className="flex items-center gap-3">
+                      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#dff5ef] text-[#12796b]">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-black">{heading}</div>
+                        <div className="mt-1 text-xs font-medium text-[#7b8984]">{body}</div>
+                      </div>
+                    </div>
+
+                    {mode === 'upload' && cvMode === 'upload' && (
+                      <div className="mt-4">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            fileInputRef.current?.click();
+                          }}
+                          className="w-full rounded-xl border border-dashed border-[#9ccfc2] bg-white px-4 py-3 text-xs font-black text-[#12796b]"
+                        >
+                          {cvFile ? cvFile.name : 'هەڵبژاردنی فایل'}
+                        </button>
+                      </div>
+                    )}
+
+                    {mode === 'resume' && cvMode === 'resume' && (
+                      <div className="mt-4 grid gap-2">
+                        {resumes.map((resume) => (
+                          <button
+                            key={resume.id}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedResumeId(resume.id);
+                            }}
+                            className={`w-full rounded-xl border p-3 text-right ${
+                              selectedResumeId === resume.id
+                                ? 'border-[#9ccfc2] bg-white'
+                                : 'border-[#e5ece9] bg-[#f8faf9]'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-black">
+                                {resume.title || resume.name || `CV ${resume.id}`}
+                              </span>
+                              {selectedResumeId === resume.id && (
+                                <CheckCircle2 className="h-4 w-4 text-[#12796b]" />
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              </section>
+                ))}
+              </div>
 
-              {/* Optional Cover Letter */}
-              <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between text-xs font-bold text-[#7b8e88]">
-                  <span className="font-mono">({coverLetter.length}/300)</span>
-                  <label className="text-[#111d1a] font-black">پەیامی تەواوکەر (ئارەزوومەندانە)</label>
+              <div className="mt-5">
+                <div className="mb-2 flex items-center justify-between text-[10px] font-black text-[#687872]">
+                  <label>پەیامی تەواوکەر <span className="font-medium">(ئارەزوومەندانە)</span></label>
+                  <span>{coverLetter.length}/300</span>
                 </div>
                 <textarea
                   rows={4}
                   maxLength={300}
                   value={coverLetter}
-                  onChange={e => setCoverLetter(e.target.value)}
-                  placeholder="سڵاو، من سێ ساڵ ئەزموونم لە پەرەپێدانی وێب، بە تایبەت لە React و Node.js هەیە. دەتوانم لە ماوەی دوو هەفتەدا دەست بە کار بکەم."
-                  className="w-full bg-white border border-[#e8eeec] rounded-2xl p-4 text-xs font-medium leading-relaxed text-[#111d1a] outline-none focus:border-[#12796b] resize-none shadow-2xs"
+                  onChange={(e) => setCoverLetter(e.target.value)}
+                  placeholder="کورتەیەک دەربارەی ئەزموون و بەردەستبوونت بنووسە..."
+                  className="w-full resize-none rounded-2xl border border-[#e3eae7] bg-[#fafcfb] p-4 text-sm font-medium leading-7 outline-none transition focus:border-[#8ccfc2]"
                 />
               </div>
-            </div>
 
-            {/* Bottom Action Bar */}
-            <div
-              className="p-4 bg-white border-t border-[#e8eeec] shrink-0"
-              style={{
-                paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 14px))',
-              }}
-            >
               <button
+                type="button"
                 onClick={handleContinueToPayment}
-                className="w-full py-4 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-xs sm:text-sm font-black shadow-[0_4px_14px_rgba(18,121,107,0.3)] active:scale-95 transition flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#111d1a] py-4 text-sm font-black text-white transition hover:bg-black active:scale-[.99] disabled:opacity-60"
               >
-                بەردەوام بە بۆ پارەدان
+                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : hasCredit ? <Send className="h-4 w-4" /> : null}
+                {isSubmitting ? 'لە ناردندایە...' : hasCredit ? 'ناردنی سیڤی · ١ کریدیت بەکاردێت' : 'بەردەوامبوون بۆ پارەدان'}
+                {!hasCredit && !isSubmitting && <ChevronRight className="h-4 w-4 rtl:rotate-180" />}
               </button>
             </div>
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════
-            SCREEN 3: APPLY 2/3 · FASTPAY
-        ══════════════════════════════════════════════════════════════ */}
+        {/* Step 2 — only for people with no credit: pay the fee with ZeraPay */}
         {step === 'fastpay' && (
-          <div className="flex-1 flex flex-col justify-between">
-            {/* Top Bar with Step Progress */}
-            <div
-              className="bg-white px-5 sm:px-6 border-b border-[#e8eeec] space-y-3 shrink-0"
-              style={{
-                paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 12px))',
-                paddingBottom: '14px',
-              }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-black text-[#12796b]">2/3</span>
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-5">
+            <div className="max-h-[94dvh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-[30px] bg-white p-5 shadow-2xl sm:rounded-[30px] sm:p-7">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="mb-2 text-[10px] font-black text-[#12796b]">STEP 2 OF 2</div>
+                  <h2 className="text-2xl font-black">پارەدان</h2>
+                  <p className="mt-1 text-xs font-medium text-[#7b8984]">کریدیتت نەماوە — کرێی داواکارییەکە بە ZeraPay بدە.</p>
+                </div>
                 <button
+                  type="button"
                   onClick={() => setStep('cv_mode')}
-                  className="w-9 h-9 rounded-2xl bg-[#f4f7f6] hover:bg-[#eaf5f2] border border-[#e8eeed] flex items-center justify-center text-[#111d1a] transition active:scale-95"
-                  aria-label="گەڕانەوە"
+                  className="grid h-10 w-10 place-items-center rounded-xl bg-[#f4f7f6] text-[#65736e]"
                 >
-                  <ArrowRight className="w-4.5 h-4.5 rtl:rotate-0" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
-              {/* 3-segment progress indicator */}
-              <div className="flex gap-1.5">
+              <div className="mt-6 flex gap-1.5">
                 <div className="h-1.5 flex-1 rounded-full bg-[#12796b]" />
                 <div className="h-1.5 flex-1 rounded-full bg-[#12796b]" />
-                <div className="h-1.5 flex-1 rounded-full bg-[#e0eae6]" />
               </div>
-            </div>
 
-            {/* Scrollable Content */}
-            <div className="p-5 sm:p-6 space-y-4 flex-1 overflow-y-auto text-right">
-              <h2 className="text-xl font-black text-[#111d1a]">کرێی داواکاری</h2>
-
-              {/* Fee Amount Card */}
-              <div className="bg-[#d4f7ee] border border-[#beece2] rounded-2xl p-5 space-y-2 shadow-2xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-mono font-black text-[#12796b]">{CV_FEE_DISPLAY}</span>
-                  <span className="text-xs font-bold text-[#15463e]">کرێی پارە</span>
-                </div>
-                <div className="flex items-start justify-end gap-1.5 text-[11px] font-bold text-[#2a6d63] leading-relaxed pt-1">
-                  <span>پارەدان بە مسۆگەری، پارە دەگەڕێندرێتەوە ئەگەر داواکاریت ڕەت کرایەوە.</span>
-                  <ShieldCheck className="w-4 h-4 text-[#12796b] shrink-0 mt-0.5" />
+              <div className="mt-5 rounded-3xl bg-[#101b18] p-5 text-white">
+                <div className="text-[10px] font-bold text-white/45">کرێی ئەم داواکارییە</div>
+                <div className="mt-1 text-3xl font-black">{CV_FEE_DISPLAY}</div>
+                <div className="mt-3 flex items-center gap-2 text-[10px] font-bold text-white/50">
+                  <ShieldCheck className="h-4 w-4 text-[#73dec7]" />
+                  پارەدان لەسەر پەڕەی پارێزراوی ZeraPay ئەنجام دەدرێت.
                 </div>
               </div>
 
-              {/* Free-credit benefit card, if the user's plan has any left */}
-              {freeCreditsLeft > 0 ? (
-                <div className="bg-white border border-[#beece2] rounded-2xl p-4 flex items-center justify-between shadow-2xs">
-                  <button
-                    onClick={() => handleFinalSubmit(true)}
-                    disabled={isSubmitting}
-                    className="px-4 py-2 rounded-xl bg-[#12796b] text-white text-xs font-black shadow-xs active:scale-95 transition"
-                  >
-                    بەکارهێنان
-                  </button>
-                  <div className="text-right">
-                    <div className="text-xs font-black text-[#111d1a] flex items-center justify-end gap-1">
-                      <Crown className="w-3.5 h-3.5 text-amber-500" />
-                      <span>داواکاری بێبەرامبەر بە کرێدیت</span>
-                    </div>
-                    <div className="text-[11px] text-[#7b8e88] font-bold mt-0.5">
-                      {freeCreditsLeft} کرێدیتی ماوە لە پلانەکەت — ئەم داواکارییە بەخۆڕاییە
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {/* FastPay Transfer Instructions Card */}
-              <div className="bg-white rounded-2xl p-5 border border-[#e8eeec] shadow-2xs space-y-4">
-                <h4 className="text-xs font-black text-[#111d1a]">گواستنەوەی دەستی</h4>
-
-                {/* FastPay Number & Recipient */}
-                <div className="p-3.5 rounded-xl bg-[#f8faf9] border border-[#e8eeed] flex items-center justify-between">
-                  <button
-                    onClick={handleCopyFastpay}
-                    className="px-3 py-1.5 rounded-lg bg-white border border-[#e0eae6] text-[11px] font-bold text-[#12796b] hover:bg-[#f0faf7] active:scale-95 transition flex items-center gap-1"
-                  >
-                    <Copy className="w-3 h-3" />
-                    <span>{copied ? 'کۆپیکرا' : 'کۆپیکردن'}</span>
-                  </button>
-
-                  <div className="text-right">
-                    <div className="text-[11px] text-[#7b8e88] font-bold">ژمارەی FastPay</div>
-                    <div dir="ltr" className="text-sm font-mono font-black text-[#111d1a]">
-                      {FASTPAY_NUMBER}
-                    </div>
-                    <div className="text-[10px] text-[#12796b] font-bold mt-0.5">
-                      ناوی وەرگر: زێرا گرووپ
-                    </div>
-                  </div>
-                </div>
-
-                {/* Transaction ID Input */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-black text-[#111d1a]">ژمارەی مامەڵە</label>
-                  <input
-                    dir="ltr"
-                    value={paymentTxId}
-                    onChange={e => setPaymentTxId(e.target.value)}
-                    placeholder="FP-89241905"
-                    className="w-full bg-[#f8faf9] border border-[#e8eeed] rounded-xl px-4 py-3 text-sm font-mono font-black text-center text-[#111d1a] outline-none focus:border-[#12796b]"
-                  />
-                  <div className="flex items-center justify-end gap-1 text-[10px] text-[#7b8e88] font-medium pt-1">
-                    <span>ژمارەی مامەڵە لە بەرنامەی فاست‌پەی وەردەگریت.</span>
-                    <Info className="w-3 h-3 text-[#7b8e88]" />
-                  </div>
-                </div>
+              <div className="mt-4 rounded-2xl border border-[#e3eae7] bg-[#f9fbfa] p-4 text-xs font-medium leading-6 text-[#5f6f69]">
+                دوای پارەدان و پشتڕاستکردنەوە، سیڤییەکەت ڕاستەوخۆ دەگاتە کۆمپانیا. دەتوانیت داواکارییەکەت لە بەشی «داواکارییەکانم» بەدوادا بچیت.
               </div>
-            </div>
 
-            {/* Bottom Action Bar */}
-            <div
-              className="p-4 bg-white border-t border-[#e8eeec] shrink-0"
-              style={{
-                paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 14px))',
-              }}
-            >
               <button
-                onClick={() => handleFinalSubmit(false)}
+                type="button"
                 disabled={isSubmitting}
-                className="w-full py-4 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-xs sm:text-sm font-black shadow-[0_4px_14px_rgba(18,121,107,0.3)] active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-50"
+                onClick={handleZeraPay}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#12796b] py-4 text-sm font-black text-white shadow-[0_8px_24px_rgba(18,121,107,.2)] disabled:opacity-50"
               >
-                {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <span>پشتڕاستکردنی پارەدان</span>
-                )}
+                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-4 w-4" />}
+                {isSubmitting ? 'کرانەوەی ZeraPay...' : `پارەدان بە ZeraPay · ${CV_FEE_DISPLAY}`}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOpenPlans}
+                className="mt-2 w-full rounded-2xl py-3 text-xs font-black text-[#12796b] transition hover:bg-[#edf8f5]"
+              >
+                یان پلانێک بکڕە بۆ کریدیتی زیاتر
               </button>
             </div>
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════
-            SCREEN 4: APPLY 3/3 · SUBMITTED / SUCCESS
-        ══════════════════════════════════════════════════════════════ */}
+        {/* Step 3 — Success */}
         {step === 'success' && (
-          <div className="flex-1 flex flex-col justify-between">
-            {/* Top Bar Spacer */}
-            <div
-              className="px-5 shrink-0"
-              style={{
-                paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 16px))',
-              }}
-            />
-
-            {/* Success Content */}
-            <div className="p-6 space-y-6 flex-1 flex flex-col justify-center items-center text-center">
-              {/* Checkmark Box */}
-              <div className="w-20 h-20 rounded-3xl bg-[#d4f7ee] border-2 border-[#beece2] flex items-center justify-center text-[#12796b] shadow-lg animate-bounce">
-                <Check className="w-10 h-10 stroke-[3]" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#101b18]/75 p-4 backdrop-blur-md">
+            <div className="w-full max-w-lg rounded-[30px] bg-white p-6 text-center shadow-2xl sm:p-8">
+              <div className="mx-auto grid h-20 w-20 place-items-center rounded-[24px] bg-[#e4f8f3] text-[#12796b]">
+                <Check className="h-10 w-10 stroke-[3]" />
               </div>
 
-              <div className="space-y-2 max-w-sm">
-                <h2 className="text-2xl font-black text-[#111d1a]">داواکاریت نێردرا!</h2>
-                <p className="text-xs text-[#5a6b65] font-medium leading-relaxed">
-                  پەیوەندیت پێوە دەکرێت لە ڕێگەی تەلەفۆن، پەیوەندیکردنی کۆمپانیا لە ماوەی ٤٨ کاتژمێردا وەڵامت دەدەنەوە.
-                </p>
-              </div>
+              <div className="mt-5 text-[10px] font-black text-[#12796b]">STEP 3 OF 3 • COMPLETED</div>
+              <h2 className="mt-2 text-2xl font-black">داواکارییەکەت نێردرا!</h2>
+              <p className="mx-auto mt-2 max-w-sm text-sm font-medium leading-7 text-[#71807a]">
+                داواکارییەکەت بە سەرکەوتوویی تۆمارکرا. دەتوانیت لە بەشی داواکارییەکان دۆخەکەی بەدواداچوون بکەیت.
+              </p>
 
-              {/* Receipt Summary Card */}
-              <div className="w-full bg-white rounded-2xl p-5 border border-[#e8eeec] shadow-2xs divide-y divide-[#f0f4f2] text-xs">
-                <div className="py-2.5 flex items-center justify-between">
-                  <span className="font-black text-[#111d1a] truncate max-w-[200px]">{title}</span>
-                  <span className="text-[#7b8e88] font-bold">کار</span>
+              <div className="mt-6 divide-y divide-[#edf1ef] rounded-2xl bg-[#f7faf9] px-4 text-right">
+                <div className="flex items-center justify-between gap-3 py-3 text-xs">
+                  <span className="max-w-[65%] truncate font-black">{title}</span>
+                  <span className="font-bold text-[#87948f]">هەلی کار</span>
                 </div>
-
-                <div className="py-2.5 flex items-center justify-between">
-                  <span dir="ltr" className="font-mono font-bold text-[#111d1a]">
-                    {generatedTxId || paymentTxId || 'FP-89241905'}
-                  </span>
-                  <span className="text-[#7b8e88] font-bold">ژمارەی مامەڵە</span>
+                <div className="flex items-center justify-between gap-3 py-3 text-xs">
+                  <span dir="ltr" className="font-mono font-black">{generatedTxId || paymentTxId}</span>
+                  <span className="font-bold text-[#87948f]">کۆدی مامەڵە</span>
                 </div>
-
-                <div className="py-2.5 flex items-center justify-between">
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#d4f7ee] text-[#12796b] font-black text-[10px]">
-                    داواکاری پێشکەشکراوە
-                  </span>
-                  <span className="text-[#7b8e88] font-bold">دۆخ</span>
+                <div className="flex items-center justify-between gap-3 py-3 text-xs">
+                  <span className="rounded-full bg-[#dff5ef] px-2.5 py-1 font-black text-[#12796b]">نێردراوە</span>
+                  <span className="font-bold text-[#87948f]">دۆخ</span>
                 </div>
               </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div
-              className="p-5 space-y-3 bg-white border-t border-[#e8eeec] shrink-0"
-              style={{
-                paddingBottom: 'max(16px, calc(env(safe-area-inset-bottom) + 16px))',
-              }}
-            >
               <button
+                type="button"
                 onClick={() => {
                   soundService.playTick?.();
                   onNavigate?.('my_applications');
                 }}
-                className="w-full py-4 rounded-2xl bg-[#111d1a] hover:bg-black text-white text-xs sm:text-sm font-black shadow-md active:scale-95 transition"
+                className="mt-5 w-full rounded-2xl bg-[#111d1a] py-4 text-sm font-black text-white"
               >
                 داواکارییەکانم ببینە
               </button>
 
               <button
+                type="button"
                 onClick={() => {
                   soundService.playTick?.();
                   onClose();
                 }}
-                className="w-full py-3.5 rounded-2xl bg-white hover:bg-[#f8faf9] border border-[#e8eeed] text-[#4a5854] text-xs font-bold active:scale-95 transition"
+                className="mt-2 w-full rounded-2xl border border-[#e3eae7] bg-white py-3.5 text-xs font-black text-[#5b6964]"
               >
                 گەڕان بۆ کاری تر
               </button>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

@@ -58,7 +58,7 @@ export const SendInvitationModal = ({ freelancer, isOpen, onClose, onSendSuccess
   };
 
   return (
-    <div dir="rtl" className="fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 font-vazirmatn select-none animate-fadeIn">
+    <div dir="rtl" className="safe-top fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 font-vazirmatn select-none animate-fadeIn">
       <div className="relative w-full max-w-lg bg-white border border-[#e8eeec] rounded-3xl p-6 sm:p-8 shadow-2xl text-right space-y-6">
 
         {/* Header */}

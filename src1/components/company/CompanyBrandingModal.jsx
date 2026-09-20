@@ -83,7 +83,7 @@ export const CompanyBrandingModal = ({ isOpen, onClose, jobs = [] }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
+    <div className="safe-top fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-md animate-fadeIn">
       <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-2xl text-right overflow-hidden">
 
         <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">

@@ -8,10 +8,10 @@ import { Eye, EyeOff, AlertCircle, Phone, Lock, LogIn } from 'lucide-react';
 // No brand-logo icon in lucide-react — real Google "G" mark, standard 4-color SVG.
 const GoogleIcon = () => (
   <svg className="w-4 h-4" viewBox="0 0 48 48" aria-hidden="true">
-    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/>
-    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
-    <path fill="#4CAF50" d="M24 44c5.5 0 10.5-2.1 14.3-5.6l-6.6-5.6C29.6 34.7 27 35.5 24 35.5c-5.2 0-9.6-3.5-11.2-8.2l-6.5 5C9.6 39.6 16.3 44 24 44z"/>
-    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.6 5.6C40.7 36.6 44 30.9 44 24c0-1.3-.1-2.7-.4-3.5z"/>
+    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z" />
+    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+    <path fill="#4CAF50" d="M24 44c5.5 0 10.5-2.1 14.3-5.6l-6.6-5.6C29.6 34.7 27 35.5 24 35.5c-5.2 0-9.6-3.5-11.2-8.2l-6.5 5C9.6 39.6 16.3 44 24 44z" />
+    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.2 5.6l6.6 5.6C40.7 36.6 44 30.9 44 24c0-1.3-.1-2.7-.4-3.5z" />
   </svg>
 );
 
@@ -92,10 +92,9 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
   };
 
   const fieldCls = (hasError) =>
-    `w-full rounded-[20px] bg-white border outline-none transition-all text-sm ${
-      hasError
-        ? 'border-rose-300 focus:border-rose-400 focus:ring-4 focus:ring-rose-400/10'
-        : 'border-[#d7e0dd] focus:border-[#12796b] focus:ring-4 focus:ring-[#12796b]/12'
+    `w-full rounded-[20px] bg-white border outline-none transition-all text-sm ${hasError
+      ? 'border-rose-300 focus:border-rose-400 focus:ring-4 focus:ring-rose-400/10'
+      : 'border-[#d7e0dd] focus:border-[#12796b] focus:ring-4 focus:ring-[#12796b]/12'
     }`;
 
   return (
@@ -104,11 +103,11 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
       className="fixed inset-0 z-40 bg-white font-vazirmatn select-none overflow-y-auto flex flex-col items-center"
       style={{
         backgroundColor: '#f4f7f6',
-        backgroundImage: 'radial-gradient(120% 45% at 50% 0%, #dcefeb, #f4f7f6 62%)',
+        backgroundImage: 'radial-gradient(100% 55% at 100% 0%, rgba(18,121,107,.14), transparent 48%), radial-gradient(80% 45% at 0% 100%, rgba(18,121,107,.07), transparent 52%), linear-gradient(180deg,#f4f8f7 0%,#f8faf9 100%)',
         paddingTop: 'max(2.5rem, calc(env(safe-area-inset-top) + 2rem))',
       }}
     >
-      <div className={`relative w-full max-w-sm px-6 pb-12 my-auto ${shake ? 'animate-[shake_0.4s_ease]' : ''}`}>
+      <div className={`relative w-full max-w-[440px] px-4 xs:px-5 sm:px-7 py-5 sm:py-8 my-auto ${shake ? 'animate-[shake_0.4s_ease]' : ''}`}>
 
         {/* Ambient glow behind the mark — same motif as the splash screen */}
         <div
@@ -122,12 +121,20 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
         />
 
         {/* Logo — sits at the reading-start edge (right, in RTL) */}
-        <div className="relative mb-6">
-          <img src="/logo-flat.png" alt="ئیش خواز" className="h-16 w-auto drop-shadow-sm" />
+        <div className="relative mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white/80 border border-white shadow-[0_10px_30px_rgba(18,121,107,.10)] overflow-hidden">
+              <img src="/logo-flat.png" alt="ئیش خواز" className="h-10 w-auto object-contain" />
+            </div>
+            <div>
+              <div className="text-[10px] font-black tracking-[0.22em] text-[#12796b]">ISHKHWAZ</div>
+              <div className="text-[11px] font-bold text-slate-400 mt-0.5">پلاتفۆرمی کار و پیشە</div>
+            </div>
+          </div>
         </div>
 
-        <h1 className="relative text-[26px] font-black mb-1.5" style={{ color: '#111' }}>بەخێربێیتەوە</h1>
-        <p className="relative text-xs font-bold mb-7" style={{ color: '#8b9490' }}>بۆ بەردەوامبوون زانیارییەکانت بنووسە</p>
+        <h1 className="relative text-[clamp(24px,6vw,30px)] font-black mb-1.5 tracking-tight" style={{ color: '#111' }}>بەخێربێیتەوە</h1>
+        <p className="relative text-xs sm:text-sm font-bold mb-7 leading-6" style={{ color: '#8b9490' }}>بۆ بەردەوامبوون، زانیارییەکانت بنووسە</p>
 
         <form onSubmit={handleSubmit} className="relative space-y-4">
 
@@ -144,7 +151,7 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
                 autoComplete="tel"
-                className={`${fieldCls(false)} font-mono py-3.5 pr-[5.2rem] pl-4`}
+                className={`${fieldCls(false)} font-mono py-4 pr-[5.2rem] pl-4 shadow-[0_4px_20px_rgba(15,23,42,.025)] hover:border-[#b9c9c4]`}
                 style={{ color: '#111' }}
               />
             </div>
@@ -162,7 +169,7 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 autoComplete="current-password"
-                className={`${fieldCls(!!errorMsg)} py-3.5 pr-11 pl-11`}
+                className={`${fieldCls(!!errorMsg)} py-4 pr-11 pl-11 shadow-[0_4px_20px_rgba(15,23,42,.025)] hover:border-[#b9c9c4]`}
                 style={{ color: '#111' }}
               />
               <button
@@ -191,7 +198,7 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
           <button
             type="submit"
             disabled={isSubmitting}
-            className="relative w-full overflow-hidden rounded-full text-white font-black text-sm transition-all active:scale-[0.97] disabled:opacity-60 py-4 mt-1 flex items-center justify-center gap-2"
+            className="group relative w-full overflow-hidden rounded-2xl text-white font-black text-sm transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.985] disabled:opacity-60 py-4 mt-1 flex items-center justify-center gap-2"
             style={{
               background: `linear-gradient(135deg, ${TEAL} 0%, ${TEAL_DEEP} 100%)`,
               boxShadow: `0 10px 24px ${TEAL}4d, inset 0 1px 0 rgba(255,255,255,0.18)`,
@@ -218,7 +225,7 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
           type="button"
           onClick={handleGoogleLogin}
           disabled={isGoogleSubmitting}
-          className="relative w-full flex items-center justify-center gap-2.5 rounded-full bg-white border font-bold text-sm py-3.5 transition-all active:scale-[0.97] disabled:opacity-60"
+          className="relative w-full flex items-center justify-center gap-2.5 rounded-2xl bg-white border font-bold text-sm py-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(15,23,42,.06)] active:scale-[0.985] disabled:opacity-60"
           style={{ borderColor: '#d7e0dd', color: '#111' }}
         >
           <GoogleIcon />

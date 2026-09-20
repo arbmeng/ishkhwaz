@@ -88,6 +88,22 @@ export const apiService = {
     }
   },
 
+  // Step 2 of "forgot password": trade the 6-digit code that was emailed for a reset token.
+  async verifyResetOtp(phoneOrEmail, otp) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-reset-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneOrEmail, otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+
   async resetPassword(resetToken, password) {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
@@ -720,6 +736,23 @@ export const apiService = {
 
   // Plans API — real one-time purchase, FastPay-proof + admin verification,
   // same pattern as CV application payments.
+  // Apply to a job by paying its CV fee through ZeraPay (for people with no plan credit).
+  // Resolves to { success, application_id, paymentUrl } — the caller redirects to paymentUrl.
+  async applyWithZeraPay(payload, token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/applications/zerapay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false };
+    }
+  },
+
   async purchasePlan(plan, paymentMethod, paymentTxId, token) {
     try {
       const res = await fetch(`${API_BASE_URL}/plans/purchase`, {

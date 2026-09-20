@@ -1,4 +1,5 @@
 import React from 'react';
+import { PageHeader } from './PageHeader';
 import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { ArrowRight, Bell, CheckCheck } from 'lucide-react';
@@ -33,27 +34,11 @@ export const NotificationsPage = ({ onBack }) => {
 
   return (
     <div dir="rtl" className="min-h-screen pb-16" style={{ background: '#f4f7f6', fontFamily: NK }}>
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#e8eeed] px-4 sm:px-8 py-4 flex items-center justify-between gap-3"
-        style={{ paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 8px))' }}>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onBack}
-            className="w-10 h-10 rounded-2xl bg-white border border-[#e8eeed] flex items-center justify-center text-[#111d1a] shrink-0 active:scale-90 transition-transform shadow-2xs"
-          >
-            <ArrowRight className="w-5 h-5" />
-          </button>
-          <h1 className="text-base font-black text-[#111d1a]">ئاگادارکردنەوەکان</h1>
-        </div>
-        {notifications.length > 0 && (
-          <button
-            onClick={() => { soundService.playTick?.(); markAllRead?.(); }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#f4f7f6] border border-[#e8eeed] text-xs font-bold text-[#4a5854] hover:bg-[#eaf5f2] transition"
-          >
-            <CheckCheck className="w-3.5 h-3.5" style={{ color: TEAL }} />
-            هەمووی وەک خوێندراوە نیشانبکە
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="ئاگادارکردنەوەکان"
+        onBack={onBack}
+        actions={notifications.length > 0 ? [{ icon: CheckCheck, label: 'هەمووی وەک خوێندراوە نیشانبکە', onClick: () => { soundService.playTick?.(); markAllRead?.(); } }] : []}
+      />
 
       <div className="max-w-2xl mx-auto px-4 sm:px-8 pt-6 space-y-2.5">
         {notifications.length === 0 ? (

@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import { soundService } from '../../services/soundService';
 import { PlanBadge } from '../ui/PlanBadge';
+import { PageHeader } from '../layout/PageHeader';
 import { getPlanIcon, getPlanColor, formatCredits } from '../../utils/planPresets';
 import { ArrowRight, Check, X, Loader2, CheckCircle2, Zap, ShieldCheck, Sparkles, HelpCircle } from 'lucide-react';
 
@@ -115,50 +116,7 @@ export const PlansPage = ({ onBack }) => {
   return (
     <div dir="rtl" className="min-h-screen pb-28" style={{ background: BG, color: TXT, fontFamily: NK }}>
       
-      {/* Mobile-only bar: on lg+ the shared DesktopHeaderNav already provides
-          navigation + the user pill, so this would be a second header. */}
-      <div
-        className="lg:hidden sticky top-0 z-30 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-3"
-        style={{ background: 'rgba(244,247,246,0.92)', borderBottom: `1px solid ${BORDER}` }}
-      >
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => { soundService.playTick?.(); onBack?.(); }}
-            className="p-2.5 rounded-xl transition-all hover:scale-105 active:scale-95" 
-            style={{ background: CARD, border: `1px solid ${BORDER}`, color: MUTED }}
-          >
-            <ArrowRight className="w-4 h-4" />
-          </button>
-          <div>
-            <h1 className="text-base font-black flex items-center gap-2" style={{ color: TXT }}>
-              پلانەکان و بەرزکردنەوە <Sparkles className="w-4 h-4 text-amber-500" />
-            </h1>
-            <p className="text-[11px] font-bold" style={{ color: MUTED }}>کڕینێکی یەکجارە — بێ تێچووی شاراوەی مانگانە</p>
-          </div>
-        </div>
-
-        {user && (
-          <div className="hidden sm:flex items-center gap-3 bg-white/60 p-1.5 pr-3 rounded-full border border-emerald-900/5">
-            <div className="text-right">
-              <div className="flex items-center gap-1.5 justify-end">
-                {currentTier && Number(currentTier.price) > 0 && <PlanBadge plan={currentTier.id} size="sm" />}
-                <span className="text-xs font-bold" style={{ color: TXT }}>{user.name}</span>
-              </div>
-              <span className="text-[10px]" style={{ color: MUTED }}>{isEmployer ? 'خاوەنکار (Employer)' : 'کارخواز (Candidate)'}</span>
-            </div>
-            <div 
-              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
-              style={{ background: TEAL_SOFT, border: `2px solid ${currentTier && Number(currentTier.price) > 0 ? TEAL : BORDER}` }}
-            >
-              {user.avatar ? (
-                <img src={user.avatar} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <span style={{ fontWeight: 800, color: TEAL_DEEP }}>{(user.name || '؟').charAt(0)}</span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      <PageHeader title="پلانەکان و بەرزکردنەوە" onBack={onBack} />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
 

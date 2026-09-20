@@ -5,6 +5,7 @@ import { soundService } from '../../services/soundService';
 import { apiService } from '../../services/api';
 import { realtimeService } from '../../services/realtimeService';
 import { Search, Bell, MessageSquare, Briefcase } from 'lucide-react';
+import { FEATURES, canSeePlans } from '../../config/features';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
 const TEAL = '#12796b';
@@ -134,7 +135,8 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
               )}
             </button>
 
-            <button
+            {FEATURES.map && (
+<button
               onClick={() => handleNav('map')}
               className={`px-3.5 py-2 rounded-xl transition-all relative ${
                 activeTab === 'map'
@@ -147,8 +149,10 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
                 <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />
               )}
             </button>
+)}
 
-            <button
+            {canSeePlans(user) && (
+<button
               onClick={() => handleNav('plans')}
               className={`px-3.5 py-2 rounded-xl transition-all relative ${
                 activeTab === 'plans'
@@ -161,6 +165,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
                 <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />
               )}
             </button>
+)}
 
             <button
               onClick={() => handleNav(isEmployer ? 'my_company_dashboard' : 'my_applications')}

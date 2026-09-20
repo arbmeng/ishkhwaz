@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { PageHeader } from '../layout/PageHeader';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { apiService } from '../../services/api';
@@ -107,22 +108,7 @@ export const ResumesPage = ({ onBack, onCreateNew, onEditStyle }) => {
 
   return (
     <div dir="rtl" className="min-h-screen font-vazirmatn" style={{ background: '#f4f7f6', paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
-      <div
-        className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b border-stone-200 px-4 sm:px-6 lg:px-8"
-        style={{ paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 12px))', paddingBottom: '14px' }}
-      >
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-          <button onClick={() => { soundService.playTick?.(); onBack?.(); }}
-            className="flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-stone-900 transition-colors">
-            <ArrowLeft className="w-4 h-4 rtl:rotate-180" />گەڕانەوە
-          </button>
-          <div className="text-center">
-            <h1 className="text-sm font-black text-stone-900">سیڤیەکانم</h1>
-            <div dir="ltr" className="text-[10px] text-stone-400 font-bold">{resumes.length} / {maxCvs > 0 ? maxCvs : '∞'}</div>
-          </div>
-          <div className="w-16" />
-        </div>
-      </div>
+      <PageHeader title={`سیڤیەکانم · ${resumes.length} / ${maxCvs > 0 ? maxCvs : '∞'}`} onBack={() => { soundService.playTick?.(); onBack?.(); }} />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 space-y-4">
 

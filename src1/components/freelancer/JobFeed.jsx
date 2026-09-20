@@ -622,566 +622,262 @@ export const JobFeed = ({ onNavigate }) => {
     : { padding: 1, background: '#e5e9e7' };
 
   return (
-    <div dir="rtl" className="min-h-screen font-vazirmatn select-none pb-28" style={{ background: 'linear-gradient(180deg, #f7faf9 0%, #f2f6f4 48%, #eef3f1 100%)' }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-7">
-
-        {/* ── Greeting header — avatar grouped with the name on the right
-              (reading-start in RTL), notification bell alone on the left.
-              Mobile-only: DesktopHeaderNav (App.jsx) already shows the same
-              avatar/chat/bell on lg+ screens, so this must stay hidden there
-              or both render stacked on top of each other. ── */}
-        <Reveal>
-          <div className="flex items-center justify-between mb-3 lg:hidden">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => onNavigate?.('profile')}
-                className="rounded-2xl active:scale-95 transition-transform shrink-0"
-                style={avatarRingStyle}
-                title={isPaidPlanUser ? (userPlanTier.name_ku || userPlanTier.name_en) : undefined}
-              >
-                <div
-                  className="w-10 h-10 rounded-[14px] bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] overflow-hidden flex items-center justify-center font-black text-sm"
-                  style={{ color: TEAL_DEEP }}
-                >
-                  {user?.avatar ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" /> : avatarLetter}
-                </div>
-              </button>
-              <div className="text-right">
-                <p className="text-xs text-stone-400 font-bold">{getGreeting()}</p>
-                <h1 className="text-2xl font-black text-stone-900 leading-tight">{greetingName || 'بەکارهێنەر'}</h1>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => onNavigate?.('messages')}
-                className="relative w-11 h-11 rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] flex items-center justify-center text-stone-500 active:scale-95 transition-transform"
-              >
-                <MessageCircle className="w-4 h-4" />
-                {unreadMessageCount > 0 && (
-                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500" />
-                )}
-              </button>
-              <button
-                onClick={() => onNavigate?.('notifications')}
-                className="relative w-11 h-11 rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] flex items-center justify-center text-stone-500 active:scale-95 transition-transform"
-              >
-                <Bell className="w-4 h-4" />
-                {unreadNotifCount > 0 && (
-                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500" />
-                )}
-              </button>
-            </div>
-          </div>
-        </Reveal>
-
-        <PremiumFeedHero
-          isEmployer={isEmployer}
-          user={user}
-          activeJobs={isEmployer ? filteredFreelancers.length : filteredJobs.length}
-          activePeople={isEmployer ? freelancers.length : jobs.length}
-          newCount={isEmployer ? newestFreelancers.length : newestJobs.length}
-          onNavigate={onNavigate}
-        />
-
-        {!isEmployer && !isPaidPlanUser && (
-          <Reveal>
-            <PremiumUpgradeBanner onNavigate={onNavigate} planName={userPlanTier?.name_ku || ''} />
-          </Reveal>
-        )}
-
-        {!isEmployer && (
-        <>
-        {/* ── Search block ────────────────────────────────────── */}
-        <Reveal className="space-y-3">
-          <div className="flex gap-2 p-1.5 rounded-[22px] bg-white border border-stone-100 shadow-[0_8px_28px_rgba(0,0,0,0.05)]">
-            <div className="relative flex-1">
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-300" />
-              <input
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                placeholder="گەڕان بۆ کار، کۆمپانیا..."
-                className="w-full bg-stone-50/70 rounded-[17px] pr-11 pl-4 py-3.5 text-sm text-stone-900 font-bold placeholder-stone-300 outline-none focus:bg-white focus:ring-2 focus:ring-[#12796b]/10 transition-all"
-              />
-            </div>
-            <div className="w-12 h-12 rounded-[17px] bg-stone-50 border border-stone-100 flex items-center justify-center shrink-0 active:scale-95 transition-all cursor-pointer hover:bg-stone-100">
-              <SlidersHorizontal className="w-4 h-4 text-stone-400" />
-            </div>
-          </div>
-
-          {/* Job-type pills — real values against job.job_type */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {[{ value: 'all', label: 'هەموو' }, ...Object.entries(JOB_TYPE_LABELS).map(([value, label]) => ({ value, label }))].map(t => (
-              <button key={t.value}
-                onClick={() => { soundService.playTick?.(); setJobTypeFilter(t.value); }}
-                className={`px-4 py-2 rounded-full text-xs font-bold shrink-0 transition-all active:scale-95 ${
-                  jobTypeFilter === t.value ? 'text-white' : 'bg-white text-stone-500 shadow-[0_2px_16px_rgba(0,0,0,0.05)] hover:text-stone-800'
-                }`}
-                style={jobTypeFilter === t.value ? { background: TEAL } : {}}>
-                {t.label}
-              </button>
-            ))}
-
-            <span className="w-px h-6 bg-stone-200 shrink-0 mx-1" />
-
-            <DropdownChip label="نرخ" value={priceFilter} options={PRICE_RANGES} onChange={setPriceFilter} />
-            <DropdownChip label="شار" value={govFilter}
-              options={[{ value: 'all', label: 'هەموو شارەکان' }, ...Object.entries(GOV_LABELS).map(([value, label]) => ({ value, label }))]}
-              onChange={setGovFilter} />
-
-            {!isEmployer && user && hasActiveFilters && (
-              <button onClick={handleSaveSearch}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold shrink-0 bg-white text-stone-500 shadow-[0_2px_16px_rgba(0,0,0,0.05)] hover:text-stone-800 transition-all">
-                <Bell className="w-3.5 h-3.5" style={{ color: TEAL }} />
-                پاشەکەوتکردنی گەڕان
-              </button>
-            )}
-          </div>
-
-          {/* Saved searches — real alerts fire server-side whenever a newly
-              posted job matches one of these */}
-          {savedSearches.length > 0 && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              <Bell className="w-3.5 h-3.5 text-stone-300 shrink-0" />
-              {savedSearches.map(s => (
-                <button key={s.id} onClick={() => applySavedSearch(s)}
-                  className="flex items-center gap-1.5 pr-3 pl-1.5 py-1.5 rounded-full text-[11px] font-bold shrink-0 bg-white text-stone-500 shadow-[0_2px_16px_rgba(0,0,0,0.05)] hover:text-stone-800 transition-all">
-                  {(s.category !== 'all' ? CATEGORIES.find(c => c.id === s.category)?.nameKu : null) ||
-                    (s.governorate_id !== 'all' ? GOV_LABELS[s.governorate_id] : null) ||
-                    (s.job_type !== 'all' ? JOB_TYPE_LABELS[s.job_type] : null) || 'گەڕانی پاشەکەوتکراو'}
-                  <span onClick={e => handleDeleteSavedSearch(s.id, e)} className="p-1 rounded-full hover:bg-stone-100">
-                    <X className="w-3 h-3 text-stone-300" />
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </Reveal>
-
-        {/* ── Recommended for you — real overlap score, plus one real AI
-              ranking pass once there's an actual CV/skills to work from.
-              While the request is in flight, show a real waiting state
-              ("finding suitable work for you") instead of silently showing
-              nothing, so a freelancer never wonders if the feature exists. ── */}
-        {recommendedLoading ? (
-          <Reveal className="space-y-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-black text-stone-900">پێشنیار بۆ تۆ</h2>
-              <Sparkles className="w-4 h-4" style={{ color: TEAL }} />
-            </div>
-            <div className="flex items-center gap-3 p-5 rounded-3xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.05)]">
-              <Loader2 className="w-5 h-5 shrink-0 animate-spin" style={{ color: TEAL }} />
-              <p className="text-xs font-bold text-stone-500">چاوەڕێبە، ئێمە کاری گونجاوت بۆ دەدۆزینەوە...</p>
-            </div>
-          </Reveal>
-        ) : recommended.jobs.length > 0 && (
-          <Reveal className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-black text-stone-900">پێشنیار بۆ تۆ</h2>
-                <Sparkles className="w-4 h-4" style={{ color: TEAL }} />
-              </div>
-              <span className="text-xs font-bold" style={{ color: TEAL }}>هەموو</span>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none snap-x snap-mandatory">
-              {recommended.jobs.map((job) => {
-                const isSaved = savedJobIds.includes(job.id);
-                const isBoosted = job.boosted_until && new Date(job.boosted_until) > new Date();
-                const company = job.company_name || job.companyName || 'کۆمپانیا';
-                const govBase = GOV_LABELS[job.governorate_id] || job.location || 'کوردستان';
-                return (
-                  <div
-                    key={job.id}
-                    onClick={() => onNavigate?.('job_detail', { jobId: job.id })}
-                    className="shrink-0 w-64 p-4 rounded-3xl border cursor-pointer transition-all snap-start active:scale-[0.98]"
-                    style={{ background: TEAL_SOFT, borderColor: `${TEAL}40` }}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      {isBoosted ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black text-white flex items-center gap-1" style={{ background: TEAL }}>
-                          <Rocket className="w-2.5 h-2.5" />بەرزکراوە
-                        </span>
-                      ) : <span />}
-                      <button onClick={e => { e.stopPropagation(); toggleSaveJob(job.id); }}
-                        className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-sm active:scale-90 transition-transform">
-                        <Heart className={`w-3.5 h-3.5 ${isSaved ? 'fill-[#ff4d67] text-[#ff4d67]' : 'text-stone-400'}`} />
-                      </button>
-                    </div>
-                    <h3 className="text-sm font-black text-stone-900 truncate">{job.title_ku}</h3>
-                    <span className="text-[11px] text-stone-500 font-bold block mt-0.5 truncate">{company}، {govBase}</span>
-                    <div className="h-px my-3" style={{ background: `${TEAL}30` }} />
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-stone-400">مانگانه</span>
-                      <span dir="ltr" className="text-sm font-mono font-black" style={{ color: TEAL_DEEP }}>
-                        {(job.salary_min || 0).toLocaleString()} IQD
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </Reveal>
-        )}
-
-        {/* ── Explore by city — real illustrated photo cards; click one to
-             reveal its real towns (from the same data used at registration)
-             below the row, pick one to filter jobs by that place. ────────── */}
-        {cityStats.length > 0 && (
-          <Reveal className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-black text-stone-900">گەڕان بەپێی شار</h2>
-              <span className="text-xs font-bold" style={{ color: TEAL }}>نەخشە</span>
-            </div>
-
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none snap-x snap-mandatory">
-              {cityStats.map(c => {
-                const [c1, c2] = monogramColors(c.id);
-                const photo = CITY_PHOTOS[c.id];
-                return (
-                  <button key={c.id} onClick={() => handleCityClick(c.id)}
-                    className="relative shrink-0 w-36 h-44 rounded-3xl overflow-hidden shadow-[0_2px_16px_rgba(0,0,0,0.08)] snap-start transition-all active:scale-95 hover:-translate-y-1 hover:shadow-[0_10px_28px_rgba(0,0,0,0.15)]"
-                    style={{ outline: (expandedGovId === c.id || govFilter === c.id) ? `2.5px solid ${TEAL}` : 'none', outlineOffset: '2px' }}>
-                    {photo ? (
-                      <img src={photo} alt={c.label} className="absolute inset-0 w-full h-full object-cover" />
-                    ) : (
-                      <>
-                        <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, ${c1}, ${c2})` }} />
-                        <CitySymbol id={c.id} className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-28 h-28 text-white/25" />
-                      </>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                    <div className="absolute bottom-4 right-4 left-4 text-right">
-                      <div className="text-white font-black text-base">{c.label}</div>
-                      <div className="text-white/70 text-[11px] font-bold mt-0.5 font-mono">{c.count} هەلی کار</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Towns of the selected province — appears below the row, not
-                in place of it. */}
-            {expandedGovId && (
-              <div key={expandedGovId} className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] p-4 animate-morph-in space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black text-stone-900">شارۆچکەکانی {GOV_LABELS[expandedGovId] || ''}</h3>
-                  <button onClick={() => { soundService.playTick?.(); setExpandedGovId(null); }}
-                    className="flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-stone-800 transition-colors">
-                    <ChevronRight className="w-3.5 h-3.5" />
-                    داخستن
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={() => { soundService.playTick?.(); setGovFilter(expandedGovId); setExpandedGovId(null); scrollToResults(); }}
-                    className="px-4 py-2.5 rounded-full text-xs font-bold text-white transition-all active:scale-95" style={{ background: TEAL }}>
-                    هەموو {GOV_LABELS[expandedGovId]}
-                  </button>
-                  {expandedTowns.map((t, i) => (
-                    <button key={t.id} onClick={() => handleDistrictClick(expandedGovId, t.name_ku)}
-                      style={{ animationDelay: `${Math.min(i, 16) * 25}ms` }}
-                      className="animate-fadeIn px-4 py-2.5 rounded-full text-xs font-bold bg-stone-50 text-stone-600 hover:bg-stone-100 hover:text-stone-900 hover:-translate-y-0.5 transition-all active:scale-95">
-                      {t.name_ku}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </Reveal>
-        )}
-
-        {/* ── Newest jobs — real created_at order ─────────────────── */}
-        {newestJobs.length > 0 && (
-          <Reveal className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-black text-stone-900">نوێترین کارەکان</h2>
-              <span className="text-xs font-bold" style={{ color: TEAL }}>هەموو</span>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none snap-x snap-mandatory">
-              {newestJobs.map((job, i) => (
-                <div key={job.id} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }} className="animate-fadeIn w-60 shrink-0 snap-start">
-                  <JobPhotoCard job={job} />
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        )}
-
-        {/* ── Category chips ──────────────────────────────────── */}
-        <Reveal className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {CATEGORIES.map(cat => {
-            const Icon = CATEGORY_ICONS[cat.id] || Briefcase;
-            const active = selectedCategory === cat.id;
-            return (
-              <button key={cat.id}
-                onClick={() => { soundService.playTick?.(); setSelectedCategory(cat.id); }}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-bold shrink-0 transition-all active:scale-95 ${
-                  active ? 'text-white' : 'bg-white text-stone-500 shadow-[0_2px_16px_rgba(0,0,0,0.05)] hover:text-stone-800'
-                }`}
-                style={active ? { background: TEAL } : {}}>
-                <Icon className="w-3.5 h-3.5" style={{ color: active ? '#fff' : '#a8a29e' }} strokeWidth={2.25} />
-                {cat.nameKu}
-              </button>
-            );
-          })}
-        </Reveal>
-
-        {/* ── Jobs header ──────────────────────────────────────── */}
-        <div ref={jobsSectionRef} className="flex items-center justify-between scroll-mt-24">
-          <h2 className="text-sm font-black text-stone-900">هەلی کارە چالاکەکان</h2>
-          <span className="text-xs font-mono font-black text-stone-400">{filteredJobs.length} ئەنجام</span>
-        </div>
-
-        {/* ── Job grid — remounts (and replays its entrance stagger) every
-             time the filtered result set actually changes, so switching
-             filters or pages feels like a real transition. ───────────── */}
-        {isInitialLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] overflow-hidden">
-                <div className="h-40 bg-stone-100 animate-pulse" />
-                <div className="p-4 space-y-2.5">
-                  <div className="h-3.5 rounded-full bg-stone-100 animate-pulse w-3/4" />
-                  <div className="h-2.5 rounded-full bg-stone-100 animate-pulse w-1/2" />
-                  <div className="h-9 rounded-xl bg-stone-100 animate-pulse mt-3" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : filteredJobs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)]">
-            <Briefcase className="w-12 h-12 text-stone-200 mb-3" />
-            <h3 className="text-base font-black text-stone-400 mb-1">هیچ هەلی کارێک نەدۆزرایەوە</h3>
-            <p className="text-xs text-stone-300">پاڵاوتنەکان بگۆڕە یان وشەیەکی تر بەکاربهێنە</p>
-          </div>
-        ) : (
-          <>
-            <div key={`${page}-${selectedCategory}-${jobTypeFilter}-${govFilter}-${priceFilter}-${searchTerm}`}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {pagedJobs.map((job, i) => (
-                <div key={job.id} style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }} className="animate-fadeIn">
-                  <JobPhotoCard job={job} />
-                </div>
-              ))}
-            </div>
-
-            {/* ── Pagination ───────────────────────────────────── */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-2">
-                <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
-                  className="w-9 h-9 rounded-full bg-white shadow-[0_2px_16px_rgba(0,0,0,0.05)] flex items-center justify-center disabled:opacity-30 transition-opacity">
-                  <ChevronRight className="w-4 h-4 text-stone-500" />
-                </button>
-                <span className="text-xs font-bold text-stone-400 font-mono">
-                  {page} / {totalPages}
-                </span>
-                <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}
-                  className="w-9 h-9 rounded-full bg-white shadow-[0_2px_16px_rgba(0,0,0,0.05)] flex items-center justify-center disabled:opacity-30 transition-opacity">
-                  <ChevronLeft className="w-4 h-4 text-stone-500" />
-                </button>
-              </div>
-            )}
-          </>
-        )}
-        </>
-        )}
-
-        {isEmployer && (
-        <>
-        {/* ── Search block ────────────────────────────────────── */}
-        <Reveal className="space-y-3">
-          <div className="flex gap-2 p-1.5 rounded-[22px] bg-white border border-stone-100 shadow-[0_8px_28px_rgba(0,0,0,0.05)]">
-            <div className="relative flex-1">
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-300" />
-              <input
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                placeholder="گەڕان بۆ کارخواز، پیشە..."
-                className="w-full bg-stone-50/70 rounded-[17px] pr-11 pl-4 py-3.5 text-sm text-stone-900 font-bold placeholder-stone-300 outline-none focus:bg-white focus:ring-2 focus:ring-[#12796b]/10 transition-all"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            <button
-              onClick={() => { soundService.playTick?.(); setVerifiedOnly(v => !v); }}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold shrink-0 transition-all active:scale-95 ${
-                verifiedOnly ? 'text-white' : 'bg-white text-stone-500 shadow-[0_2px_16px_rgba(0,0,0,0.05)] hover:text-stone-800'
-              }`}
-              style={verifiedOnly ? { background: TEAL } : {}}>
-              <BadgeCheck className="w-3.5 h-3.5" style={{ color: verifiedOnly ? '#fff' : '#a8a29e' }} />
-              تەنها پشتڕاستکراوەکان
-            </button>
-
-            <span className="w-px h-6 bg-stone-200 shrink-0 mx-1" />
-
-            <DropdownChip label="شار" value={govFilter}
-              options={[{ value: 'all', label: 'هەموو شارەکان' }, ...Object.entries(GOV_LABELS).map(([value, label]) => ({ value, label }))]}
-              onChange={setGovFilter} />
-          </div>
-        </Reveal>
-
-        {/* ── Explore by city — real per-governorate freelancer counts ── */}
-        {freelancerCityStats.length > 0 && (
-          <Reveal className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-black text-stone-900">گەڕان بەپێی شار</h2>
-              <span className="text-xs font-bold" style={{ color: TEAL }}>نەخشە</span>
-            </div>
-
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none snap-x snap-mandatory">
-              {freelancerCityStats.map(c => {
-                const [c1, c2] = monogramColors(c.id || c.label);
-                const photo = c.id ? CITY_PHOTOS[c.id] : null;
-                return (
-                  <button key={c.label} onClick={() => c.id && handleCityClick(c.id)}
-                    className="relative shrink-0 w-36 h-44 rounded-3xl overflow-hidden shadow-[0_2px_16px_rgba(0,0,0,0.08)] snap-start transition-all active:scale-95 hover:-translate-y-1 hover:shadow-[0_10px_28px_rgba(0,0,0,0.15)]"
-                    style={{ outline: (expandedGovId === c.id || (c.id && govFilter === c.id)) ? `2.5px solid ${TEAL}` : 'none', outlineOffset: '2px' }}>
-                    {photo ? (
-                      <img src={photo} alt={c.label} className="absolute inset-0 w-full h-full object-cover" />
-                    ) : (
-                      <>
-                        <div className="absolute inset-0" style={{ background: `linear-gradient(160deg, ${c1}, ${c2})` }} />
-                        {c.id && <CitySymbol id={c.id} className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-28 h-28 text-white/25" />}
-                      </>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                    <div className="absolute bottom-4 right-4 left-4 text-right">
-                      <div className="text-white font-black text-base">{c.label}</div>
-                      <div className="text-white/70 text-[11px] font-bold mt-0.5 font-mono">{c.count} کارخواز</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {expandedGovId && (
-              <div key={expandedGovId} className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] p-4 animate-morph-in space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black text-stone-900">شارۆچکەکانی {GOV_LABELS[expandedGovId] || ''}</h3>
-                  <button onClick={() => { soundService.playTick?.(); setExpandedGovId(null); }}
-                    className="flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-stone-800 transition-colors">
-                    <ChevronRight className="w-3.5 h-3.5" />
-                    داخستن
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={() => { soundService.playTick?.(); setGovFilter(expandedGovId); setExpandedGovId(null); scrollToResults(); }}
-                    className="px-4 py-2.5 rounded-full text-xs font-bold text-white transition-all active:scale-95" style={{ background: TEAL }}>
-                    هەموو {GOV_LABELS[expandedGovId]}
-                  </button>
-                  {expandedTowns.map((t, i) => (
-                    <button key={t.id} onClick={() => handleDistrictClick(expandedGovId, t.name_ku)}
-                      style={{ animationDelay: `${Math.min(i, 16) * 25}ms` }}
-                      className="animate-fadeIn px-4 py-2.5 rounded-full text-xs font-bold bg-stone-50 text-stone-600 hover:bg-stone-100 hover:text-stone-900 hover:-translate-y-0.5 transition-all active:scale-95">
-                      {t.name_ku}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </Reveal>
-        )}
-
-        {/* ── Newest freelancers — real created_at order ─────────────────── */}
-        {newestFreelancers.length > 0 && (
-          <Reveal className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-black text-stone-900">نوێترین کارخوازان</h2>
-              <span className="text-xs font-bold" style={{ color: TEAL }}>هەموو</span>
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none snap-x snap-mandatory">
-              {newestFreelancers.map((f, i) => (
-                <div key={f.id} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }} className="animate-fadeIn w-60 shrink-0 snap-start">
-                  <FreelancerPhotoCard f={f} />
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        )}
-
-        {/* ── Category chips ──────────────────────────────────── */}
-        <Reveal className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {CATEGORIES.map(cat => {
-            const Icon = CATEGORY_ICONS[cat.id] || Briefcase;
-            const active = selectedCategory === cat.id;
-            return (
-              <button key={cat.id}
-                onClick={() => { soundService.playTick?.(); setSelectedCategory(cat.id); }}
-                className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-xs font-bold shrink-0 transition-all active:scale-95 ${
-                  active ? 'text-white' : 'bg-white text-stone-500 shadow-[0_2px_16px_rgba(0,0,0,0.05)] hover:text-stone-800'
-                }`}
-                style={active ? { background: TEAL } : {}}>
-                <Icon className="w-3.5 h-3.5" style={{ color: active ? '#fff' : '#a8a29e' }} strokeWidth={2.25} />
-                {cat.nameKu}
-              </button>
-            );
-          })}
-        </Reveal>
-
-        {/* ── Freelancers header ──────────────────────────────────────── */}
-        <div ref={jobsSectionRef} className="flex items-center justify-between scroll-mt-24">
-          <h2 className="text-sm font-black text-stone-900">کارخوازە چالاکەکان</h2>
-          <span className="text-xs font-mono font-black text-stone-400">{filteredFreelancers.length} ئەنجام</span>
-        </div>
-
-        {isInitialLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] overflow-hidden">
-                <div className="h-40 bg-stone-100 animate-pulse" />
-                <div className="p-4 space-y-2.5">
-                  <div className="h-3.5 rounded-full bg-stone-100 animate-pulse w-3/4" />
-                  <div className="h-2.5 rounded-full bg-stone-100 animate-pulse w-1/2" />
-                  <div className="h-9 rounded-xl bg-stone-100 animate-pulse mt-3" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : filteredFreelancers.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)]">
-            <Users className="w-12 h-12 text-stone-200 mb-3" />
-            <h3 className="text-base font-black text-stone-400 mb-1">هیچ کارخوازێک نەدۆزرایەوە</h3>
-            <p className="text-xs text-stone-300">پاڵاوتنەکان بگۆڕە یان وشەیەکی تر بەکاربهێنە</p>
-          </div>
-        ) : (
-          <>
-            <div key={`${page}-${selectedCategory}-${govFilter}-${verifiedOnly}-${searchTerm}`}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {pagedFreelancers.map((f, i) => (
-                <div key={f.id} style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }} className="animate-fadeIn">
-                  <FreelancerPhotoCard f={f} />
-                </div>
-              ))}
-            </div>
-
-            {totalFreelancerPages > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-2">
-                <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
-                  className="w-9 h-9 rounded-full bg-white shadow-[0_2px_16px_rgba(0,0,0,0.05)] flex items-center justify-center disabled:opacity-30 transition-opacity">
-                  <ChevronRight className="w-4 h-4 text-stone-500" />
-                </button>
-                <span className="text-xs font-bold text-stone-400 font-mono">
-                  {page} / {totalFreelancerPages}
-                </span>
-                <button disabled={page === totalFreelancerPages} onClick={() => setPage(p => p + 1)}
-                  className="w-9 h-9 rounded-full bg-white shadow-[0_2px_16px_rgba(0,0,0,0.05)] flex items-center justify-center disabled:opacity-30 transition-opacity">
-                  <ChevronLeft className="w-4 h-4 text-stone-500" />
-                </button>
-              </div>
-            )}
-          </>
-        )}
-        </>
-        )}
-
+    <div dir="rtl" className="min-h-screen bg-[#f6f8f7] text-stone-900 font-vazirmatn pb-24 lg:pb-10">
+      {/* Ambient background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-0">
+        <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full blur-3xl opacity-[0.12]" style={{background: TEAL}} />
+        <div className="absolute top-[42%] -left-40 w-96 h-96 rounded-full blur-3xl opacity-[0.07]" style={{background: '#76bdb1'}} />
       </div>
 
-      {/* ── Detail modals ─────────────────────────────────── */}
-      {isEmployer && (
-        <>
-          <FreelancerProfileModal freelancer={selectedFreelancer} isOpen={!!selectedFreelancer} onClose={() => setSelectedFreelancer(null)} />
-          <SendInvitationModal freelancer={inviteTarget} isOpen={!!inviteTarget} onClose={() => setInviteTarget(null)} />
-        </>
-      )}
+      <main className="relative z-10 max-w-7xl mx-auto px-3 sm:px-5 lg:px-8">
+        {/* Mobile / compact app header */}
+        <div className="lg:hidden sticky top-0 z-40 -mx-3 sm:-mx-5 px-3 sm:px-5 py-1.5 bg-white/95 backdrop-blur-xl border-b border-[#e8eeec]"
+          style={{ paddingTop: 'calc(0.375rem + env(safe-area-inset-top))', marginTop: 'calc(-1 * env(safe-area-inset-top))' }}>
+          <div className="flex items-center gap-3">
+            <button onClick={() => onNavigate?.('profile')}
+              className="w-11 h-11 rounded-2xl bg-white border border-stone-100 shadow-sm shrink-0 overflow-hidden active:scale-95 transition-transform"
+              style={isPaidPlanUser ? {boxShadow: `0 0 0 2px ${planColor?.accent || TEAL}`} : {}}>
+              {user?.avatar ? <img src={user.avatar} alt="" className="w-full h-full object-cover" /> :
+                <span className="w-full h-full flex items-center justify-center font-black" style={{color: TEAL_DEEP}}>{avatarLetter}</span>}
+            </button>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold text-stone-400">{getGreeting()}</p>
+              <h1 className="text-sm sm:text-base font-black truncate">{greetingName || 'بەکارهێنەر'}</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => onNavigate?.('messages')} className="relative w-10 h-10 rounded-2xl bg-white border border-stone-100 shadow-sm flex items-center justify-center active:scale-95">
+                <MessageCircle className="w-[17px] h-[17px] text-stone-500" />
+                {unreadMessageCount > 0 && <i className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500" />}
+              </button>
+              <button onClick={() => onNavigate?.('notifications')} className="relative w-10 h-10 rounded-2xl bg-white border border-stone-100 shadow-sm flex items-center justify-center active:scale-95">
+                <Bell className="w-[17px] h-[17px] text-stone-500" />
+                {unreadNotifCount > 0 && <i className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Hero — deliberately compact, like a consumer app rather than a dashboard */}
+        <Reveal>
+          <section className="mt-2 relative overflow-hidden rounded-[28px] sm:rounded-[34px] bg-[#0d1c19] shadow-[0_18px_50px_rgba(13,28,25,.14)]">
+            <div className="absolute inset-0 opacity-80"
+              style={{background: 'radial-gradient(circle at 15% 10%, rgba(67,190,164,.28), transparent 32%), radial-gradient(circle at 90% 100%, rgba(18,121,107,.28), transparent 38%)'}} />
+            <div className="absolute inset-0 opacity-[.04]" style={{backgroundImage:'linear-gradient(rgba(255,255,255,.7) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.7) 1px,transparent 1px)',backgroundSize:'28px 28px'}} />
+            <div className="relative p-5 sm:p-7 lg:p-9">
+              <div className="max-w-3xl">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-[10px] font-black text-[#b8eee4]">
+                  {isEmployer ? <UsersRound className="w-3.5 h-3.5"/> : <Briefcase className="w-3.5 h-3.5"/>}
+                  {isEmployer ? 'کارخوازەکان' : 'Job Feed'}
+                </div>
+                <h2 className="mt-4 text-[29px] sm:text-[38px] lg:text-[46px] leading-[1.12] font-black text-white tracking-tight">
+                  {isEmployer ? <>کەسێکی <span style={{color:'#6ee1cc'}}>باش</span> بۆ کارەکەت بدۆزەرەوە.</> :
+                    <>کاری <span style={{color:'#6ee1cc'}}>گونجاو</span> بۆ تۆ بدۆزەرەوە.</>}
+                </h2>
+                <p className="mt-3 text-xs sm:text-sm leading-6 text-white/50 font-bold max-w-xl">
+                  {isEmployer ? 'پڕۆفایلی کارخوازەکان بپشکنە، تواناکانیان ببینە و بە خێرایی بانگهێشتیان بکە.' :
+                    'گەڕان بکە، هەلی نوێ ببینە و بە خێرایی سیڤییەکەت بنێرە.'}
+                </p>
+              </div>
+              <div className="mt-6 grid grid-cols-3 gap-2 max-w-2xl">
+                {[
+                  [isEmployer ? filteredFreelancers.length : filteredJobs.length, isEmployer ? 'کارخواز' : 'هەلی کار'],
+                  [isEmployer ? freelancers.length : jobs.length, isEmployer ? 'کارخواز هەیە' : 'کۆی کارەکان'],
+                  [isEmployer ? newestFreelancers.length : newestJobs.length, 'نوێ'],
+                ].map(([value,label]) => (
+                  <div key={label} className="rounded-2xl bg-white/[.07] border border-white/10 px-3 py-3">
+                    <div className="text-lg sm:text-xl font-black text-white font-mono">{Number(value||0).toLocaleString()}</div>
+                    <div className="mt-0.5 text-[9px] sm:text-[10px] text-white/40 font-bold">{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </Reveal>
+
+        {/* Main content */}
+        {!isEmployer ? (
+          <div className="mt-5 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-5 lg:gap-7">
+            <div className="min-w-0 space-y-5">
+              {/* Search */}
+              <Reveal>
+                <div className="rounded-[24px] bg-white border border-stone-100 p-2 shadow-[0_8px_30px_rgba(20,45,40,.055)]">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-300"/>
+                      <input value={searchTerm} onChange={e=>setSearchTerm(e.target.value)}
+                        placeholder="گەڕان بۆ ناوی کار، کۆمپانیا..."
+                        className="w-full h-12 bg-stone-50 rounded-[18px] pr-11 pl-4 outline-none text-sm font-bold placeholder:text-stone-300 focus:bg-white focus:ring-2 focus:ring-[#12796b]/10"/>
+                    </div>
+                    {hasActiveFilters && <button onClick={()=>{setSelectedCategory('all');setJobTypeFilter('all');setGovFilter('all');setPriceFilter('all');setSearchTerm('');}}
+                      className="w-12 h-12 rounded-[18px] bg-stone-100 flex items-center justify-center text-stone-500 active:scale-95">
+                      <X className="w-4 h-4"/>
+                    </button>}
+                  </div>
+                </div>
+              </Reveal>
+
+              {/* Category rail */}
+              <Reveal>
+                <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-1 px-1 pb-1">
+                  {CATEGORIES.map(cat=>{
+                    const Icon=CATEGORY_ICONS[cat.id]||Briefcase;
+                    const active=selectedCategory===cat.id;
+                    return <button key={cat.id} onClick={()=>{soundService.playTick?.();setSelectedCategory(cat.id);}}
+                      className={`shrink-0 h-10 px-4 rounded-full flex items-center gap-2 text-xs font-black transition-all active:scale-95 ${active?'text-white shadow-[0_8px_18px_rgba(18,121,107,.18)]':'bg-white border border-stone-100 text-stone-500'}`}
+                      style={active?{background:TEAL}: {}}>
+                      <Icon className="w-3.5 h-3.5"/>{cat.nameKu}
+                    </button>
+                  })}
+                </div>
+              </Reveal>
+
+              {/* Filters */}
+              <Reveal>
+                <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
+                  {[{value:'all',label:'هەموو' },...Object.entries(JOB_TYPE_LABELS).map(([value,label])=>({value,label}))].map(t=>
+                    <button key={t.value} onClick={()=>setJobTypeFilter(t.value)}
+                      className={`shrink-0 px-4 py-2.5 rounded-full text-[11px] font-black ${jobTypeFilter===t.value?'text-white':'bg-white border border-stone-100 text-stone-500'}`}
+                      style={jobTypeFilter===t.value?{background:TEAL}: {}}>{t.label}</button>
+                  )}
+                  <DropdownChip label="نرخ" value={priceFilter} options={PRICE_RANGES} onChange={setPriceFilter}/>
+                  <DropdownChip label="شار" value={govFilter}
+                    options={[{value:'all',label:'هەموو شارەکان'},...Object.entries(GOV_LABELS).map(([value,label])=>({value,label}))]}
+                    onChange={setGovFilter}/>
+                </div>
+              </Reveal>
+
+              {/* Personalized rail */}
+              {recommendedLoading ? (
+                <div className="rounded-[24px] bg-white p-5 flex items-center gap-3 border border-stone-100">
+                  <Loader2 className="w-5 h-5 animate-spin" style={{color:TEAL}}/>
+                  <span className="text-xs font-bold text-stone-500">بۆ تۆ دەگەڕێین...</span>
+                </div>
+              ) : recommended.jobs.length > 0 && (
+                <Reveal>
+                  <section>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2"><Sparkles className="w-4 h-4" style={{color:TEAL}}/><h2 className="text-sm font-black">پێشنیاری تایبەت بۆ تۆ</h2></div>
+                    </div>
+                    <div className="flex gap-3 overflow-x-auto scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0">
+                      {recommended.jobs.slice(0,6).map(job=>{
+                        const company=job.company_name||job.companyName||'کۆمپانیا';
+                        const saved=savedJobIds.includes(job.id);
+                        return <article key={job.id} onClick={()=>onNavigate?.('job_detail',{jobId:job.id})}
+                          className="w-[270px] shrink-0 rounded-[24px] bg-white border border-stone-100 p-4 shadow-[0_5px_22px_rgba(20,45,40,.06)] cursor-pointer active:scale-[.985]">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="w-11 h-11 rounded-2xl overflow-hidden bg-stone-100 shrink-0">
+                              {job.company_logo?<img src={job.company_logo} alt="" className="w-full h-full object-cover"/>:<div className="w-full h-full flex items-center justify-center font-black text-sm" style={{color:TEAL}}>{company.charAt(0)}</div>}
+                            </div>
+                            <button onClick={e=>{e.stopPropagation();toggleSaveJob(job.id)}} className="w-9 h-9 rounded-xl bg-stone-50 flex items-center justify-center">
+                              <Heart className={`w-4 h-4 ${saved?'fill-rose-500 text-rose-500':'text-stone-300'}`}/>
+                            </button>
+                          </div>
+                          <h3 className="mt-4 font-black text-sm truncate">{job.title_ku||job.title||'هەلی کار'}</h3>
+                          <p className="mt-1 text-[11px] text-stone-400 font-bold truncate">{company}</p>
+                          <div className="mt-4 flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-stone-400">{GOV_LABELS[job.governorate_id]||job.location||'کوردستان'}</span>
+                            <span className="font-mono text-xs font-black" style={{color:TEAL_DEEP}}>{Number(job.salary_min||0).toLocaleString()} IQD</span>
+                          </div>
+                        </article>
+                      })}
+                    </div>
+                  </section>
+                </Reveal>
+              )}
+
+              {/* Feed */}
+              <Reveal>
+                <div className="flex items-center justify-between pt-1">
+                  <div><h2 className="text-base font-black">هەلی کارەکان</h2><p className="text-[10px] text-stone-400 font-bold mt-1">{filteredJobs.length} هەلی بەردەست</p></div>
+                  {user && hasActiveFilters && <button onClick={handleSaveSearch} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-stone-100 text-[10px] font-black text-stone-500"><Bell className="w-3.5 h-3.5" style={{color:TEAL}}/>ئاگادارکردنەوە</button>}
+                </div>
+              </Reveal>
+
+              {isInitialLoading ? (
+                <div className="space-y-3">{Array.from({length:5}).map((_,i)=><div key={i} className="h-44 rounded-[24px] bg-white border border-stone-100 animate-pulse"/>)}</div>
+              ) : pagedJobs.length===0 ? (
+                <div className="rounded-[28px] bg-white border border-stone-100 py-20 text-center">
+                  <Briefcase className="w-12 h-12 mx-auto text-stone-200 mb-3"/>
+                  <h3 className="font-black text-stone-500">هیچ هەلی کارێک نەدۆزرایەوە</h3>
+                  <p className="mt-1 text-xs font-bold text-stone-300">پاڵاوتنەکان بگۆڕە و دووبارە هەوڵ بدەوە</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pagedJobs.map((job,i)=><div key={job.id} style={{animationDelay:`${Math.min(i,8)*35}ms`}} className="animate-fadeIn"><JobPhotoCard job={job}/></div>)}
+                </div>
+              )}
+
+              {totalPages>1 && <div className="flex justify-center items-center gap-3 pt-2">
+                <button disabled={page===1} onClick={()=>setPage(p=>p-1)} className="w-10 h-10 rounded-full bg-white border border-stone-100 disabled:opacity-30"><ChevronRight className="w-4 h-4 mx-auto"/></button>
+                <span className="text-xs font-black text-stone-400 font-mono">{page} / {totalPages}</span>
+                <button disabled={page===totalPages} onClick={()=>setPage(p=>p+1)} className="w-10 h-10 rounded-full bg-white border border-stone-100 disabled:opacity-30"><ChevronLeft className="w-4 h-4 mx-auto"/></button>
+              </div>}
+            </div>
+
+            {/* Desktop discovery sidebar */}
+            <aside className="hidden lg:block space-y-4">
+              <div className="sticky top-24 space-y-4">
+                <div className="rounded-[26px] bg-white border border-stone-100 p-5 shadow-[0_8px_30px_rgba(20,45,40,.05)]">
+                  <div className="flex items-center gap-2 mb-4"><MapPin className="w-4 h-4" style={{color:TEAL}}/><h3 className="text-sm font-black">گەڕان بەپێی شار</h3></div>
+                  <div className="space-y-1.5">
+                    {cityStats.slice(0,6).map(c=><button key={c.id} onClick={()=>{setGovFilter(c.id);scrollToResults()}}
+                      className={`w-full flex items-center justify-between px-3 py-3 rounded-xl text-xs font-bold transition-colors ${govFilter===c.id?'bg-[#e7f4f1]':'hover:bg-stone-50 text-stone-500'}`}>
+                      <span>{c.label}</span><span className="font-mono text-[10px] text-stone-400">{c.count}</span>
+                    </button>)}
+                  </div>
+                </div>
+                {!isPaidPlanUser && !isEmployer && <PremiumUpgradeBanner onNavigate={onNavigate} planName={userPlanTier?.name_ku||''}/>}
+              </div>
+            </aside>
+          </div>
+        ) : (
+          /* Employer feed */
+          <div className="mt-5 space-y-5">
+            <Reveal>
+              <div className="rounded-[24px] bg-white border border-stone-100 p-2 shadow-[0_8px_30px_rgba(20,45,40,.05)]">
+                <div className="relative">
+                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-300"/>
+                  <input value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} placeholder="گەڕان بۆ کارخواز، تواناکان، شار..."
+                    className="w-full h-12 bg-stone-50 rounded-[18px] pr-11 pl-4 outline-none text-sm font-bold placeholder:text-stone-300 focus:bg-white"/>
+                </div>
+              </div>
+            </Reveal>
+
+            <Reveal>
+              <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
+                {CATEGORIES.map(cat=>{const Icon=CATEGORY_ICONS[cat.id]||Briefcase;const active=selectedCategory===cat.id;return <button key={cat.id} onClick={()=>setSelectedCategory(cat.id)}
+                  className={`shrink-0 px-4 py-2.5 rounded-full flex items-center gap-2 text-xs font-black ${active?'text-white':'bg-white border border-stone-100 text-stone-500'}`} style={active?{background:TEAL}:{}}><Icon className="w-3.5 h-3.5"/>{cat.nameKu}</button>})}
+                <button onClick={()=>setVerifiedOnly(v=>!v)} className={`shrink-0 px-4 py-2.5 rounded-full text-xs font-black border ${verifiedOnly?'text-white border-transparent':'bg-white border-stone-100 text-stone-500'}`} style={verifiedOnly?{background:TEAL}:{}}><BadgeCheck className="inline w-3.5 h-3.5 ml-1"/>پشتڕاستکراو</button>
+              </div>
+            </Reveal>
+
+            <Reveal>
+              <div className="flex items-end justify-between">
+                <div><h2 className="text-base font-black">کارخوازەکان</h2><p className="text-[10px] text-stone-400 font-bold mt-1">{filteredFreelancers.length} پڕۆفایل</p></div>
+                <button onClick={()=>onNavigate?.('post-job')} className="px-4 py-2.5 rounded-xl text-[11px] font-black text-white" style={{background:TEAL}}><Briefcase className="inline w-3.5 h-3.5 ml-1"/>بڵاوکردنەوەی کار</button>
+              </div>
+            </Reveal>
+
+            {filteredFreelancers.length===0 ? (
+              <div className="rounded-[28px] bg-white border border-stone-100 py-20 text-center"><Users className="w-12 h-12 mx-auto text-stone-200 mb-3"/><h3 className="font-black text-stone-500">هیچ کارخوازێک نەدۆزرایەوە</h3><p className="text-xs text-stone-300 mt-1">گەڕان یان پاڵاوتنەکان بگۆڕە</p></div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {pagedFreelancers.map((f,i)=><div key={f.id} style={{animationDelay:`${Math.min(i,10)*35}ms`}} className="animate-fadeIn"><FreelancerPhotoCard f={f}/></div>)}
+              </div>
+            )}
+            {totalFreelancerPages>1 && <div className="flex justify-center items-center gap-3 pt-1">
+              <button disabled={page===1} onClick={()=>setPage(p=>p-1)} className="w-10 h-10 rounded-full bg-white border border-stone-100 disabled:opacity-30"><ChevronRight className="w-4 h-4 mx-auto"/></button>
+              <span className="text-xs font-black text-stone-400 font-mono">{page} / {totalFreelancerPages}</span>
+              <button disabled={page===totalFreelancerPages} onClick={()=>setPage(p=>p+1)} className="w-10 h-10 rounded-full bg-white border border-stone-100 disabled:opacity-30"><ChevronLeft className="w-4 h-4 mx-auto"/></button>
+            </div>}
+          </div>
+        )}
+      </main>
+
+      {isEmployer && <>
+        <FreelancerProfileModal freelancer={selectedFreelancer} isOpen={!!selectedFreelancer} onClose={()=>setSelectedFreelancer(null)} />
+        <SendInvitationModal freelancer={inviteTarget} isOpen={!!inviteTarget} onClose={()=>setInviteTarget(null)} />
+      </>}
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { apiService } from '../services/api';
 import { socketService } from '../services/socketService';
 import { realtimeService } from '../services/realtimeService';
 import { useAuth } from './AuthContext';
+import { keepIfSame } from '../utils/sameData';
 
 const StoreContext = createContext();
 
@@ -92,15 +93,16 @@ export const StoreProvider = ({ children }) => {
         apiService.getPlanTiers(),
       ]);
 
-      if (Array.isArray(liveJobs)) setJobs(liveJobs);
-      if (Array.isArray(liveApps)) setApplications(liveApps);
-      if (Array.isArray(liveNotifs)) setNotifications(liveNotifs);
-      if (Array.isArray(liveFreelancers)) setFreelancers(liveFreelancers);
-      if (Array.isArray(liveCompanies)) setCompanies(liveCompanies);
-      if (Array.isArray(liveCategories) && liveCategories.length > 0) setCategories(liveCategories);
-      if (Array.isArray(liveWorkTypes) && liveWorkTypes.length > 0) setWorkTypes(liveWorkTypes);
-      if (liveSettings && Object.keys(liveSettings).length > 0) setSettings(liveSettings);
-      if (Array.isArray(liveTiers)) setPlanTiers(liveTiers);
+      // keepIfSame: a poll that found nothing new must not re-render every page.
+      if (Array.isArray(liveJobs)) setJobs(prev => keepIfSame(prev, liveJobs));
+      if (Array.isArray(liveApps)) setApplications(prev => keepIfSame(prev, liveApps));
+      if (Array.isArray(liveNotifs)) setNotifications(prev => keepIfSame(prev, liveNotifs));
+      if (Array.isArray(liveFreelancers)) setFreelancers(prev => keepIfSame(prev, liveFreelancers));
+      if (Array.isArray(liveCompanies)) setCompanies(prev => keepIfSame(prev, liveCompanies));
+      if (Array.isArray(liveCategories) && liveCategories.length > 0) setCategories(prev => keepIfSame(prev, liveCategories));
+      if (Array.isArray(liveWorkTypes) && liveWorkTypes.length > 0) setWorkTypes(prev => keepIfSame(prev, liveWorkTypes));
+      if (liveSettings && Object.keys(liveSettings).length > 0) setSettings(prev => keepIfSame(prev, liveSettings));
+      if (Array.isArray(liveTiers)) setPlanTiers(prev => keepIfSame(prev, liveTiers));
     } catch (e) {
       console.warn('Sync error', e);
     } finally {

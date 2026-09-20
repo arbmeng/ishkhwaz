@@ -63,7 +63,7 @@ export const PWAInstallModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div dir="rtl" className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 select-none font-vazirmatn animate-fadeIn">
+    <div dir="rtl" className="safe-top fixed inset-0 z-[9999] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 select-none font-vazirmatn animate-fadeIn">
       
       {/* Background Glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-lime-400/15 blur-[120px] rounded-full pointer-events-none" />

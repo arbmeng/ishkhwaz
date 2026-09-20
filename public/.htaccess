@@ -45,6 +45,9 @@
   # server 301s /plans -> /plans/ and serves THAT site's index.html instead of
   # the SPA. Send these exact paths to the SPA first. Remove this rule once the
   # folders are deleted from the server.
+  # Host-gated: on zeraworld.com/ishkhwaz/* these folders are the Zera panel's
+  # own admin pages, and "/index.html" there resolves to the Zera World root.
+  RewriteCond %{HTTP_HOST} ^ishkhwaz\.
   RewriteRule ^(plans|messages|map|dashboard)/?$ /index.html [L]
 
   # Frontend Single Page App fallback

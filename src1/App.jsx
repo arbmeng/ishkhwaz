@@ -34,6 +34,7 @@ import { ResetPasswordPage } from './components/auth/ResetPasswordPage';
 import { PullToRefresh } from './components/layout/PullToRefresh';
 import { JobDetailPage } from './components/company/JobDetailPage';
 import { JobPage } from './components/freelancer/JobPage';
+import { FEATURES, canSeePlans } from './config/features';
 
 // /jobs/{id} (job seeker page) and /dashboard/jobs/{id} (owner page) — read
 // from the raw path (not the lowercased `target` getInitialTab builds) so a
@@ -109,6 +110,7 @@ function MainAppContent() {
       if (target.startsWith('jobs/')) return 'job_detail';
       if (target === 'wallet' || target === 'plans' || target === 'upgrade') return 'plans';
       if (target === 'resumes' || target === 'my-resumes') return 'resumes';
+      if (target === 'post-job' || target === 'post_job') return 'post_job';
       if (target === 'cv' || target === 'build-cv' || target === 'cv_builder' || target === 'karnama_cv') return 'karnama_cv';
       if (target === 'install') return 'install_app';
       if (target === 'admin') return 'admin';
@@ -234,6 +236,13 @@ function MainAppContent() {
       }
     }
   }, [user, activeTab, initialShareLinkQuery]);
+
+  // Disabled map / plans-for-companies: land on Home instead of an empty or forbidden page.
+  useEffect(() => {
+    if ((activeTab === 'map' && !FEATURES.map) || (activeTab === 'plans' && user && !canSeePlans(user))) {
+      setActiveTab('home', { replace: true });
+    }
+  }, [activeTab, user]);
 
   // Subscribe this device for real push notifications (lock screen, app closed) —
   // safe to call every load: no-op if already granted/subscribed, silent if the

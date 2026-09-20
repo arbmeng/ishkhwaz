@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiService, API_BASE_URL } from '../services/api';
 import { supabase } from '../services/supabaseClient';
 import { realtimeService } from '../services/realtimeService';
+import { keepIfSame } from '../utils/sameData';
 
 const AuthContext = createContext();
 
@@ -95,7 +96,7 @@ export const AuthProvider = ({ children }) => {
             logout();
             return;
           }
-          setUser(prev => ({ ...prev, ...u,
+          setUser(prev => keepIfSame(prev, { ...prev, ...u,
             walletBalance: u.wallet_balance ?? prev?.walletBalance,
             governorate:   u.governorate   ?? prev?.governorate,
             subDistrict:   u.sub_district  ?? prev?.subDistrict,

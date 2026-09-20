@@ -171,19 +171,36 @@ export const Dashboard = ({ onNavigate }) => {
     setTogglingJobId(null);
   };
 
-  const handleApproveApplicant = (appId) => {
-    soundService.playSuccess?.();
-    setStatusOverrides(prev => ({ ...prev, [appId]: 'accepted' }));
-    setStageOverrides(prev => ({ ...prev, [appId]: 4 }));
-    updateCompanyApplicantStatus?.(appId, 'accepted');
-    addToast?.({ title: 'پەسەندکرا ✓', message: 'کاندید بە سەرکەوتوویی پەسەندکرا.', type: 'success' });
+  // Show the decision right away, but only keep it (and only announce success)
+  // once the server has actually accepted it. Before this, a stray call to an
+  // undefined setStageOverrides threw before the request was ever sent, so the
+  // card looked accepted while the server never heard about it.
+  const decideApplicant = async (appId, decision) => {
+    const previous = statusOverrides[appId];
+    setStatusOverrides(prev => ({ ...prev, [appId]: decision }));
+    const ok = await updateCompanyApplicantStatus?.(appId, decision);
+    if (ok) return true;
+    setStatusOverrides(prev => {
+      const next = { ...prev };
+      if (previous === undefined) delete next[appId]; else next[appId] = previous;
+      return next;
+    });
+    return false; // updateCompanyApplicantStatus already showed the error toast
   };
 
-  const handleRejectApplicant = (appId) => {
+  const handleApproveApplicant = async (appId) => {
     soundService.playTick?.();
-    setStatusOverrides(prev => ({ ...prev, [appId]: 'rejected' }));
-    updateCompanyApplicantStatus?.(appId, 'rejected');
-    addToast?.({ title: 'ڕەتکرایەوە', message: 'کاندید ڕەتکرایەوە.', type: 'info' });
+    if (await decideApplicant(appId, 'accepted')) {
+      soundService.playSuccess?.();
+      addToast?.({ title: 'پەسەندکرا ✓', message: 'کاندید بە سەرکەوتوویی پەسەندکرا.', type: 'success' });
+    }
+  };
+
+  const handleRejectApplicant = async (appId) => {
+    soundService.playTick?.();
+    if (await decideApplicant(appId, 'rejected')) {
+      addToast?.({ title: 'ڕەتکرایەوە', message: 'کاندید ڕەتکرایەوە.', type: 'info' });
+    }
   };
 
   const handleOpenCv = (applicant) => {
@@ -670,7 +687,7 @@ export const Dashboard = ({ onNavigate }) => {
                     <h4 className="text-sm font-bold text-[#111d1a]">
                       {sentRequests.length === 0 ? 'هیچ داواکارییەکت نەناردووە' : 'هیچ داواکارییەک بەم فلتەرە نییە'}
                     </h4>
-                    <p className="text-xs text-[#7b8e88]">سەردانی بەشی (گەڕان) یان (نەخشە) بکە بۆ ناردنی سیڤی بۆ کۆمپانیاکان.</p>
+                    <p className="text-xs text-[#7b8e88]">سەردانی بەشی (گەڕان) بکە بۆ ناردنی سیڤی بۆ کۆمپانیاکان.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">

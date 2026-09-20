@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { PageHeader } from '../layout/PageHeader';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import { soundService } from '../../services/soundService';
@@ -228,28 +229,14 @@ export const KarnamaCVPage = ({ onBack, onProceed }) => {
 
   return (
     <div dir="rtl" className="min-h-screen font-vazirmatn" style={{ background: '#f4f7f6', paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}>
-      {/* HEADER */}
-      <div
-        className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b border-stone-200 px-4 sm:px-6 lg:px-8"
-        style={{
-          paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 12px))',
-          paddingBottom: '14px',
-        }}
-      >
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-          <span className="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-black font-mono" style={{ background: TEAL_SOFT, color: TEAL_DEEP }}>
-            {step + 1}/{STEPS.length}
-          </span>
-          <div className="text-center">
-            <h1 className="text-sm font-black text-stone-900">دروستکردنی سیڤی پیشەیی</h1>
-            <div className="text-[10px] text-stone-400 font-bold">{current.label}</div>
-          </div>
-          <button onClick={() => { soundService.playTick?.(); if (onBack) onBack(); }} aria-label="گەڕانەوە"
-            className="shrink-0 w-9 h-9 rounded-2xl bg-stone-50 border border-stone-200 flex items-center justify-center text-stone-600 active:scale-95 transition-transform">
-            <ChevronRight className="w-4 h-4 rtl:rotate-180" />
-          </button>
-        </div>
-        <div className="max-w-3xl mx-auto mt-3 flex gap-1">
+      {/* HEADER — shared page header; the step label + progress bars are plain content under it */}
+      <PageHeader
+        title={`دروستکردنی سیڤی پیشەیی · ${step + 1}/${STEPS.length}`}
+        onBack={() => { soundService.playTick?.(); if (onBack) onBack(); }}
+      />
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <div className="text-[11px] text-stone-500 font-bold mb-2 text-right">{current.label}</div>
+        <div className="flex gap-1">
           {STEPS.map((s, i) => (
             <div key={s.key} className="h-1.5 flex-1 rounded-full overflow-hidden bg-stone-200">
               <div className="h-full rounded-full transition-all duration-300" style={{ width: i <= step ? '100%' : '0%', background: `linear-gradient(90deg,${TEAL_DEEP},${TEAL})` }} />

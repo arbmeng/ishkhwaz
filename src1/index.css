@@ -230,3 +230,9 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #12796b;
 }
+
+/* Full-screen overlays that would draw under the phone status bar / notch in the installed PWA
+   (viewport-fit=cover + a translucent status bar): a transparent top border of the safe-area
+   height pushes their content below it. The element's own background still covers the strip and
+   its padding is untouched; it is 0 on devices with no notch. */
+.safe-top { border-top: env(safe-area-inset-top, 0px) solid transparent; }

@@ -1,81 +1,125 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { soundService } from '../../services/soundService';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BriefcaseBusiness,
+  Check,
+  ChevronLeft,
+  MapPin,
+  Search,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
 
-// Brand teal — matches the new logo mark (teal briefcase-notched "ئ").
 const TEAL = '#12796b';
+const TEAL_DEEP = '#0d5c50';
 const EASE = 'cubic-bezier(.22,.9,.34,1)';
 
 const SLIDES = [
   {
     illustration: 'search',
-    title: 'کارێک بدۆزەرەوە لە نزیکترین ناوچەت',
-    desc: 'لە پێنج پارێزگا و هەموو ناحیەکانیان بگەڕێ — سلێمانی، هەولێر، دهۆک، کەرکووک و هەڵەبجە.',
+    eyebrow: 'گەڕانێکی زیرەک',
+    title: 'کاری گونجاو بە ئاسانی بدۆزەرەوە',
+    desc: 'لە پێنج پارێزگا و هەموو ناوچەکانیان بگەڕێ — سلێمانی، هەولێر، دهۆک، کەرکووک و هەڵەبجە.',
   },
   {
     illustration: 'location',
-    title: 'فلتەرکردنی دقیق بەپێی شار، قەزا و ناحیەکان',
-    desc: 'دۆزینەوەی ئیش تەنانەت لە بچووکترین ناوچە و ناحیەکان: تەکیەی کاکەمەند، بازیان، باوانج، چەمچەماڵ، زاخۆ و عەنکاوە.',
+    eyebrow: 'ناوچەی ورد',
+    title: 'کارەکان لە نزیکترین شوێنەوە',
+    desc: 'بەپێی شار، قەزا و ناحیە فلتەر بکە و تەنانەت لە بچووکترین ناوچەکاندا کار بدۆزەرەوە.',
   },
   {
     illustration: 'shield',
-    title: 'سیستەمی پارێزراوی ناردنی سیڤی و پارەدان',
-    desc: 'تەنها بە بڕێکی زۆر کەم سیڤییەکەت ڕەوانە بکە، بە ڕاستەوخۆیی دۆخی داواکارییەکەت لە دەستی ئەدمین و کۆمپانیا دەبینیت.',
+    eyebrow: 'پارێزراو و متمانەپێکراو',
+    title: 'سیڤی بنێرە و داواکارییەکەت بەدوادا بچۆ',
+    desc: 'بە شێوەیەکی پارێزراو سیڤییەکەت ڕەوانە بکە و دۆخی داواکارییەکەت لە سیستەمەکە ببینە.',
   },
 ];
 
-// What the splash's feature row promotes — same three pillars the onboarding
-// carousel goes on to explain in full.
 const FEATURES = [
-  { icon: '🔍', label: 'دۆزینەوەی ئیش' },
-  { icon: '📍', label: 'گەڕانی وردی ناوچەیی' },
-  { icon: '🔒', label: 'پارەدانی پارێزراو' },
+  { icon: Search, label: 'دۆزینەوەی ئیش' },
+  { icon: MapPin, label: 'گەڕانی ناوچەیی' },
+  { icon: ShieldCheck, label: 'پارێزراو' },
 ];
 
-// Real hand-drawn SVG illustrations for each onboarding slide — brand teal,
-// no external image assets. Replaces the old "illustration — {name}" text
-// placeholder that used to sit here during development.
 const SearchIllustration = () => (
-  <svg viewBox="0 0 200 200" className="w-[62%] h-[62%]" fill="none">
-    <rect x="34" y="46" width="108" height="30" rx="8" fill="#fff" stroke="#cfe6e0" strokeWidth="2" />
-    <rect x="46" y="55" width="46" height="5" rx="2.5" fill="#12796b" opacity="0.85" />
-    <rect x="46" y="65" width="66" height="4" rx="2" fill="#cfe6e0" />
-    <rect x="26" y="86" width="108" height="30" rx="8" fill="#fff" stroke="#cfe6e0" strokeWidth="2" />
-    <rect x="38" y="95" width="46" height="5" rx="2.5" fill="#12796b" opacity="0.85" />
-    <rect x="38" y="105" width="66" height="4" rx="2" fill="#cfe6e0" />
-    <circle cx="128" cy="132" r="30" fill="#eaf6f3" stroke="#12796b" strokeWidth="6" />
-    <path d="M149 153 L167 171" stroke="#12796b" strokeWidth="8" strokeLinecap="round" />
-    <path d="M116 132 a12 12 0 0 1 12 -12" stroke="#5fb8a8" strokeWidth="4" strokeLinecap="round" />
+  <svg viewBox="0 0 320 280" className="h-full w-full" fill="none">
+    <defs>
+      <linearGradient id="searchCard" x1="40" y1="30" x2="260" y2="250">
+        <stop stopColor="#ffffff" />
+        <stop offset="1" stopColor="#eaf6f3" />
+      </linearGradient>
+      <filter id="searchShadow" x="-30%" y="-30%" width="160%" height="170%">
+        <feDropShadow dx="0" dy="12" stdDeviation="12" floodColor="#12796b" floodOpacity=".13" />
+      </filter>
+    </defs>
+    <circle cx="244" cy="64" r="44" fill="#12796b" opacity=".07" />
+    <circle cx="74" cy="218" r="58" fill="#12796b" opacity=".05" />
+    <g filter="url(#searchShadow)">
+      <rect x="50" y="52" width="178" height="132" rx="24" fill="url(#searchCard)" stroke="#cfe6e0" />
+      <rect x="72" y="76" width="88" height="10" rx="5" fill="#12796b" opacity=".9" />
+      <rect x="72" y="96" width="128" height="7" rx="3.5" fill="#d5e7e2" />
+      <rect x="72" y="112" width="104" height="7" rx="3.5" fill="#e3eeeb" />
+      <rect x="72" y="140" width="64" height="18" rx="9" fill="#eaf6f3" />
+      <rect x="144" y="140" width="50" height="18" rx="9" fill="#f1f5f4" />
+    </g>
+    <circle cx="224" cy="178" r="45" fill="#ffffff" stroke="#12796b" strokeWidth="8" />
+    <circle cx="224" cy="178" r="19" fill="#eaf6f3" stroke="#12796b" strokeWidth="5" />
+    <path d="M256 210l28 28" stroke="#12796b" strokeWidth="11" strokeLinecap="round" />
+    <path d="M214 178h20M224 168v20" stroke="#12796b" strokeWidth="4" strokeLinecap="round" opacity=".8" />
   </svg>
 );
 
 const LocationIllustration = () => (
-  <svg viewBox="0 0 200 200" className="w-[62%] h-[62%]" fill="none">
-    <ellipse cx="100" cy="168" rx="46" ry="8" fill="#cfe6e0" opacity="0.6" />
-    <circle cx="46" cy="60" r="5" fill="#5fb8a8" opacity="0.7" />
-    <circle cx="152" cy="70" r="4" fill="#5fb8a8" opacity="0.5" />
-    <circle cx="160" cy="130" r="5" fill="#5fb8a8" opacity="0.6" />
-    <circle cx="38" cy="120" r="4" fill="#5fb8a8" opacity="0.5" />
-    <path
-      d="M100 30 C126 30 147 51 147 77 C147 112 100 158 100 158 C100 158 53 112 53 77 C53 51 74 30 100 30 Z"
-      fill="#12796b"
-    />
-    <circle cx="100" cy="78" r="24" fill="#fff" />
-    <circle cx="100" cy="78" r="11" fill="#12796b" />
+  <svg viewBox="0 0 320 280" className="h-full w-full" fill="none">
+    <defs>
+      <filter id="pinShadow" x="-50%" y="-50%" width="200%" height="200%">
+        <feDropShadow dx="0" dy="12" stdDeviation="12" floodColor="#12796b" floodOpacity=".18" />
+      </filter>
+    </defs>
+    <ellipse cx="160" cy="237" rx="80" ry="12" fill="#12796b" opacity=".08" />
+    <circle cx="70" cy="74" r="7" fill="#12796b" opacity=".28" />
+    <circle cx="248" cy="82" r="6" fill="#12796b" opacity=".2" />
+    <circle cx="262" cy="190" r="8" fill="#12796b" opacity=".18" />
+    <path d="M70 130h180M102 88h116M102 172h116" stroke="#cfe6e0" strokeWidth="3" strokeLinecap="round" />
+    <g filter="url(#pinShadow)">
+      <path
+        d="M160 42c-39 0-70 31-70 70 0 52 70 111 70 111s70-59 70-111c0-39-31-70-70-70Z"
+        fill="#12796b"
+      />
+      <circle cx="160" cy="112" r="34" fill="#fff" />
+      <circle cx="160" cy="112" r="15" fill="#12796b" />
+      <circle cx="160" cy="112" r="7" fill="#d8f0eb" />
+    </g>
   </svg>
 );
 
 const ShieldIllustration = () => (
-  <svg viewBox="0 0 200 200" className="w-[62%] h-[62%]" fill="none">
-    <path
-      d="M100 28 L152 46 C152 46 156 108 100 158 C44 108 48 46 48 46 Z"
-      fill="#eaf6f3"
-      stroke="#12796b"
-      strokeWidth="6"
-    />
-    <path d="M78 88 L94 106 L126 68" stroke="#12796b" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-    <rect x="132" y="118" width="40" height="30" rx="8" fill="#12796b" />
-    <path d="M140 118 v-8 a12 12 0 0 1 24 0 v8" stroke="#12796b" strokeWidth="6" fill="none" strokeLinecap="round" />
-    <circle cx="152" cy="132" r="4" fill="#fff" />
+  <svg viewBox="0 0 320 280" className="h-full w-full" fill="none">
+    <defs>
+      <linearGradient id="shieldFill" x1="90" y1="40" x2="240" y2="230">
+        <stop stopColor="#f7fffd" />
+        <stop offset="1" stopColor="#e4f4f0" />
+      </linearGradient>
+      <filter id="shieldShadow" x="-30%" y="-30%" width="160%" height="170%">
+        <feDropShadow dx="0" dy="12" stdDeviation="12" floodColor="#12796b" floodOpacity=".15" />
+      </filter>
+    </defs>
+    <circle cx="88" cy="64" r="44" fill="#12796b" opacity=".06" />
+    <circle cx="246" cy="214" r="52" fill="#12796b" opacity=".05" />
+    <g filter="url(#shieldShadow)">
+      <path
+        d="M160 34 232 60s4 86-72 154C84 146 88 60 88 60l72-26Z"
+        fill="url(#shieldFill)"
+        stroke="#12796b"
+        strokeWidth="8"
+      />
+      <path d="m125 112 24 25 48-55" stroke="#12796b" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" />
+    </g>
+    <rect x="204" y="158" width="60" height="48" rx="14" fill="#12796b" />
+    <path d="M218 158v-10c0-13 10-23 23-23s23 10 23 23v10" stroke="#12796b" strokeWidth="9" strokeLinecap="round" />
+    <circle cx="234" cy="181" r="5" fill="#fff" />
   </svg>
 );
 
@@ -86,232 +130,349 @@ const ILLUSTRATIONS = {
 };
 
 export const SplashOnboarding = ({ onComplete }) => {
-  const [phase, setPhase] = useState('splash'); // 'splash' | 'onboarding'
+  const [phase, setPhase] = useState('splash');
   const [leaving, setLeaving] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState(0);
   const [stepVisible, setStepVisible] = useState(true);
 
   useEffect(() => {
-    const raf = requestAnimationFrame(() => requestAnimationFrame(() => setMounted(true)));
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setMounted(true));
+    });
     return () => cancelAnimationFrame(raf);
   }, []);
 
   useEffect(() => {
-    if (phase !== 'splash') return;
-    // A full, unhurried page — not a flashed-past modal — so this holds for
-    // a couple of seconds before the leave transition kicks off.
-    const t = setTimeout(() => {
+    if (phase !== 'splash') return undefined;
+
+    const alreadyOnboarded =
+      localStorage.getItem('ishkhwaz_splash_seen') === 'true';
+
+    const delay = alreadyOnboarded ? 1700 : 2500;
+    const leaveTimer = window.setTimeout(() => {
       setLeaving(true);
-      setTimeout(() => {
-        // Onboarding itself only ever plays once — every visit after the
-        // first just shows this brief splash, then straight into the app.
-        const alreadyOnboarded = localStorage.getItem('ishkhwaz_splash_seen') === 'true';
-        if (alreadyOnboarded) onComplete();
-        else setPhase('onboarding');
-      }, 380);
-    }, 2850);
-    return () => clearTimeout(t);
-  }, [phase]);
+      window.setTimeout(() => {
+        if (alreadyOnboarded) {
+          onComplete?.();
+        } else {
+          setPhase('onboarding');
+        }
+      }, 420);
+    }, delay);
+
+    return () => window.clearTimeout(leaveTimer);
+  }, [phase, onComplete]);
 
   const goStep = (next) => {
     setStepVisible(false);
-    setTimeout(() => {
+    window.setTimeout(() => {
       setStep(next);
       setStepVisible(true);
-    }, 180);
+    }, 190);
   };
 
   const handleNext = () => {
-    soundService.playTick();
+    soundService.playTick?.();
+
     if (step < SLIDES.length - 1) {
       goStep(step + 1);
     } else {
-      soundService.playSuccess();
-      onComplete();
+      soundService.playSuccess?.();
+      localStorage.setItem('ishkhwaz_splash_seen', 'true');
+      onComplete?.();
     }
   };
+
+  const handleSkip = () => {
+    soundService.playTick?.();
+    localStorage.setItem('ishkhwaz_splash_seen', 'true');
+    onComplete?.();
+  };
+
+  const currentSlide = SLIDES[step];
+  const Illustration = ILLUSTRATIONS[currentSlide.illustration];
 
   if (phase === 'splash') {
     return (
       <div
         dir="rtl"
-        className="fixed inset-0 z-[10001] flex flex-col items-center justify-center gap-7 select-none overflow-hidden"
+        className="fixed inset-0 z-[10001] flex min-h-[100dvh] items-center justify-center overflow-hidden select-none"
         style={{
-          backgroundColor: '#f4f7f6',
-          backgroundImage: 'radial-gradient(120% 60% at 50% 28%, #cdeae4, #f4f7f6 68%)',
+          background:
+            'radial-gradient(90% 65% at 50% 35%, #dff4ef 0%, #eef7f5 42%, #f7faf9 78%, #ffffff 100%)',
           opacity: leaving ? 0 : 1,
-          transform: leaving ? 'scale(1.03)' : 'scale(1)',
-          transition: `opacity 380ms ${EASE}, transform 380ms ${EASE}`,
+          transform: leaving ? 'scale(1.025)' : 'scale(1)',
+          transition: `opacity 420ms ${EASE}, transform 420ms ${EASE}`,
         }}
       >
         <style>{`
-          @keyframes ishkLogoPop {
-            0%   { transform: scale(0.5) translateY(16px); opacity: 0; }
-            58%  { transform: scale(1.09) translateY(-3px); opacity: 1; }
-            78%  { transform: scale(0.97) translateY(1px); }
-            100% { transform: scale(1) translateY(0); opacity: 1; }
-          }
-          @keyframes ishkGlowPulse {
-            0%, 100% { opacity: 0.24; transform: translate(-50%, -50%) scale(1); }
-            50%      { opacity: 0.4; transform: translate(-50%, -50%) scale(1.12); }
-          }
-          @keyframes ishkTextIn {
-            0%   { opacity: 0; transform: translateY(12px); filter: blur(5px); }
-            100% { opacity: 1; transform: translateY(0); filter: blur(0); }
-          }
-          @keyframes ishkShimmer {
-            0%   { transform: translateX(-140%); }
-            100% { transform: translateX(280%); }
-          }
-          @keyframes ishkFloat {
-            0%, 100% { transform: translateY(0); }
-            50%      { transform: translateY(-6px); }
-          }
-          @keyframes ishkChipIn {
-            0%   { opacity: 0; transform: translateY(10px) scale(0.94); }
+          @keyframes ishkLogoIn {
+            0% { opacity: 0; transform: translateY(24px) scale(.72); filter: blur(8px); }
+            65% { opacity: 1; transform: translateY(-5px) scale(1.06); filter: blur(0); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
           }
-          @keyframes ishkBlobA {
-            0%, 100% { transform: translate(-8%, -6%) scale(1); }
-            50%      { transform: translate(4%, 5%) scale(1.12); }
+          @keyframes ishkFloat {
+            0%,100% { transform: translateY(0); }
+            50% { transform: translateY(-7px); }
           }
-          @keyframes ishkBlobB {
-            0%, 100% { transform: translate(6%, 4%) scale(1); }
-            50%      { transform: translate(-5%, -6%) scale(1.1); }
+          @keyframes ishkText {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes ishkOrb {
+            0%,100% { transform: scale(1) translate(0,0); opacity:.4; }
+            50% { transform: scale(1.12) translate(4px,-5px); opacity:.65; }
+          }
+          @keyframes ishkBar {
+            from { transform: translateX(-120%); }
+            to { transform: translateX(330%); }
           }
         `}</style>
 
-        {/* Ambient background shapes — a full, designed page, not a flat flash.
-            Kept faint and pinned to the corners so they never compete with
-            the logo, even at the peak of their slow pulse. */}
-        <div aria-hidden="true" className="absolute pointer-events-none" style={{
-          top: '-10%', right: '-18%', width: 220, height: 220, borderRadius: '50%',
-          background: `radial-gradient(circle, ${TEAL}14, transparent 72%)`,
-          filter: 'blur(6px)', animation: mounted ? 'ishkBlobA 9s ease-in-out infinite' : 'none',
-        }} />
-        <div aria-hidden="true" className="absolute pointer-events-none" style={{
-          bottom: '-12%', left: '-20%', width: 260, height: 260, borderRadius: '50%',
-          background: 'radial-gradient(circle, #a8d8cd20, transparent 72%)',
-          filter: 'blur(6px)', animation: mounted ? 'ishkBlobB 11s ease-in-out infinite' : 'none',
-        }} />
-
-        {/* Soft breathing glow behind the mark */}
-        <div
-          aria-hidden="true"
-          className="absolute rounded-full pointer-events-none"
-          style={{
-            top: '32%', left: '50%', width: 200, height: 200,
-            background: `radial-gradient(circle, ${TEAL}40, transparent 70%)`,
-            filter: 'blur(18px)',
-            animation: mounted ? 'ishkGlowPulse 2.6s ease-in-out infinite' : 'none',
-            opacity: mounted ? undefined : 0,
-          }}
-        />
-
-        <div
-          className="relative h-24 w-[52px]"
-          style={{
-            filter: `drop-shadow(0 10px 20px ${TEAL}55)`,
-            animation: mounted ? 'ishkLogoPop 780ms cubic-bezier(.34,1.4,.4,1) both, ishkFloat 3.2s ease-in-out 780ms infinite' : 'none',
-            opacity: mounted ? undefined : 0,
-          }}
-        >
-          <img src="/logo-flat.png" alt="ئیش خواز" className="w-full h-full object-contain" />
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div
+            className="absolute -right-24 -top-24 h-72 w-72 rounded-full blur-3xl"
+            style={{
+              background: `${TEAL}12`,
+              animation: mounted ? 'ishkOrb 7s ease-in-out infinite' : 'none',
+            }}
+          />
+          <div
+            className="absolute -bottom-32 -left-24 h-80 w-80 rounded-full blur-3xl"
+            style={{
+              background: '#8fd1c420',
+              animation: mounted ? 'ishkOrb 9s ease-in-out infinite reverse' : 'none',
+            }}
+          />
+          <div
+            className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+            style={{ background: `${TEAL}20` }}
+          />
         </div>
 
-        <div
-          className="relative flex flex-col items-center gap-1.5"
-          style={{ animation: mounted ? 'ishkTextIn 620ms ease 260ms both' : 'none', opacity: mounted ? undefined : 0 }}
-        >
-          <h1 className="text-3xl font-black" style={{ fontFamily: "'Vazirmatn', sans-serif", color: '#111' }}>ئیش خواز</h1>
-          <p className="text-sm font-bold" style={{ color: '#6b7280' }}>کار لە کوردستان</p>
-        </div>
-
-        {/* Feature row — gives the splash real content, not just a logo flash */}
-        <div className="relative flex items-center gap-2.5 px-6">
-          {FEATURES.map((f, i) => (
-            <div
-              key={f.label}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-full"
-              style={{
-                background: 'rgba(255,255,255,0.65)',
-                border: '1px solid rgba(18,121,107,0.14)',
-                boxShadow: '0 4px 14px rgba(18,121,107,0.08)',
-                animation: mounted ? `ishkChipIn 520ms ${EASE} ${740 + i * 130}ms both` : 'none',
-                opacity: mounted ? undefined : 0,
-              }}
-            >
-              <span className="text-[13px] leading-none">{f.icon}</span>
-              <span className="text-[10.5px] font-bold whitespace-nowrap" style={{ color: '#3b4744' }}>{f.label}</span>
-            </div>
-          ))}
-        </div>
-
-        <div
-          className="absolute bottom-20 flex flex-col items-center gap-3"
-          style={{ opacity: mounted ? 1 : 0, transition: 'opacity 500ms ease 420ms' }}
-        >
-          <div className="relative w-[130px] h-[3px] rounded-full overflow-hidden" style={{ background: '#e2e5e3' }}>
-            <div
-              className="relative h-full rounded-full overflow-hidden"
-              style={{ width: mounted ? '100%' : '0%', background: TEAL, transition: `width 2250ms ${EASE} 500ms` }}
-            >
-              <div
-                aria-hidden="true"
-                className="absolute inset-y-0"
-                style={{
-                  width: '40%',
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.65), transparent)',
-                  animation: mounted ? 'ishkShimmer 1.35s ease-in-out 500ms' : 'none',
-                }}
-              />
-            </div>
+        <div className="relative flex w-full max-w-md flex-col items-center px-6">
+          <div
+            className="relative mb-7 h-28 w-[62px]"
+            style={{
+              animation: mounted
+                ? 'ishkLogoIn 850ms cubic-bezier(.34,1.35,.4,1) both, ishkFloat 3.4s ease-in-out 850ms infinite'
+                : 'none',
+              opacity: mounted ? undefined : 0,
+              filter: `drop-shadow(0 16px 24px ${TEAL}45)`,
+            }}
+          >
+            <img src="/logo-flat.png" alt="ئیش خواز" className="h-full w-full object-contain" />
           </div>
-          <span className="text-[10px] font-bold tracking-[0.2em]" style={{ color: '#9aa1a0' }}>ZERA GROUP</span>
+
+          <div
+            className="flex flex-col items-center"
+            style={{
+              animation: mounted ? 'ishkText 650ms ease 260ms both' : 'none',
+              opacity: mounted ? undefined : 0,
+            }}
+          >
+            <h1
+              className="text-4xl font-black tracking-tight"
+              style={{ color: '#101514', fontFamily: "'Vazirmatn', sans-serif" }}
+            >
+              ئیش خواز
+            </h1>
+            <p className="mt-1 text-sm font-bold text-[#687773]">
+              کار لە کوردستان، بە شێوەیەکی زیرەک
+            </p>
+          </div>
+
+          <div className="mt-7 flex flex-wrap justify-center gap-2">
+            {FEATURES.map(({ icon: Icon, label }, index) => (
+              <div
+                key={label}
+                className="flex items-center gap-2 rounded-full border bg-white/75 px-3.5 py-2 shadow-sm backdrop-blur-md"
+                style={{
+                  borderColor: `${TEAL}18`,
+                  animation: mounted
+                    ? `ishkText 520ms ${EASE} ${650 + index * 120}ms both`
+                    : 'none',
+                  opacity: mounted ? undefined : 0,
+                }}
+              >
+                <Icon className="h-3.5 w-3.5" style={{ color: TEAL }} />
+                <span className="text-[10.5px] font-bold text-[#3f4c48]">{label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div
+            className="absolute top-[calc(100vh-100px)] flex flex-col items-center gap-3"
+            style={{ opacity: mounted ? 1 : 0, transition: 'opacity 500ms ease 500ms' }}
+          >
+            <div className="h-1 w-36 overflow-hidden rounded-full bg-[#dce6e3]">
+              <div
+                className="relative h-full rounded-full"
+                style={{
+                  width: mounted ? '100%' : '0%',
+                  background: `linear-gradient(90deg, ${TEAL_DEEP}, ${TEAL})`,
+                  transition: `width ${alreadyOnboardedPlaceholder()}ms ${EASE} 250ms`,
+                }}
+              >
+                <div
+                  className="absolute inset-y-0 w-1/3"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent)',
+                    animation: mounted ? 'ishkBar 1.2s ease-in-out infinite' : 'none',
+                  }}
+                />
+              </div>
+            </div>
+            <span className="text-[9px] font-bold tracking-[0.22em] text-[#9aa5a1]">
+              ZERA GROUP
+            </span>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="fixed inset-0 z-[10001] flex flex-col select-none" style={{ background: '#f4f7f6' }}>
-      <div className="flex justify-start p-4 shrink-0" style={{ paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 8px))' }}>
-        <button onClick={onComplete} className="text-[13px] font-semibold px-2 py-2" style={{ color: '#8b938d' }}>تێپەڕاندن</button>
-      </div>
-
+    <div
+      dir="rtl"
+      className="fixed inset-0 z-[10001] flex min-h-[100dvh] flex-col overflow-hidden select-none"
+      style={{
+        background:
+          'radial-gradient(100% 50% at 50% 0%, #e2f3ef 0%, #f4f8f7 52%, #f8faf9 100%)',
+      }}
+    >
       <div
-        className="flex-1 flex flex-col justify-center gap-8 px-8 max-w-md mx-auto w-full"
-        style={{
-          opacity: stepVisible ? 1 : 0,
-          transform: stepVisible ? 'translateY(0)' : 'translateY(10px)',
-          transition: `opacity 220ms ${EASE}, transform 220ms ${EASE}`,
-        }}
-      >
-        <div
-          className="aspect-square flex items-center justify-center relative"
-          style={{ borderRadius: 24, border: '1px solid #d7e8e4', background: 'radial-gradient(120% 100% at 50% 20%, #eaf6f3, #f4f7f6 75%)' }}
-        >
-          {(() => { const Illustration = ILLUSTRATIONS[SLIDES[step].illustration]; return <Illustration />; })()}
-        </div>
-        <div className="flex flex-col gap-3">
-          <h2 style={{ margin: 0, fontFamily: "'Vazirmatn', sans-serif", fontSize: 24, fontWeight: 800, lineHeight: 1.4, color: '#111' }}>{SLIDES[step].title}</h2>
-          <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.9, color: '#6b7280' }}>{SLIDES[step].desc}</p>
-        </div>
-      </div>
+        className="absolute inset-x-0 top-0 h-1"
+        style={{ background: `linear-gradient(90deg, ${TEAL_DEEP}, ${TEAL})` }}
+      />
 
-      <div className="flex flex-col items-center gap-5 px-8 pb-10 shrink-0 max-w-md mx-auto w-full" style={{ paddingBottom: 'max(40px, calc(env(safe-area-inset-bottom) + 16px))' }}>
+      <header
+        className="relative flex items-center justify-between px-5 py-4 sm:px-8"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+      >
         <div className="flex items-center gap-2">
-          {SLIDES.map((_, i) => (
-            <div key={i} className="rounded-full"
-              style={{ height: 7, width: i === step ? 22 : 7, background: i === step ? TEAL : '#dfe3e1', transition: `width 320ms ${EASE}, background 320ms ${EASE}` }} />
-          ))}
+          <img src="/logo-flat.png" alt="" className="h-7 w-7 object-contain" />
+          <span className="text-xs font-black text-[#26332f]">ئیش خواز</span>
         </div>
-        <button onClick={handleNext} className="w-full text-center active:scale-[0.97]"
-          style={{ padding: 17, borderRadius: 14, fontFamily: 'inherit', fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer', background: TEAL, color: '#fff', boxShadow: `0 3px 12px ${TEAL}40`, transition: `transform 150ms ${EASE}` }}>
-          {step === SLIDES.length - 1 ? 'دەستپێکردن' : 'بەردەوام بە'}
+
+        <button
+          type="button"
+          onClick={handleSkip}
+          className="rounded-full border bg-white/70 px-4 py-2 text-[11px] font-black text-[#71807b] shadow-sm backdrop-blur-md transition hover:bg-white active:scale-95"
+          style={{ borderColor: '#dce7e3' }}
+        >
+          تێپەڕاندن
         </button>
-      </div>
+      </header>
+
+      <main className="relative mx-auto flex min-h-0 w-full max-w-5xl flex-1 items-center px-4 pb-5 sm:px-8 lg:px-12">
+        <div
+          className="grid w-full items-center gap-8 lg:grid-cols-[1.05fr_.95fr] lg:gap-14"
+          style={{
+            opacity: stepVisible ? 1 : 0,
+            transform: stepVisible ? 'translateY(0)' : 'translateY(12px)',
+            transition: `opacity 220ms ${EASE}, transform 220ms ${EASE}`,
+          }}
+        >
+          <div className="order-1 lg:order-2">
+            <div
+              className="relative mx-auto aspect-square w-full max-w-[430px] overflow-hidden rounded-[38px] border bg-white/65 p-5 shadow-[0_28px_90px_rgba(13,92,80,.10)] backdrop-blur-xl sm:p-8"
+              style={{ borderColor: '#d8e9e5' }}
+            >
+              <div className="absolute right-7 top-7 flex items-center gap-1.5 rounded-full border bg-white/75 px-3 py-1.5 text-[9px] font-black text-[#58706a] backdrop-blur-md">
+                <Sparkles className="h-3 w-3" style={{ color: TEAL }} />
+                ئیش خواز
+              </div>
+
+              <div
+                className="absolute left-8 top-16 h-20 w-20 rounded-full blur-2xl"
+                style={{ background: `${TEAL}15` }}
+              />
+              <div
+                className="absolute bottom-7 right-8 h-24 w-24 rounded-full blur-2xl"
+                style={{ background: '#9ed9ce22' }}
+              />
+
+              <div className="relative h-full w-full">
+                <Illustration />
+              </div>
+            </div>
+          </div>
+
+          <div className="order-2 text-right lg:order-1">
+            <div
+              className="mb-4 inline-flex items-center gap-2 rounded-full border bg-white/70 px-3 py-1.5 text-[10px] font-black text-[#5b716b] shadow-sm backdrop-blur-md"
+              style={{ borderColor: '#dce9e5' }}
+            >
+              <span className="h-2 w-2 rounded-full" style={{ background: TEAL }} />
+              {currentSlide.eyebrow}
+            </div>
+
+            <h2
+              className="max-w-xl text-[30px] font-black leading-[1.45] tracking-tight text-[#111716] sm:text-[38px] lg:text-[44px]"
+              style={{ fontFamily: "'Vazirmatn', sans-serif" }}
+            >
+              {currentSlide.title}
+            </h2>
+
+            <p className="mt-4 max-w-xl text-[14px] font-medium leading-[2] text-[#667570] sm:text-[15px]">
+              {currentSlide.desc}
+            </p>
+
+            <div className="mt-7 flex items-center gap-2">
+              {SLIDES.map((_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => {
+                    soundService.playTick?.();
+                    goStep(index);
+                  }}
+                  aria-label={`قۆناغی ${index + 1}`}
+                  className="h-2 rounded-full transition-all duration-300"
+                  style={{
+                    width: index === step ? 34 : 8,
+                    background: index === step ? TEAL : '#d5e1de',
+                  }}
+                />
+              ))}
+              <span className="mr-2 text-[10px] font-black text-[#98a39f]">
+                {step + 1} / {SLIDES.length}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleNext}
+              className="group mt-7 flex w-full max-w-sm items-center justify-between rounded-[20px] px-5 py-4 text-sm font-black text-white shadow-[0_16px_34px_rgba(18,121,107,.22)] transition-all duration-200 hover:-translate-y-1 active:translate-y-0 active:scale-[.985]"
+              style={{
+                background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})`,
+              }}
+            >
+              <span>{step === SLIDES.length - 1 ? 'دەستپێکردن' : 'بەردەوام بە'}</span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 transition-transform duration-200 group-hover:-translate-x-1">
+                <ArrowLeft className="h-4 w-4" />
+              </span>
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <footer
+        className="px-5 pb-5 text-center sm:px-8"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      >
+        <div className="mx-auto flex max-w-5xl items-center justify-between border-t pt-4 text-[9px] font-bold text-[#a0aaa7]" style={{ borderColor: '#e0e8e5' }}>
+          <span>کار لە کوردستان</span>
+          <span className="tracking-[0.18em]">ZERA GROUP</span>
+        </div>
+      </footer>
     </div>
   );
 };
+
+// Kept as a tiny helper so the splash progress animation stays visually tied
+// to the splash duration without introducing another piece of component state.
+const alreadyOnboardedPlaceholder = () => 2250;

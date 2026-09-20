@@ -4,6 +4,8 @@ import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { EditJobModal } from './EditJobModal';
 import { ConfirmationModal } from '../ui/ConfirmationModal';
+import { PageHeader } from '../layout/PageHeader';
+import { sectorLabel } from '../../data/jobSectors';
 import {
   ArrowRight, MapPin, Briefcase, Wallet, Calendar, Edit, Trash2, Tag, Clock, Building2,
   Share2, Copy, Check, Eye, Users, Home,
@@ -109,23 +111,13 @@ export const JobDetailPage = ({ jobId, onBack }) => {
 
   return (
     <div dir="rtl" className="min-h-screen pb-28" style={{ background: BG, color: TXT, fontFamily: NK }}>
-      {/* Mobile-only bar: on lg+ the shared DesktopHeaderNav is the header, and the
-          in-page back link below replaces this (two stacked headers was the old bug). */}
-      <div className="lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b px-4 py-3 flex items-center gap-3"
-        style={{ borderColor: BORDER, paddingTop: 'max(12px, calc(env(safe-area-inset-top) + 8px))' }}>
-        <button onClick={back} aria-label="گەڕانەوە" className="w-10 h-10 rounded-2xl bg-white border flex items-center justify-center shrink-0 active:scale-90 transition-transform" style={{ borderColor: BORDER }}>
-          <ArrowRight className="w-5 h-5" />
-        </button>
-        <h1 className="text-sm font-black truncate flex-1">{title}</h1>
-        <button onClick={handleShare} aria-label="هاوبەشکردن" className="w-10 h-10 rounded-2xl bg-white border flex items-center justify-center shrink-0 active:scale-90 transition-transform" style={{ borderColor: BORDER }}>
-          {copied ? <Check className="w-4 h-4" style={{ color: TEAL }} /> : <Share2 className="w-4 h-4" />}
-        </button>
-      </div>
+      <PageHeader
+        title={title}
+        onBack={back}
+        actions={[{ icon: copied ? Check : Share2, label: 'هاوبەشکردن', onClick: handleShare, active: copied }]}
+      />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 lg:pt-6 space-y-4">
-        <button onClick={back} className="hidden lg:inline-flex items-center gap-2 text-xs font-black px-3 py-2 rounded-xl bg-white border hover:bg-[#f0f7f5] transition-colors" style={{ borderColor: BORDER, color: MUTED }}>
-          <ArrowRight className="w-4 h-4" /> گەڕانەوە بۆ داشبۆرد
-        </button>
 
         {/* Hero */}
         <div className="rounded-3xl bg-white border overflow-hidden" style={{ borderColor: BORDER }}>
@@ -172,6 +164,7 @@ export const JobDetailPage = ({ jobId, onBack }) => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Stat icon={Wallet} label="مووچە" value={formatSalary(job)} ltr />
           <Stat icon={Briefcase} label="جۆری کار" value={type} />
+          <Stat icon={Building2} label="جۆری کەرت" value={sectorLabel(job.sector) || 'دیارینەکراوە'} />
           <Stat icon={Home} label="شێوازی کار" value={workplace} />
           <Stat icon={Clock} label="کۆتایی وادە" value={job.deadline || 'دیارینەکراوە'} tone="#b45309" ltr={!!job.deadline} />
         </div>

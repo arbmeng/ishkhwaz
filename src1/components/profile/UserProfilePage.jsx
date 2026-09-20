@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
@@ -8,6 +9,8 @@ import { getPlanColor } from '../../utils/planPresets';
 import { apiService } from '../../services/api';
 import { pushService } from '../../services/pushService';
 import { AboutModal } from '../layout/AboutModal';
+import { PlanBadge } from '../ui/PlanBadge';
+import { canSeePlans } from '../../config/features';
 import {
   Settings, Share2, Camera, FileText, Eye, CheckCircle2, Save,
   Heart, Trash2, Briefcase, ChevronLeft, LogOut, User,
@@ -22,8 +25,8 @@ const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
 // heavy corner-rounding and animated shimmer/pulse effects read as too
 // playful for a page employers also use professionally. Kept teal as the
 // single accent color, dropped the candy-mint backgrounds for neutral gray.
-const TEAL   = '#0f6b5f';
-const TEAL_DEEP = '#0a4a41';
+const TEAL   = '#12796b';
+const TEAL_DEEP = '#0d5c50';
 const TEAL2  = '#245e56';
 const MINT   = '#eef1f0';
 const MINT2  = '#f4f5f4';
@@ -32,6 +35,39 @@ const TXT    = '#161f1c';
 const SUB    = '#425049';
 const MUTED  = '#6b7975';
 const CARD   = '#f6f7f6';
+
+// Components defined *inside* UserProfilePage used to be a brand-new component type on every
+// render, so React unmounted and remounted the whole profile (avatar flicker, reset scroll,
+// wiped form fields) every time anything above it changed — e.g. the 30 s background sync.
+// This keeps one stable component identity while still rendering the latest closure.
+const useStable = (render) => {
+  const ref = useRef(render);
+  ref.current = render;
+  return useMemo(() => function Stable(props) { return ref.current(props); }, []);
+};
+
+const Field = ({ label, children }) => (
+  <div className="space-y-1.5 text-right">
+    <label className="text-xs font-bold" style={{ color: TXT }}>{label}</label>
+    {children}
+  </div>
+);
+
+const SectionCard = ({ title, icon: SIcon, children, className = '' }) => (
+  <div className={`rounded-2xl border p-5 space-y-4 ${className}`} style={{ background: '#fff', borderColor: '#eef3f1', boxShadow: '0 1px 3px rgba(17,61,54,.04)' }}>
+    {title && (
+      <div className="flex items-center gap-2 pb-3 border-b" style={{ borderColor: '#f4f7f6' }}>
+        {SIcon && (
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#eef7f5', color: TEAL }}>
+            <SIcon className="w-3.5 h-3.5" />
+          </div>
+        )}
+        <h4 className="text-xs font-black" style={{ color: TXT }}>{title}</h4>
+      </div>
+    )}
+    {children}
+  </div>
+);
 
 const parseJsonArray = (val) => {
   if (Array.isArray(val)) return val;
@@ -94,6 +130,12 @@ export const UserProfilePage = ({ onNavigate }) => {
   /* ── push ── */
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushBusy,    setPushBusy]    = useState(false);
+  useEffect(() => {
+    if (!showSettings) return;
+    const onKey = (e) => { if (e.key === 'Escape') setShowSettings(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showSettings]);
 
   /* ── email verification ── */
   const [resendBusy, setResendBusy] = useState(false);
@@ -505,354 +547,167 @@ export const UserProfilePage = ({ onNavigate }) => {
      PROFILE HERO — identity rail + bento grid, one responsive layout
      shared by mobile and desktop (rail stacks on top below 1024px)
   ══════════════════════════════════════════════════════════════════ */
-  const ProfileHero = () => (
-    <div className="w-full max-w-6xl mx-auto" dir="rtl" style={{ fontFamily: NK }}>
 
-      {/* ── Top bar ── */}
-      <div className="flex items-center justify-between pt-1 pb-4 px-1">
-        <button
-          onClick={() => { soundService.playTick?.(); setShowSettings(true); }}
-          className="w-10 h-10 rounded-2xl bg-white border border-[#e4eae7] shadow-sm flex items-center justify-center text-[#4a5854] hover:text-[#12796b] active:scale-90 transition"
-        >
-          <Settings className="w-4.5 h-4.5" />
+  /* ══════════════════════════════════════════════════════════════════
+     SNAP-INSPIRED PROFILE — simple, social, fast
+     Visual direction: centered identity, strong avatar, compact stats,
+     white surfaces, warm yellow accent, black typography.
+  ══════════════════════════════════════════════════════════════════ */
+  const ProfileHeroImpl = () => (
+    <div className="snap-profile w-full max-w-4xl mx-auto" dir="rtl" style={{ fontFamily: NK }}>
+      <div className="snap-topbar">
+        <button type="button" onClick={() => { soundService.playTick?.(); setShowSettings(true); }}
+          className="snap-settings-btn" aria-label="ڕێکخستنەکان" aria-haspopup="dialog">
+          <Settings className="w-[18px] h-[18px]" />
+          <span>ڕێکخستن</span>
         </button>
-        <h1 className="text-lg font-black" style={{ color: TXT }}>
-          {isEmployer ? 'پڕۆفایلی کۆمپانیا' : 'پڕۆفایل'}
-        </h1>
+        <span className="snap-page-title">{isEmployer ? 'پڕۆفایلی کۆمپانیا' : 'پڕۆفایل'}</span>
+        <button type="button" onClick={handleShare} className="snap-icon-btn" aria-label="هاوبەشکردن">
+          <Share2 className="w-[18px] h-[18px]" />
+        </button>
       </div>
 
       {needsEmailVerification && (
-        <div className="mb-4 px-4 py-3.5 rounded-2xl border flex items-center gap-3 flex-wrap" style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
-          <MailWarning className="w-5 h-5 shrink-0" style={{ color: '#b45309' }} />
-          <div className="flex-1 min-w-[180px]">
-            <p className="text-xs font-black" style={{ color: '#92400e' }}>ئیمەیلەکەت هێشتا دڵنیا نەکراوەتەوە</p>
-            <p className="text-[11px] font-bold mt-0.5" style={{ color: '#b45309' }}>{user?.email}</p>
+        <div className="snap-alert">
+          <MailWarning className="w-4 h-4 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <strong>ئیمەیلەکەت پشتڕاست نەکراوەتەوە</strong>
+            <span>{user?.email}</span>
           </div>
-          <button
-            onClick={handleResendVerification}
-            disabled={resendBusy}
-            className="shrink-0 px-3.5 py-2 rounded-xl bg-white border text-xs font-black active:scale-95 transition disabled:opacity-60 flex items-center gap-1.5"
-            style={{ borderColor: '#fde68a', color: '#92400e' }}
-          >
-            {resendBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-            {resendBusy ? 'ناردن...' : 'ناردنەوەی ئیمەیل'}
+          <button onClick={handleResendVerification} disabled={resendBusy}>
+            {resendBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'ناردنەوە'}
           </button>
         </div>
       )}
 
-      <ProfileCommandBar />
-
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-5 items-start">
-
-        {/* ══════════ IDENTITY RAIL ══════════ */}
-        <aside className="bg-white rounded-2xl border border-[#e4eae7] shadow-sm lg:sticky lg:top-5 relative overflow-hidden">
-          {/* Cover banner — real photo when set (cover/company_cover already
-              collected in the edit modal below), gradient fallback otherwise */}
-          <div
-            className="h-36 sm:h-44 relative"
-            style={{ background: cover ? `url(${cover}) center/cover` : `linear-gradient(135deg, ${TEAL}, #2db89f)` }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
-            <div className="absolute top-3 inset-x-3 flex items-start justify-between gap-2">
-              {isVIP && (
-                <span
-                  className="text-white text-[11px] font-black px-2.5 py-1 rounded-full inline-flex items-center gap-1 shrink-0"
-                  style={{ background: planAccent }}
-                >
-                  <Sparkles className="w-3 h-3" /> VIP
-                </span>
-              )}
-              <span
-                className="text-[11px] font-black px-2.5 py-1 rounded-full shrink-0"
-                style={{ background: 'rgba(255,255,255,0.92)', color: TXT }}
-              >
-                {isEmployer ? 'کۆمپانیا و خاوەنکار' : 'کارخواز'}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => coverRef.current?.click()}
-              className="absolute bottom-2 left-2 w-7 h-7 rounded-full flex items-center justify-center shadow-sm hover:bg-white transition"
-              style={{ background: 'rgba(255,255,255,0.92)' }}
-              aria-label="گۆڕینی وێنەی پاشبنەما"
-            >
-              <Camera className="w-3.5 h-3.5" style={{ color: TXT }} />
-            </button>
-          </div>
-
-          <div className="p-6 pt-0 relative">
-            {/* subtle kilim-inspired weave, restrained */}
-            <div
-              className="absolute inset-0 pointer-events-none opacity-[0.05]"
-              style={{
-                backgroundImage: `repeating-linear-gradient(45deg, ${TXT} 0 1.5px, transparent 1.5px 22px), repeating-linear-gradient(-45deg, ${TXT} 0 1.5px, transparent 1.5px 22px)`,
-                WebkitMaskImage: 'radial-gradient(circle at 100% 0%, #000 0%, transparent 62%)',
-                maskImage: 'radial-gradient(circle at 100% 0%, #000 0%, transparent 62%)',
-              }}
-            />
-
-            {/* Avatar overlaps the banner, anchored to the reading-start
-                (right) side rather than centered — sits "inside" the cover
-                photo like a standard cover+avatar profile layout */}
-            <div className="flex justify-start -mt-14 relative z-10">
-              <div className="relative w-[108px] h-[108px]">
-                <CompletionRing pct={completion} />
-                <div
-                  onClick={() => avatarRef.current?.click()}
-                  className="absolute inset-[9px] rounded-full overflow-hidden border-2 border-white cursor-pointer group flex items-center justify-center shadow-sm"
-                  style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}
-                >
-                  {displayAvatar
-                    ? <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
-                    : <span className="text-3xl font-black text-white">{initial}</span>}
-                  <div className="absolute inset-0 bg-black/25 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white">
-                    <Camera className="w-4 h-4" />
-                  </div>
-                </div>
-                <span
-                  className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 text-white text-[10px] font-black px-2 py-0.5 rounded-full border-2 border-white font-mono"
-                  style={{ background: TEAL }}
-                >
-                  {completion}٪
-                </span>
-              </div>
-            </div>
-
-            <h2 className="text-right text-xl font-black relative mt-4" style={{ color: TXT }}>{displayName}</h2>
-            <p className="text-right text-xs font-bold mt-1 relative" style={{ color: SUB }}>{displayTitle}</p>
-            <p className="text-right text-[11px] font-medium mt-1 mb-6 relative" style={{ color: MUTED }}>
-              {govObj?.name_ku || 'سلێمانی'}{distObj?.name_ku ? `، ${distObj.name_ku}` : ''}{joinYear ? ` · ئەندام لە ${joinYear}` : ''}
-            </p>
-
-          <button
-            onClick={() => { soundService.playTick?.(); setShowEdit(true); }}
-            className="w-full py-3.5 rounded-xl text-white font-black text-sm shadow-sm active:scale-[0.98] transition relative mb-2.5"
-            style={{ background: TEAL }}
-          >
-            {isEmployer ? 'دەستکاری زانیاری کۆمپانیا' : 'دەستکاری پڕۆفایل'}
-          </button>
-
-          <div className="flex gap-2 relative">
-            <button
-              onClick={handleShare}
-              className="flex-1 py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border transition hover:text-white hover:bg-[#12796b] hover:border-[#12796b]"
-              style={{ background: CARD, borderColor: '#e4eae7', color: SUB }}
-            >
-              <Share2 className="w-3.5 h-3.5" /> هاوبەشکردن
-            </button>
-            <button
-              onClick={() => { soundService.playTick?.(); setShowLogout(true); }}
-              className="flex-1 py-2.5 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border transition"
-              style={{ background: '#fef5f5', borderColor: '#fad8d8', color: '#d84848' }}
-            >
-              <LogOut className="w-3.5 h-3.5" /> چوونەدەرەوە
-            </button>
-          </div>
-
-          <div className="h-px my-5 relative" style={{ background: '#eef3f1' }} />
-
-          <div className="flex text-center relative">
-            {(isEmployer ? [
-              { val: employerJobs.length, label: 'هەلی کار', fn: () => onNavigate?.('employer') },
-              { val: employerReceivedApplications, label: 'داواکاری', fn: () => onNavigate?.('employer') },
-              { val: profileViews, label: 'بینین', fn: () => setShowViewers(true) },
-            ] : [
-              { val: profileViews, label: 'بینین', fn: () => setShowViewers(true) },
-              { val: applCount, label: 'داواکاری', fn: () => onNavigate?.('my_applications') },
-              { val: savedCount, label: 'پاشەکەوت', fn: () => setShowSaved(true) },
-            ]).map(({ val, label, fn }, i) => (
-              <button
-                key={label}
-                onClick={() => { soundService.playTick?.(); fn(); }}
-                className="flex-1 py-1.5 rounded-xl hover:bg-[#f4faf8] transition"
-                style={i > 0 ? { borderRight: '1px solid #eef3f1' } : {}}
-              >
-                <div className="text-lg font-black font-mono" style={{ color: TXT }}>{val}</div>
-                <div className="text-[10px] font-bold mt-0.5" style={{ color: MUTED }}>{label}</div>
+      <section className="snap-identity">
+        <div className="snap-avatar-wrap">
+          <div className="snap-avatar-ring" style={{ '--pct': `${completion}%` }}>
+            <div className="snap-avatar">
+              <button type="button" onClick={() => avatarRef.current?.click()} className="snap-avatar-button" aria-label="گۆڕینی وێنە">
+                {displayAvatar
+                  ? <img src={displayAvatar} alt={displayName} />
+                  : <span>{initial}</span>}
+                <span className="snap-camera"><Camera className="w-4 h-4" /></span>
               </button>
-            ))}
+            </div>
           </div>
-          </div>
-        </aside>
+          <span className="snap-completion">{completion}%</span>
+        </div>
 
-        {/* ══════════ BENTO GRID ══════════ */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className="snap-name-row">
+          <h1>{displayName}</h1>
+          {isVIP && <PlanBadge plan={userPlanTier.id} size="sm" />}
+        </div>
+        <p className="snap-handle">{displayTitle}</p>
+        <p className="snap-location">{location || 'سلێمانی'}{joinYear ? ` · ئەندام لە ${joinYear}` : ''}</p>
 
-          {/* About */}
-          <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5">
-            <BentoHead eyebrow="دەربارە" title={isEmployer ? 'دەربارەی کۆمپانیا' : 'دەربارەی من'} />
-            <p className="text-[13.5px] leading-[1.9] font-medium" style={{ color: SUB }}>
-              {bio || user?.bio || (
-                <span style={{ color: MUTED }}>
-                  {isEmployer ? 'کورتەیەک دەربارەی کار و بەرهەمەکانی کۆمپانیاکەت بنووسە.' : 'کورتەیەک دەربارەی خۆت و ئەزموونەکانت بنووسە.'}
-                </span>
-              )}
-            </p>
-          </div>
+        <div className="snap-actions">
+          <button onClick={() => { soundService.playTick?.(); setShowEdit(true); }} className="snap-primary">
+            <UserRoundCheck className="w-4 h-4" /> {isEmployer ? 'دەستکاری کۆمپانیا' : 'دەستکاری پڕۆفایل'}
+          </button>
+          {!isEmployer && (
+            <button onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }} className="snap-secondary">
+              <FileText className="w-4 h-4" /> CV
+            </button>
+          )}
+        </div>
 
-          {isFreelancer ? (
-            <>
-              {/* Resumes */}
-              <div className="col-span-1 lg:col-span-3 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5 flex flex-col">
-                <BentoHead eyebrow="سیڤیەکان" title="کارنامەکانم" link="هەموو" onLink={() => { soundService.playTick?.(); onNavigate?.('resumes'); }} />
-                <button
-                  onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }}
-                  className="flex-1 rounded-2xl border flex items-center gap-3 p-4 transition hover:border-[#12796b]/40 hover:bg-[#f4faf8]"
-                  style={{ background: CARD, borderColor: '#eef3f1' }}
-                >
-                  <div className="w-11 h-12 rounded-xl flex items-center justify-center shrink-0 border" style={{ background: '#e0f3ee', borderColor: '#dde3e0' }}>
-                    <FileText className="w-6 h-6" style={{ color: TEAL }} />
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs font-black" style={{ color: TXT }}>کارنامەی فەرمی</div>
-                    <div className="text-[11px] mt-0.5" style={{ color: MUTED }}>{user?.cv_url ? 'سیڤی بارکراو' : 'دروستکردنی CV'}</div>
-                  </div>
-                </button>
+        <div className="snap-stats">
+          {(isEmployer ? [
+            { val: employerJobs.length, label: 'هەلی کار', fn: () => onNavigate?.('my_company_dashboard') },
+            { val: employerReceivedApplications, label: 'داواکاری', fn: () => onNavigate?.('my_company_dashboard') },
+            { val: profileViews, label: 'بینین', fn: () => setShowViewers(true) },
+          ] : [
+            { val: profileViews, label: 'بینین', fn: () => setShowViewers(true) },
+            { val: applCount, label: 'داواکاری', fn: () => onNavigate?.('my_applications') },
+            { val: savedCount, label: 'پاشەکەوت', fn: () => setShowSaved(true) },
+          ]).map(({ val, label, fn }) => (
+            <button key={label} onClick={() => { soundService.playTick?.(); fn(); }} className="snap-stat">
+              <strong>{val}</strong><span>{label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <div className="snap-completion-card">
+        <div>
+          <span>پڕۆفایلی پیشەیی</span>
+          <strong>{completion}% تەواوە</strong>
+        </div>
+        <div className="snap-progress"><i style={{ width: `${completion}%` }} /></div>
+        <div className="snap-completion-foot">
+          <p>{completion >= 90 ? 'پڕۆفایلەکەت ئامادەیە.' : 'زانیارییە کەمەکان تەواو بکە بۆ پڕۆفایلێکی بەهێزتر.'}</p>
+          {completion < 90 && <button type="button" onClick={() => { soundService.playTick?.(); setShowEdit(true); }}>تەواوکردن</button>}
+        </div>
+      </div>
+
+      <div className="snap-grid">
+        <section className="snap-card snap-about">
+          <div className="snap-section-head"><span>دەربارە</span><button onClick={() => setShowEdit(true)}>دەستکاری</button></div>
+          <p>{bio || user?.bio || (isEmployer ? 'کورتەیەک دەربارەی کۆمپانیاکەت بنووسە.' : 'کورتەیەک دەربارەی خۆت و ئەزموونەکانت بنووسە.')}</p>
+        </section>
+
+        {isFreelancer ? (
+          <>
+            <section className="snap-card">
+              <div className="snap-section-head"><span>کارنامەکان</span><button onClick={() => onNavigate?.('resumes')}>هەموو</button></div>
+              <button className="snap-list-row" onClick={() => onNavigate?.('resumes')}>
+                <span className="snap-list-icon"><FileText className="w-5 h-5" /></span>
+                <span><strong>کارنامەی فەرمی</strong><small>{user?.cv_url ? 'سیڤی بارکراوە' : 'دروستکردنی CV'}</small></span>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </section>
+
+            <section className="snap-card">
+              <div className="snap-section-head"><span>شوێن</span></div>
+              <div className="snap-list-row static">
+                <span className="snap-list-icon"><MapPin className="w-5 h-5" /></span>
+                <span><strong>{govObj?.name_ku || 'سلێمانی'}{distObj?.name_ku ? `، ${distObj.name_ku}` : ''}</strong><small>ناوچەی کارکردن</small></span>
               </div>
+            </section>
 
-              {/* Location */}
-              <div className="col-span-1 lg:col-span-3 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5">
-                <BentoHead eyebrow="شوێن" title="ناونیشان" />
-                <div className="flex items-center gap-3.5">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#e0f3ee', color: TEAL }}>
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-black" style={{ color: TXT }}>{govObj?.name_ku}{distObj?.name_ku ? `، ${distObj.name_ku}` : ''}</div>
-                    <div className="text-[11px] font-bold mt-0.5" style={{ color: MUTED }}>ناوچەی کارکردن</div>
-                  </div>
-                </div>
+            <section className="snap-card snap-wide">
+              <div className="snap-section-head"><span>شارەزایی</span><button onClick={() => setShowEdit(true)}>زیادکردن</button></div>
+              <div className="snap-chips">
+                {(skills.length ? skills : parseJsonArray(user?.skills)).map(s => <span key={s}>{s}</span>)}
+                {skills.length === 0 && !parseJsonArray(user?.skills).length && <small>هیچ شارەزاییەک زیاد نەکراوە.</small>}
               </div>
+            </section>
 
-              {/* Skills */}
-              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5">
-                <BentoHead eyebrow="شارەزایی" title="کارامەیی و تواناکان" />
-                <div className="flex flex-wrap gap-2">
-                  {(skills.length ? skills : parseJsonArray(user?.skills)).map(s => (
-                    <span key={s} className="px-3.5 py-2 rounded-xl border text-xs font-bold" style={{ background: '#fff', borderColor: '#dce5e1', color: '#2d3a36' }}>
-                      {s}
-                    </span>
-                  ))}
-                  {skills.length === 0 && !parseJsonArray(user?.skills).length && (
-                    <span className="text-xs font-bold" style={{ color: MUTED }}>هیچ شارەزاییەک زیاد نەکراوە.</span>
-                  )}
-                  <button
-                    onClick={() => { soundService.playTick?.(); setShowEdit(true); }}
-                    className="px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1"
-                    style={{ background: CARD, color: TEAL }}
-                  >
-                    <Plus className="w-3.5 h-3.5" /> زیادکردن
-                  </button>
-                </div>
-              </div>
-
-              {/* Experience timeline */}
-              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5">
-                <BentoHead eyebrow="مێژوو" title="ئەزموونی کار" link="زیادکردن" onLink={() => { soundService.playTick?.(); setShowEdit(true); }} />
-                {experiences.length === 0 ? (
-                  <p className="text-xs font-bold" style={{ color: MUTED }}>هیچ ئەزموونێک زیاد نەکراوە.</p>
-                ) : (
-                  <div className="space-y-5">
-                    {experiences.map((exp, i) => (
-                      <div key={exp.id || i} className="relative pr-5">
-                        {i < experiences.length - 1 && (
-                          <span className="absolute right-[3px] top-3 bottom-[-20px] w-px" style={{ background: '#eef3f1' }} />
-                        )}
-                        <span className="absolute -right-[2px] top-1 w-2.5 h-2.5 rounded-full" style={{ background: TEAL }} />
-                        <div className="flex items-baseline justify-between gap-3">
-                          <span className="text-[11px] font-mono shrink-0" style={{ color: MUTED }}>{exp.period}</span>
-                          <h4 className="text-sm font-black" style={{ color: TXT }}>{exp.title}</h4>
-                        </div>
-                        {exp.description && <p className="text-xs font-medium mt-1 leading-relaxed" style={{ color: SUB }}>{exp.description}</p>}
-                        {exp.link && (
-                          <a href={exp.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] font-black mt-1 hover:underline" style={{ color: TEAL }}>
-                            بینینی لینک <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Verified strip — only when the admin has actually verified this account */}
-              {Number(user?.verified) === 1 && (
-                <div className="col-span-1 lg:col-span-3 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5 flex items-center">
-                  <div className="w-full flex items-center gap-2.5 rounded-xl p-3.5" style={{ background: '#eef1f0', border: '1px solid #dde3e0' }}>
-                    <ShieldCheck className="w-4.5 h-4.5 shrink-0" style={{ color: TEAL_DEEP }} />
-                    <span className="text-[11px] font-bold" style={{ color: TEAL_DEEP }}>کۆمپانیای پشتڕاستکراو</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Post job CTA */}
-              <div className={Number(user?.verified) === 1 ? 'col-span-1 lg:col-span-3' : 'col-span-1 sm:col-span-2 lg:col-span-6'}>
-                <button
-                  onClick={() => { soundService.playTick?.(); onNavigate?.('post_job'); }}
-                  className="w-full h-full min-h-[76px] rounded-xl flex items-center justify-between px-5 text-white font-black text-xs shadow-sm transition active:scale-[0.98]"
-                  style={{ background: TEAL }}
-                >
-                  <Plus className="w-5 h-5" />
-                  بڵاوکردنەوەی هەلی کاری نوێ
-                </button>
-              </div>
-
-              {/* Jobs list */}
-              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5">
-                <BentoHead eyebrow="چالاک" title={`هەلی کارەکان (${employerJobs.length})`} link="هەموو" onLink={() => { soundService.playTick?.(); onNavigate?.('employer'); }} />
-                {employerJobs.length === 0 ? (
-                  <p className="text-xs font-bold" style={{ color: MUTED }}>هێشتا هیچ هەلی کارێکت بڵاونەکردووەتەوە.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {employerJobs.map(job => (
-                      <div key={job.id} className="p-3.5 rounded-xl border flex items-center justify-between gap-3 hover:bg-[#f4faf8] transition" style={{ borderColor: '#eef3f1', background: CARD }}>
-                        <button onClick={() => { soundService.playTick?.(); onNavigate?.('employer'); }} className="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-stone-200 bg-white hover:bg-stone-50 shrink-0">
-                          بەڕێوەبردن
-                        </button>
-                        <div className="text-right flex-1 min-w-0">
-                          <div className="text-xs font-black truncate" style={{ color: TXT }}>{job.title_ku || job.title}</div>
-                          <div className="text-[11px] mt-0.5" style={{ color: MUTED }}>{job.governorate_name || job.governorate || 'سلێمانی'}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Company info table */}
-              <div className="col-span-1 sm:col-span-2 lg:col-span-6 bg-white rounded-xl border border-[#e4eae7] shadow-sm p-5">
-                <BentoHead eyebrow="زانیاری فەرمی" title="تۆماری کۆمپانیا" />
-                <div className="divide-y" style={{ borderColor: '#eef3f1' }}>
-                  {[
-                    [companyName, 'ناوی کۆمپانیا'],
-                    [industry, 'بواری چالاکی'],
-                    [phone || 'دیارینەکراوە', 'ژمارەی تەلەفۆن'],
-                    [email || user?.email || 'دیارینەکراوە', 'ئیمەیلی فەرمی'],
-                    [companyReg || 'دیارینەکراوە', 'ژمارەی تۆماری بازرگانی'],
-                  ].map(([val, label]) => (
-                    <div key={label} className="py-2.5 flex items-center justify-between text-xs">
-                      <span className="font-bold" style={{ color: TXT }}>{val}</span>
-                      <span style={{ color: MUTED }}>{label}</span>
+            <section className="snap-card snap-wide">
+              <div className="snap-section-head"><span>ئەزموونی کار</span><button onClick={() => setShowEdit(true)}>زیادکردن</button></div>
+              {experiences.length === 0 ? <p className="snap-empty">هیچ ئەزموونێک زیاد نەکراوە.</p> : (
+                <div className="snap-timeline">
+                  {experiences.map((exp, i) => (
+                    <div className="snap-experience" key={exp.id || i}>
+                      <span className="snap-dot" />
+                      <div><div className="snap-exp-top"><strong>{exp.title}</strong><small>{exp.period}</small></div>{exp.description && <p>{exp.description}</p>}</div>
                     </div>
                   ))}
                 </div>
-              </div>
-            </>
-          )}
-
-        </div>
+              )}
+            </section>
+          </>
+        ) : (
+          <>
+            {Number(user?.verified) === 1 && (
+              <section className="snap-card snap-wide snap-verified"><ShieldCheck className="w-5 h-5" /><span>هەژماری پشتڕاستکراوە</span></section>
+            )}
+            <section className="snap-card">
+              <div className="snap-section-head"><span>شوێن</span></div>
+              <div className="snap-list-row static"><span className="snap-list-icon"><MapPin className="w-5 h-5" /></span><span><strong>{govObj?.name_ku || 'سلێمانی'}</strong><small>{distObj?.name_ku || 'ناوچەی کارکردن'}</small></span></div>
+            </section>
+            <section className="snap-card">
+              <div className="snap-section-head"><span>هەلی کار</span><button onClick={() => onNavigate?.('my_company_dashboard')}>بینین</button></div>
+              <div className="snap-list-row static"><span className="snap-list-icon"><Briefcase className="w-5 h-5" /></span><span><strong>{employerJobs.length}</strong><small>هەلی کار بڵاوکراوە</small></span></div>
+            </section>
+          </>
+        )}
       </div>
     </div>
   );
-
-  /* ══════════════════════════════════════════════════════════════════
-     MODALS
-  ══════════════════════════════════════════════════════════════════ */
-
-  /* ── Interactive Multi-Tab Edit Modal ── */
-  const EditModal = () => {
+  const EditModalImpl = () => {
     const [activeSection, setActiveSection] = useState(isEmployer ? 'company_info' : 'basic');
 
     // Tells main.jsx's service-worker updater not to force-reload the app
@@ -885,28 +740,6 @@ export const UserProfilePage = ({ onNavigate }) => {
     const fieldCls = 'w-full bg-white border rounded-xl px-4 py-3 text-xs font-bold outline-none transition';
     const fieldStyle = { borderColor: '#e4eae7', color: TXT };
     const fieldFocus = 'focus:border-[#12796b]';
-    const Field = ({ label, children }) => (
-      <div className="space-y-1.5 text-right">
-        <label className="text-xs font-bold" style={{ color: TXT }}>{label}</label>
-        {children}
-      </div>
-    );
-    const SectionCard = ({ title, icon: SIcon, children, className = '' }) => (
-      <div className={`rounded-2xl border p-5 space-y-4 ${className}`} style={{ background: '#fff', borderColor: '#eef3f1', boxShadow: '0 1px 3px rgba(17,61,54,.04)' }}>
-        {title && (
-          <div className="flex items-center gap-2 pb-3 border-b" style={{ borderColor: '#f4f7f6' }}>
-            {SIcon && (
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#eef7f5', color: TEAL }}>
-                <SIcon className="w-3.5 h-3.5" />
-              </div>
-            )}
-            <h4 className="text-xs font-black" style={{ color: TXT }}>{title}</h4>
-          </div>
-        )}
-        {children}
-      </div>
-    );
-
     return (
       <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-0 lg:p-6"
         style={{ animation: 'profileFadeUp 0.25s ease both' }}>
@@ -1326,89 +1159,73 @@ export const UserProfilePage = ({ onNavigate }) => {
     );
   };
 
-  /* ── Settings modal ── */
-  const SettingsModal = () => (
-    <div className="fixed inset-0 z-50 bg-[#07110f]/55 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4"
-      style={{ animation: 'profileFadeUp 0.25s ease both' }}>
-      <div className="w-full max-w-md bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
-        onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
-        <div className="p-5 border-b border-[#f0f4f2] flex items-center justify-between bg-[#fbfdfc]">
-          <button onClick={() => setShowSettings(false)} className="w-9 h-9 rounded-full bg-[#f0f4f2] flex items-center justify-center transition"><X className="w-5 h-5 text-[#4a5854]" /></button>
-          <h3 className="text-lg font-black" style={{ color: '#1a2321' }}>ڕێکخستنەکان</h3>
-        </div>
-        <div className="p-5 overflow-y-auto space-y-4 flex-1 text-right">
-          {/* Push */}
-          <div className="p-4 rounded-2xl flex items-center justify-between" style={{ background: CARD, border: '1px solid #e4eae7' }}>
-            <button type="button" onClick={handleTogglePush} disabled={pushBusy}
-              className="w-12 h-6 rounded-full p-1 flex items-center transition-colors duration-300"
-              style={{ background: pushEnabled ? TEAL : '#cbd5d3', justifyContent: pushEnabled ? 'flex-end' : 'flex-start' }}>
-              <span className="w-4 h-4 rounded-full bg-white shadow-sm block" />
+  /* ── Settings sheet ── bottom sheet on mobile, centred card on desktop.
+     Portalled to <body>: inside this page's isolated stacking context the
+     sticky desktop header (z-50) would otherwise paint over the backdrop. */
+  const renderSettings = () => {
+    const go = (fn) => () => { soundService.playTick?.(); setShowSettings(false); fn(); };
+    return createPortal(
+      <div className="snap-sheet-overlay" onClick={() => setShowSettings(false)}>
+        <div className="snap-sheet" role="dialog" aria-modal="true" aria-label="ڕێکخستنەکان" dir="rtl" onClick={e => e.stopPropagation()}>
+          <div className="snap-sheet-grab" aria-hidden="true" />
+          <header className="snap-sheet-head">
+            <h2>ڕێکخستنەکان</h2>
+            <button type="button" className="snap-icon-btn" onClick={() => setShowSettings(false)} aria-label="داخستن"><X className="w-5 h-5" /></button>
+          </header>
+          <div className="snap-sheet-body">
+            <div className="snap-sheet-account">
+              <div className="snap-sheet-avatar">{displayAvatar ? <img src={displayAvatar} alt="" /> : <span>{initial}</span>}</div>
+              <div className="min-w-0 flex-1">
+                <strong>{displayName}</strong>
+                <span dir="ltr">{user?.phone || user?.email || ''}</span>
+              </div>
+              <button type="button" onClick={go(() => setShowEdit(true))}>دەستکاری</button>
+            </div>
+
+            <div className="snap-sheet-label">ئاگادارکردنەوە</div>
+            <div className="snap-sheet-group">
+              <div className="snap-row" style={{ cursor: 'default' }}>
+                <span className="snap-row-icon"><Bell className="w-[18px] h-[18px]" /></span>
+                <span className="snap-row-copy"><strong>ئاگادارکردنەوەی ئامێر</strong><small>{pushEnabled ? 'چالاکە' : 'ناچالاکە'}</small></span>
+                <button type="button" role="switch" aria-checked={pushEnabled} aria-label="ئاگادارکردنەوەی ئامێر"
+                  className="snap-switch" onClick={handleTogglePush} disabled={pushBusy}><i /></button>
+              </div>
+            </div>
+
+            <div className="snap-sheet-label">هەژمار و یارمەتی</div>
+            <div className="snap-sheet-group">
+              {canSeePlans(user) && (
+<button type="button" className="snap-row" onClick={go(() => onNavigate?.('plans'))}>
+                <span className="snap-row-icon"><Sparkles className="w-[18px] h-[18px]" /></span>
+                <span className="snap-row-copy"><strong>پلانەکانی ئیش خواز</strong><small>{userPlanTier ? `پلانی ئێستا: ${userPlanTier.name_ku}` : 'بەرزکردنەوەی هەژمار'}</small></span>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+)}
+              <button type="button" className="snap-row" onClick={go(() => onNavigate?.('how_it_works'))}>
+                <span className="snap-row-icon"><HelpCircle className="w-[18px] h-[18px]" /></span>
+                <span className="snap-row-copy"><strong>چۆنیەتی کارکردنی ئەپ</strong><small>چوونەژوورەوە و بەکارهێنانی سیستەم</small></span>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button type="button" className="snap-row" onClick={go(() => setShowAbout(true))}>
+                <span className="snap-row-icon"><Info className="w-[18px] h-[18px]" /></span>
+                <span className="snap-row-copy"><strong>دەربارەی ئیش خواز</strong><small>زانیاری و پەیوەندی پشتگیری</small></span>
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </div>
+
+            <button type="button" className="snap-row snap-danger" onClick={go(() => setShowLogout(true))}>
+              <span className="snap-row-icon"><LogOut className="w-[18px] h-[18px]" /></span>
+              <span className="snap-row-copy"><strong>چوونەدەرەوە</strong></span>
             </button>
-            <div className="flex items-center gap-3">
-              <div>
-                <div className="text-xs font-bold" style={{ color: '#1a2321' }}>ئاگادارکردنەوەکان</div>
-                <div className="text-[11px] mt-0.5" style={{ color: '#6b7975' }}>{pushEnabled ? 'چالاکە' : 'ناچالاکە'}</div>
-              </div>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#eef1f0' }}>
-                <Bell className="w-5 h-5" style={{ color: TEAL }} />
-              </div>
-            </div>
-          </div>
-          {/* Plans */}
-          <div onClick={() => { soundService.playTick?.(); setShowSettings(false); onNavigate?.('plans'); }}
-            className="p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:shadow-sm transition"
-            style={{ background: CARD, border: '1px solid #dde3e0' }}>
-            <ChevronLeft className="w-4 h-4" style={{ color: TEAL }} />
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <div className="text-xs font-black" style={{ color: '#123e37' }}>پلانەکانی ئیش خواز</div>
-                <div className="text-[11px] font-medium mt-0.5" style={{ color: '#36796f' }}>بەرزکردنەوەی هەژمار</div>
-              </div>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ background: TEAL }}>
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </div>
-          {/* How it works */}
-          <div onClick={() => { soundService.playTick?.(); setShowSettings(false); onNavigate?.('how_it_works'); }}
-            className="p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:shadow-sm transition"
-            style={{ background: CARD, border: '1px solid #e4eae7' }}>
-            <ChevronLeft className="w-4 h-4" style={{ color: TEAL }} />
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <div className="text-xs font-black" style={{ color: '#1a2321' }}>چۆنیەتی کارکردنی ئەپ</div>
-                <div className="text-[11px] font-medium mt-0.5" style={{ color: '#6b7975' }}>چوونەژوورەوە و بەکارهێنانی سیستەم</div>
-              </div>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#eef1f0' }}>
-                <HelpCircle className="w-5 h-5" style={{ color: TEAL }} />
-              </div>
-            </div>
-          </div>
-          {/* About the app */}
-          <div onClick={() => { soundService.playTick?.(); setShowSettings(false); setShowAbout(true); }}
-            className="p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:shadow-sm transition"
-            style={{ background: CARD, border: '1px solid #e4eae7' }}>
-            <ChevronLeft className="w-4 h-4" style={{ color: TEAL }} />
-            <div className="flex items-center gap-3">
-              <div className="text-right">
-                <div className="text-xs font-black" style={{ color: '#1a2321' }}>دەربارەی ئیش خواز</div>
-                <div className="text-[11px] font-medium mt-0.5" style={{ color: '#6b7975' }}>زانیاری و پەیوەندی پشتگیری</div>
-              </div>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#eef1f0' }}>
-                <Info className="w-5 h-5" style={{ color: TEAL }} />
-              </div>
-            </div>
           </div>
         </div>
-        <div className="p-4 border-t border-[#f0f4f2] bg-[#fbfdfc]">
-          <button onClick={() => setShowSettings(false)} className="w-full py-3 rounded-2xl text-white font-bold text-xs transition" style={{ background: '#111d1a' }}>داخستن</button>
-        </div>
-      </div>
-    </div>
-  );
+      </div>,
+      document.body
+    );
+  };
 
   /* ── Saved jobs modal ── */
-  const SavedModal = () => (
+  const SavedModalImpl = () => (
     <div className="fixed inset-0 z-50 bg-[#07110f]/55 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ animation: 'profileFadeUp 0.25s ease both' }}>
       <div className="w-full max-w-lg bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
@@ -1449,7 +1266,7 @@ export const UserProfilePage = ({ onNavigate }) => {
   );
 
   /* ── Viewers modal ── */
-  const ViewersModal = () => (
+  const ViewersModalImpl = () => (
     <div className="fixed inset-0 z-50 bg-[#07110f]/55 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4"
       style={{ animation: 'profileFadeUp 0.25s ease both' }}>
       <div className="w-full max-w-md bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
@@ -1479,8 +1296,8 @@ export const UserProfilePage = ({ onNavigate }) => {
   );
 
   /* ── Logout modal ── */
-  const LogoutModal = () => (
-    <div className="fixed inset-0 z-50 bg-[#07110f]/60 backdrop-blur-md flex items-center justify-center p-4"
+  const LogoutModalImpl = () => createPortal(
+    <div className="fixed inset-0 z-[9000] bg-[#07110f]/60 backdrop-blur-md flex items-center justify-center p-4"
       style={{ animation: 'profileFadeUp 0.2s ease both' }}>
       <div className="w-full max-w-sm bg-white rounded-3xl p-6 text-center shadow-2xl border border-[#e4eae7] space-y-4"
         onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
@@ -1501,7 +1318,13 @@ export const UserProfilePage = ({ onNavigate }) => {
         </div>
       </div>
     </div>
-  );
+    , document.body);
+
+  const ProfileHero = useStable(ProfileHeroImpl);
+  const EditModal = useStable(EditModalImpl);
+  const SavedModal = useStable(SavedModalImpl);
+  const ViewersModal = useStable(ViewersModalImpl);
+  const LogoutModal = useStable(LogoutModalImpl);
 
   /* ══════════════════════════════════════════════════════════════════
      ROOT RENDER
@@ -1515,7 +1338,6 @@ export const UserProfilePage = ({ onNavigate }) => {
 
       <style>{`
         .profile-page-shell{position:relative;isolation:isolate;overflow:hidden}
-        .profile-page-shell > *{position:relative;z-index:1}
         .profile-ambient{position:absolute!important;z-index:0!important;pointer-events:none;filter:blur(1px)}
         .profile-ambient-a{width:420px;height:420px;right:-220px;top:100px;background:radial-gradient(circle,rgba(15,107,95,.10),transparent 68%)}
         .profile-ambient-b{width:360px;height:360px;left:-210px;bottom:120px;background:radial-gradient(circle,rgba(36,94,86,.07),transparent 68%)}
@@ -1523,15 +1345,142 @@ export const UserProfilePage = ({ onNavigate }) => {
         @media (min-width:1024px){.profile-page-shell{min-height:100vh}.profile-commandbar{margin-bottom:22px}.profile-page-shell .lg\\:sticky{box-shadow:0 12px 40px rgba(17,61,54,.06)}}
         @media (max-width:639px){.profile-commandbar .rounded-\\[26px\\]{border-radius:22px}.profile-page-shell{padding-bottom:calc(80px + env(safe-area-inset-bottom))}}
         @media (prefers-reduced-motion:reduce){.profile-commandbar{animation:none!important}.profile-page-shell *{scroll-behavior:auto!important;transition-duration:0.01ms!important}}
+
+        /* Profile visual system — the app's teal/white palette (same tokens as Dashboard, Plans and the job page). */
+        .profile-page-shell,.snap-sheet-overlay{--ink:#111d1a;--sub:#4a5b55;--muted:#7b8e88;--line:#e8eeec;--teal:#12796b;--teal-deep:#0d5c50;--mint:#e7f4f1;--mint-line:#cfe8e2;--bg:#f4f7f6;--danger:#dc2626}
+        .profile-page-shell{background:#f4f7f6!important}
+        .profile-page-shell .profile-ambient{display:none}
+        .snap-profile{color:var(--ink);padding-bottom:28px}
+        .snap-profile button:focus-visible,.snap-sheet button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+        .snap-topbar{height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+        .snap-page-title{font-size:16px;font-weight:900;letter-spacing:-.01em}
+        .snap-icon-btn{width:44px;height:44px;border:1px solid var(--line);background:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--teal-deep);transition:.18s}
+        .snap-icon-btn:hover{background:var(--mint);border-color:var(--mint-line);transform:translateY(-1px)}
+        .snap-settings-btn{height:44px;padding:0 16px;border:1px solid var(--mint-line);background:var(--mint);color:var(--teal-deep);border-radius:14px;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:900;transition:.18s}
+        .snap-settings-btn svg{transition:transform .35s}
+        .snap-settings-btn:hover{background:var(--teal);border-color:var(--teal);color:#fff}
+        .snap-settings-btn:hover svg{transform:rotate(60deg)}
+        .snap-alert{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#fff8e6;border:1px solid #f4dfa6;border-radius:18px;margin-bottom:12px;color:var(--ink)}
+        .snap-alert strong,.snap-alert span{display:block;font-size:10px;font-weight:800}
+        .snap-alert span{color:var(--muted);margin-top:2px;direction:ltr;text-align:right}
+        .snap-alert button{border:0;background:var(--teal);color:#fff;border-radius:11px;padding:9px 13px;font-size:10px;font-weight:900}
+        .snap-identity{text-align:center;background:#fff;border:1px solid var(--line);border-radius:28px;padding:26px 18px 18px;box-shadow:0 10px 40px rgba(18,121,107,.07)}
+        .snap-avatar-wrap{position:relative;width:112px;height:112px;margin:0 auto 12px}
+        .snap-avatar-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--teal) var(--pct),#dfe9e6 0)}
+        .snap-avatar-ring:after{content:"";position:absolute;inset:4px;background:#fff;border-radius:50%}
+        .snap-avatar{position:absolute;inset:9px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--teal),var(--teal-deep));z-index:2}
+        .snap-avatar-button{width:100%;height:100%;border:0;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;color:#fff;font-size:38px;font-weight:900;position:relative}
+        .snap-avatar-button img{width:100%;height:100%;object-fit:cover}
+        .snap-camera{position:absolute;bottom:5px;right:5px;width:27px;height:27px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+        .snap-completion{position:absolute;bottom:-3px;left:50%;transform:translateX(-50%);background:var(--teal-deep);color:#fff;padding:3px 8px;border-radius:99px;font:900 9px monospace;z-index:3}
+        .snap-name-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+        .snap-name-row h1{font-size:25px;line-height:1.2;font-weight:900;letter-spacing:-.02em;margin:0}
+        .snap-handle{margin:5px 0 0;font-size:12px;font-weight:800;color:var(--sub)}
+        .snap-location{margin:5px 0 16px;font-size:10px;font-weight:700;color:var(--muted)}
+        .snap-actions{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
+        .snap-actions button{height:44px;border-radius:14px;padding:0 18px;border:1px solid var(--mint-line);font-size:11px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.18s}
+        .snap-primary{background:var(--teal);color:#fff;border-color:var(--teal)!important}
+        .snap-primary:hover{background:var(--teal-deep)}
+        .snap-secondary{background:#fff;color:var(--teal-deep)}
+        .snap-secondary:hover{background:var(--mint)}
+        .snap-stats{max-width:500px;margin:auto;border-top:1px solid var(--line);padding-top:14px;display:grid;grid-template-columns:repeat(3,1fr)}
+        .snap-stat{border:0;background:transparent;min-width:0;padding:4px 0;border-radius:12px;transition:background .15s}
+        .snap-stat:hover{background:var(--mint)}
+        .snap-stat+ .snap-stat{border-right:1px solid var(--line)}
+        .snap-stat strong,.snap-stat span{display:block}
+        .snap-stat strong{font-size:18px;font-weight:900;line-height:1.1;color:var(--teal-deep)}
+        .snap-stat span{font-size:9px;color:var(--muted);font-weight:800;margin-top:4px}
+        .snap-completion-card{background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;border-radius:20px;padding:16px 18px;margin:12px 0;box-shadow:0 10px 28px rgba(18,121,107,.22)}
+        .snap-completion-card>div:first-child{display:flex;align-items:center;justify-content:space-between;font-size:10px}
+        .snap-completion-card strong{font-size:11px}
+        .snap-progress{height:6px;background:rgba(255,255,255,.22);border-radius:99px;overflow:hidden;margin-top:10px}
+        .snap-progress i{display:block;height:100%;background:#fff;border-radius:inherit}
+        .snap-completion-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}
+        .snap-completion-foot p{margin:0;color:rgba(255,255,255,.82);font-size:9px;font-weight:700}
+        .snap-completion-foot button{flex:0 0 auto;border:0;background:#fff;color:var(--teal-deep);border-radius:10px;padding:7px 12px;font-size:10px;font-weight:900}
+        .snap-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+        .snap-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;min-width:0}
+        .snap-wide{grid-column:1/-1}
+        .snap-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+        .snap-section-head span{font-size:12px;font-weight:900}
+        .snap-section-head button{border:0;background:none;color:var(--teal);font-size:10px;font-weight:900;padding:6px}
+        .snap-section-head button:hover{text-decoration:underline}
+        .snap-card>p{font-size:12px;line-height:1.9;color:var(--sub);margin:0;font-weight:600}
+        .snap-list-row{width:100%;display:flex;align-items:center;gap:10px;border:0;background:var(--bg);border-radius:15px;padding:11px;text-align:right;color:var(--ink)}
+        .snap-list-row.static{cursor:default}
+        .snap-list-icon{width:38px;height:38px;border-radius:12px;background:var(--mint);color:var(--teal);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+        .snap-list-row>span:nth-child(2){flex:1;min-width:0}
+        .snap-list-row strong,.snap-list-row small{display:block}
+        .snap-list-row strong{font-size:11px;font-weight:900}
+        .snap-list-row small{font-size:9px;color:var(--muted);font-weight:700;margin-top:3px}
+        .snap-chips{display:flex;flex-wrap:wrap;gap:7px}
+        .snap-chips span{padding:8px 11px;border-radius:10px;background:var(--mint);border:1px solid var(--mint-line);color:var(--teal-deep);font-size:10px;font-weight:800}
+        .snap-chips small,.snap-empty{font-size:10px;color:var(--muted);font-weight:700}
+        .snap-timeline{display:flex;flex-direction:column;gap:14px}
+        .snap-experience{display:grid;grid-template-columns:10px 1fr;gap:11px}
+        .snap-dot{width:8px;height:8px;background:var(--teal);border-radius:50%;margin-top:5px}
+        .snap-exp-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+        .snap-exp-top strong{font-size:11px;font-weight:900}
+        .snap-exp-top small{font-size:9px;color:var(--muted);font-family:monospace}
+        .snap-experience p{margin:5px 0 0;font-size:10px;line-height:1.7;color:var(--sub)}
+        .snap-verified{display:flex;align-items:center;gap:8px;color:var(--teal-deep);font-size:11px;font-weight:900}
+        .snap-verified svg{color:#16a34a}
+        @media(max-width:640px){
+          .snap-profile{padding-bottom:18px}
+          .snap-topbar{height:58px}
+          .snap-identity{border-radius:22px;padding-top:22px}
+          .snap-name-row h1{font-size:22px}
+          .snap-grid{grid-template-columns:1fr}
+          .snap-wide{grid-column:auto}
+          .snap-card{border-radius:18px}
+          .snap-actions button{flex:1}
+        }
+
+        /* Settings sheet */
+        @keyframes snapFade{from{opacity:0}to{opacity:1}}
+        @keyframes snapSheetUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+        .snap-sheet-overlay{position:fixed;inset:0;z-index:9000;background:rgba(7,17,15,.5);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;animation:snapFade .2s ease both;font-family:'Noto Kufi Arabic','Vazirmatn',system-ui,sans-serif;color:var(--ink)}
+        .snap-sheet{width:100%;max-width:460px;max-height:90vh;background:var(--bg);border-radius:28px 28px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -20px 60px rgba(0,0,0,.25);animation:snapSheetUp .28s cubic-bezier(.22,1,.36,1) both}
+        .snap-sheet-grab{width:40px;height:4px;border-radius:99px;background:#cfdcd8;margin:10px auto 0}
+        .snap-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:8px 18px}
+        .snap-sheet-head h2{margin:0;font-size:17px;font-weight:900}
+        .snap-sheet-body{padding:4px 16px calc(20px + env(safe-area-inset-bottom));overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+        .snap-sheet-account{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px}
+        .snap-sheet-avatar{width:52px;height:52px;border-radius:18px;background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;overflow:hidden;flex:0 0 auto}
+        .snap-sheet-avatar img{width:100%;height:100%;object-fit:cover}
+        .snap-sheet-account strong{display:block;font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .snap-sheet-account span{display:block;font-size:10px;color:var(--muted);font-weight:700;margin-top:3px;text-align:right}
+        .snap-sheet-account>button{height:36px;padding:0 14px;border-radius:12px;border:1px solid var(--mint-line);background:var(--mint);color:var(--teal-deep);font-size:10px;font-weight:900;flex:0 0 auto}
+        .snap-sheet-label{margin:12px 4px 2px;font-size:10px;font-weight:900;color:var(--muted)}
+        .snap-sheet-group{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden}
+        .snap-row{width:100%;min-height:60px;display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:0;border-bottom:1px solid #f0f4f2;text-align:right;color:var(--ink);cursor:pointer;transition:background .15s}
+        .snap-row:last-child{border-bottom:0}
+        .snap-row:hover{background:#f7fbfa}
+        .snap-row-icon{width:38px;height:38px;border-radius:12px;background:var(--mint);color:var(--teal);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+        .snap-row-copy{flex:1;min-width:0}
+        .snap-row-copy strong{display:block;font-size:12px;font-weight:900}
+        .snap-row-copy small{display:block;font-size:10px;color:var(--muted);font-weight:700;margin-top:2px}
+        .snap-row>svg{color:#a9b9b4;flex:0 0 auto}
+        .snap-switch{width:48px;height:28px;border-radius:99px;background:#cbd5d3;padding:3px;display:flex;justify-content:flex-start;border:0;transition:background .2s;flex:0 0 auto}
+        .snap-switch i{width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);display:block}
+        .snap-switch[aria-checked=true]{background:var(--teal);justify-content:flex-end}
+        .snap-switch:disabled{opacity:.6}
+        .snap-row.snap-danger{margin-top:8px;border:1px solid #f6d6d6;border-radius:18px;color:var(--danger)}
+        .snap-row.snap-danger .snap-row-icon{background:#fef0f0;color:var(--danger)}
+        .snap-row.snap-danger:hover{background:#fff5f5}
+        @media(min-width:640px){.snap-sheet-overlay{align-items:center;padding:20px}.snap-sheet{border-radius:28px}}
+        @media(prefers-reduced-motion:reduce){.snap-profile *,.snap-sheet,.snap-sheet-overlay{transition:none!important;animation:none!important}}
       `}</style>
       <ProfileHero />
 
-      {showEdit     && <EditModal />}
-      {showSettings && <SettingsModal />}
-      {showSaved    && <SavedModal />}
-      {showViewers  && <ViewersModal />}
+      {/* Modals are portalled to <body>: inside this page's isolated stacking
+          context the sticky desktop header would paint over their backdrop. */}
+      {showEdit     && createPortal(<EditModal />, document.body)}
+      {showSettings && renderSettings()}
+      {showSaved    && createPortal(<SavedModal />, document.body)}
+      {showViewers  && createPortal(<ViewersModal />, document.body)}
       {showLogout   && <LogoutModal />}
-      {showAbout    && <AboutModal onClose={() => setShowAbout(false)} />}
+      {showAbout    && createPortal(<AboutModal onClose={() => setShowAbout(false)} />, document.body)}
     </div>
   );
 };
