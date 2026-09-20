@@ -12,10 +12,11 @@ import { MilestonesPanel } from '../shared/MilestonesPanel';
 import { StarRatingInput } from '../ui/StarRating';
 import { TrendChart } from '../ui/TrendChart';
 import { HScroll } from '../ui/HScroll';
+import { PageHeader } from '../layout/PageHeader';
 import {
   Plus, Check, X, Crown, Edit, Trash2, MessageCircle, FileText, Send,
   Inbox, CheckCircle2, XCircle, Undo2, Layers, Palette, Star, Eye,
-  Play, Pause, MapPin, Briefcase, BarChart3, Sparkles, Search,
+  Play, Pause, MapPin, Briefcase, BarChart3, Search,
   ArrowUpRight, RefreshCw, Clock, Users, Building2, UserRound, CheckCheck
 } from 'lucide-react';
 
@@ -529,8 +530,6 @@ export const Dashboard = ({ onNavigate }) => {
     await respondToInvitation(offerId, 'rejected');
   };
 
-  const companyDisplayName = user?.company_name || user?.name || 'کۆمپانیا';
-  const displayName = isEmployer ? companyDisplayName : (user?.name || 'بەکارهێنەر');
 
   const statCards = isEmployer ? [
     { value: companyJobs.filter(j => j.status === 'active').length, label: 'کاری چالاک', icon: Briefcase, hint: 'کارەکان', accent: false, tab: 'jobs' },
@@ -562,34 +561,17 @@ export const Dashboard = ({ onNavigate }) => {
         <div className="absolute -left-40 top-[38%] h-96 w-96 rounded-full bg-[#12796b]/4 blur-3xl" />
       </div>
 
-      <main className="relative mx-auto w-full max-w-[1500px] px-3 pb-8 pt-4 sm:px-6 sm:pt-7 lg:px-8">
-        {/* Header */}
-        <header className="dashboard-rise mb-5 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="mb-1 flex items-center gap-2 text-[10px] font-black text-[#12796b]">
-              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#e7f4f1]"><Sparkles className="h-3.5 w-3.5" /></span>
-              {isEmployer ? 'داشبۆردی کۆمپانیا' : 'بەخێربێیتەوە بۆ ئیش خواز'}
-            </div>
-            <h1 className="truncate text-xl font-black tracking-tight text-[#17231f] sm:text-2xl lg:text-3xl">{displayName}</h1>
-            <p className="mt-1 hidden text-[11px] font-medium text-[#7b8e88] sm:block">
-              {isEmployer ? 'کاندیدەکان، کارەکان و ئەنجامەکانت لە یەک شوێن بەڕێوە ببە.' : 'داواکارییەکان و ئۆفەرەکانت بە ئاسانی بەڕێوە ببە.'}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button onClick={handleRefresh} disabled={refreshing} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#e2eae7] bg-white text-[#5f716b] shadow-sm transition hover:text-[#12796b] disabled:opacity-50" aria-label="نوێکردنەوە">
-              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-            </button>
-            {isEmployer && (
-              <GlassButton primary onClick={() => { soundService.playTick?.(); onNavigate?.('post_job'); }} className="hidden sm:inline-flex">
-                <Plus className="h-4 w-4" />بڵاوکردنەوەی کار
-              </GlassButton>
-            )}
-          </div>
-        </header>
+      <PageHeader
+        title={isEmployer ? 'داشبۆردی کۆمپانیا' : 'داواکارییەکانم'}
+        actions={[{ icon: RefreshCw, label: 'نوێکردنەوە', onClick: handleRefresh, active: refreshing }]}
+      />
 
+      <main className="relative mx-auto w-full max-w-[1500px] px-3 pb-8 pt-4 sm:px-6 sm:pt-7 lg:px-8">
         {isEmployer && (
-          <div className="mb-4 sm:hidden">
-            <GlassButton primary onClick={() => onNavigate?.('post_job')} className="w-full py-3.5"><Plus className="h-4 w-4" />بڵاوکردنەوەی کار</GlassButton>
+          <div className="dashboard-rise mb-4">
+            <GlassButton primary onClick={() => { soundService.playTick?.(); onNavigate?.('post_job'); }} className="w-full sm:w-auto sm:px-6 py-3.5 sm:py-3">
+              <Plus className="h-4 w-4" />بڵاوکردنەوەی کار
+            </GlassButton>
           </div>
         )}
 
@@ -627,7 +609,7 @@ export const Dashboard = ({ onNavigate }) => {
                       />
                     </div>
                     <div className="min-w-0 sm:max-w-[55%]">
-                    <HScroll bar={false} fade="from-white" className="flex items-center gap-2 px-1 py-0.5">
+                    <HScroll bar={false} className="flex items-center gap-2 px-1 py-0.5">
                       {applicantCategoryFilters.map(c => (
                         <button key={c.id} onClick={() => setSelectedCategoryFilter(c.id)} className={`shrink-0 rounded-full px-3.5 py-2 text-[10px] font-black transition ${selectedCategoryFilter === c.id ? 'bg-[#17231f] text-white' : 'border border-[#e5ece9] bg-white text-[#65766f] hover:border-[#12796b]/30'}`}>{c.label}</button>
                       ))}

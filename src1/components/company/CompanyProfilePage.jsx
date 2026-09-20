@@ -618,7 +618,7 @@ export const CompanyProfilePage = ({
           )}
 
           {/* Tabs */}
-          <nav className="sticky top-0 z-50 mt-5 py-2 bg-[#f5f8f7]/90 backdrop-blur-xl">
+          <nav className="sticky top-[calc(env(safe-area-inset-top)+57px)] lg:top-[73px] z-20 mt-5 py-2 bg-[#f5f8f7]/90 backdrop-blur-xl">
             <div className="flex items-center gap-1 p-1 rounded-2xl bg-white border border-stone-100 shadow-[0_5px_25px_rgba(16,40,35,.045)]">
               <button
                 type="button"
