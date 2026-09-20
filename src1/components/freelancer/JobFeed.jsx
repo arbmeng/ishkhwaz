@@ -668,15 +668,15 @@ export const JobFeed = ({ onNavigate }) => {
               <div className="max-w-3xl">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-[10px] font-black text-[#b8eee4]">
                   {isEmployer ? <UsersRound className="w-3.5 h-3.5"/> : <Briefcase className="w-3.5 h-3.5"/>}
-                  {isEmployer ? 'کارخوازەکان' : 'Job Feed'}
+                  {isEmployer ? 'کارخوازەکان' : 'هەلی کار'}
                 </div>
-                <h2 className="mt-4 text-[29px] sm:text-[38px] lg:text-[46px] leading-[1.12] font-black text-white tracking-tight">
-                  {isEmployer ? <>کەسێکی <span style={{color:'#6ee1cc'}}>باش</span> بۆ کارەکەت بدۆزەرەوە.</> :
-                    <>کاری <span style={{color:'#6ee1cc'}}>گونجاو</span> بۆ تۆ بدۆزەرەوە.</>}
+                <h2 className="mt-4 text-[29px] sm:text-[38px] lg:text-[46px] leading-[1.5] font-black text-white [text-wrap:balance]">
+                  {isEmployer ? <>کارمەندی <span style={{color:'#6ee1cc'}}>باش</span> بۆ کارەکەت بدۆزەرەوە</> :
+                    <>هەلی کاری <span style={{color:'#6ee1cc'}}>گونجاو</span> بۆ تۆ لێرەیە</>}
                 </h2>
-                <p className="mt-3 text-xs sm:text-sm leading-6 text-white/50 font-bold max-w-xl">
+                <p className="mt-3 text-xs sm:text-sm leading-7 text-white/70 font-bold max-w-xl">
                   {isEmployer ? 'پڕۆفایلی کارخوازەکان بپشکنە، تواناکانیان ببینە و بە خێرایی بانگهێشتیان بکە.' :
-                    'گەڕان بکە، هەلی نوێ ببینە و بە خێرایی سیڤییەکەت بنێرە.'}
+                    'بگەڕێ، هەلی نوێ ببینە و بە یەک کرتە سیڤییەکەت بنێرە.'}
                 </p>
               </div>
               <div className="mt-6 grid grid-cols-3 gap-2 max-w-2xl">
