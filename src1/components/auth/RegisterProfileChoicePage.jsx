@@ -4,7 +4,7 @@ import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { compressImageFile } from '../../utils/image';
 import { signInWithProvider } from '../../services/supabaseClient';
-import { AuthBrandPanel, AUTH_PAD_LG } from './AuthBrandPanel';
+import { AuthBrandPanel, AuthAssistant, AUTH_PAD_LG } from './AuthBrandPanel';
 
 // No brand-logo icon in lucide-react — real Google "G" mark, standard 4-color SVG.
 const GoogleIcon = () => (
@@ -364,7 +364,8 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         <div className="reg-grid" />
       </div>
 
-      <AuthBrandPanel variant="register" />
+      <AuthBrandPanel variant="register" step={step} isRecruiter={isRecruiter} />
+      <AuthAssistant variant="register" step={step} isRecruiter={isRecruiter} actions={{ login: onBack }} />
 
       {step <= TOTAL_STEPS && (
         <header
@@ -401,7 +402,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         {step === 1 && (
           <div className="space-y-6 animate-fadeIn">
             <div className="space-y-1.5">
-              <h2 className="text-2xl font-black tracking-tight" style={{ color: '#111' }}>
+              <h2 className="text-2xl font-black" style={{ color: '#111' }}>
                 تۆ کێیت؟
               </h2>
               <p className="text-xs font-bold text-slate-500">
@@ -491,7 +492,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         {step === 2 && (
           <div className="space-y-5 animate-fadeIn">
             <div className="space-y-1">
-              <h2 className="text-2xl font-black tracking-tight" style={{ color: '#111' }}>زانیاری کەسی</h2>
+              <h2 className="text-2xl font-black" style={{ color: '#111' }}>زانیاری کەسی</h2>
               <p className="text-xs font-bold text-slate-500">تکایە زانیارییەکانت بنووسە بۆ دروستکردنی هه‌ژمار</p>
             </div>
 
@@ -563,7 +564,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         {step === 3 && isRecruiter && (
           <div className="space-y-5 animate-fadeIn">
             <div className="space-y-1">
-              <h2 className="text-2xl font-black tracking-tight" style={{ color: '#111' }}>زانیاری کۆمپانیا</h2>
+              <h2 className="text-2xl font-black" style={{ color: '#111' }}>زانیاری کۆمپانیا</h2>
               <p className="text-xs font-bold text-slate-500">زانیاری کۆمپانیا / بزنسەکەت بنووسە</p>
             </div>
 
@@ -652,7 +653,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         {step === 3 && selectedOption === 'job_seeker' && (
           <div className="space-y-5 animate-fadeIn">
             <div className="space-y-1">
-              <h2 className="text-2xl font-black tracking-tight" style={{ color: '#111' }}>ئارەزووەکانی کار</h2>
+              <h2 className="text-2xl font-black" style={{ color: '#111' }}>ئارەزووەکانی کار</h2>
               <p className="text-xs font-bold text-slate-500">حەز و لێهاتوویییەکانت هەڵبژێرە بۆ ئاسانکاری دۆزینەوەی کار</p>
             </div>
 
@@ -732,7 +733,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         {step === 4 && isRecruiter && (
           <div className="space-y-5 animate-fadeIn">
             <div className="space-y-1">
-              <h2 className="text-2xl font-black tracking-tight" style={{ color: '#111' }}>حەز و ئارەزووەکان</h2>
+              <h2 className="text-2xl font-black" style={{ color: '#111' }}>حەز و ئارەزووەکان</h2>
               <p className="text-xs font-bold text-slate-500">ئەم زانیارییانە دەتوانن دواتریش بگۆڕدرێن — پێویستی کارخواز لە کارمەند</p>
             </div>
 
@@ -857,7 +858,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         {((step === 4 && !isRecruiter) || (step === 5 && isRecruiter)) && (
           <div className="space-y-5 animate-fadeIn">
             <div className="space-y-1">
-              <h2 className="text-2xl font-black tracking-tight" style={{ color: '#111' }}>
+              <h2 className="text-2xl font-black" style={{ color: '#111' }}>
                 {selectedOption === 'recruiter' ? 'ڕەگەز، وێنە & لۆگۆ' : 'ڕەگەز & وێنەی پڕۆفایل'}
               </h2>
               <p className="text-xs font-bold text-slate-500">
@@ -964,7 +965,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
               <span className="px-3 py-1 rounded-full text-xs font-black inline-block" style={{ background: TEAL_SOFT, border: `1px solid ${TEAL}33`, color: TEAL_DEEP }}>
                 پڕۆفایلەکەت بە سەرکەوتوویی تەواو کرا!
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black tracking-tight" style={{ color: '#111' }}>
+              <h2 className="text-2xl sm:text-3xl font-black" style={{ color: '#111' }}>
                 بەخێربێیت بۆ ئیش خواز
               </h2>
               <p className="text-xs text-slate-500 font-medium max-w-sm mx-auto">

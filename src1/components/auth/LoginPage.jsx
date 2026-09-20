@@ -4,7 +4,7 @@ import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { signInWithProvider } from '../../services/supabaseClient';
 import { Eye, EyeOff, AlertCircle, Phone, Lock, LogIn, Loader2, ArrowLeft, Compass, ShieldCheck } from 'lucide-react';
-import { AuthBrandPanel, AuthMobileHero, AUTH_PAD_LG } from './AuthBrandPanel';
+import { AuthBrandPanel, AuthAssistant, AuthMobileHero, AUTH_PAD_LG } from './AuthBrandPanel';
 
 // No brand-logo icon in lucide-react — real Google "G" mark, standard 4-color SVG.
 const GoogleIcon = () => (
@@ -118,6 +118,7 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
       style={{ backgroundColor: '#f4f7f6' }}
     >
       <AuthBrandPanel variant="login" />
+      <AuthAssistant variant="login" actions={{ register: onNavigateRegister, forgot: onForgotPassword }} />
       <AuthMobileHero />
 
       <div className="relative min-h-[calc(100dvh-7rem)] lg:min-h-full flex flex-col">
@@ -125,7 +126,7 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
           <div className={`relative w-full max-w-[480px] bg-[#f4f7f6] lg:bg-transparent -mt-8 lg:mt-0 rounded-t-[32px] lg:rounded-none px-5 sm:px-8 pt-8 lg:pt-12 pb-10 ${shake ? 'animate-[shake_0.4s_ease]' : ''}`}>
 
             <div className="mb-7">
-              <h1 className="text-[clamp(28px,7vw,36px)] font-black tracking-tight text-[#111d1a]">بەخێربێیتەوە</h1>
+              <h1 className="text-[clamp(28px,7vw,36px)] font-black text-[#111d1a]">بەخێربێیتەوە</h1>
               <p className="mt-1.5 text-sm font-bold leading-6 text-[#7b8e88]">بۆ بەردەوامبوون، زانیارییەکانت بنووسە</p>
             </div>
 
