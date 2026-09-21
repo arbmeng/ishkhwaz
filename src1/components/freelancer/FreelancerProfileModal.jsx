@@ -807,25 +807,125 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                 </section>
               )}
 
+              {hasCompanyVisibleCvs && (
+                <Section
+                  eyebrow="PORTFOLIO / CV"
+                  title="CV ـە گشتییەکان"
+                  icon={FileText}
+                >
+                  <div className="rounded-[24px] bg-white border border-stone-200/80 p-4 sm:p-5 shadow-[0_8px_30px_rgba(20,30,25,.04)]">
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                      <div className="text-xs sm:text-[13px] text-stone-500 font-medium leading-6">
+                        کۆمپانیاکان دەتوانن ئەم CV ـانە ببینن و هەڵیبژێرن.
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {visibleCvs.map((cv, index) => {
+                        const isSelected = selectedCv?.id === cv.id;
+
+                        return (
+                          <button
+                            key={cv.id || index}
+                            onClick={() => handleViewCv(cv)}
+                            className="text-right rounded-2xl border p-3.5 transition-all hover:-translate-y-0.5 active:scale-[.99]"
+                            style={{
+                              background: isSelected ? `${TEAL}08` : '#fff',
+                              borderColor: isSelected ? `${TEAL}45` : '#e8e7e9'
+                            }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                style={{
+                                  background: isSelected ? TEAL : TEAL_SOFT,
+                                  color: isSelected ? '#fff' : TEAL
+                                }}
+                              >
+                                <FileText className="w-[17px] h-[17px]" />
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs sm:text-[13px] font-black text-stone-900 truncate">
+                                  {cv.title || `CV ${index + 1}`}
+                                </div>
+                                <div className="text-[10px] text-stone-400 font-bold mt-1">
+                                  {isExportingCv ? 'دەکرێتەوە...' : 'کرتە بکە بۆ بینین و داگرتن (PDF)'}
+                                </div>
+                              </div>
+
+                              <ChevronLeft
+                                className="w-4 h-4 shrink-0"
+                                style={{ color: isSelected ? TEAL : '#a8afac' }}
+                              />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {selectedCv && (
+                      <button
+                        onClick={() => handleViewCv(selectedCv)}
+                        disabled={isExportingCv}
+                        className="w-full mt-3.5 py-3.5 rounded-2xl text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-[.98] transition-transform disabled:opacity-60"
+                        style={{
+                          background: `linear-gradient(135deg, ${TEAL_DEEP}, ${TEAL})`,
+                          boxShadow: `0 8px 20px ${TEAL}28`
+                        }}
+                      >
+                        {isExportingCv ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <FileText className="w-4 h-4" />
+                        )}
+                        بینینی {selectedCv.title || 'CV'}
+                      </button>
+                    )}
+                  </div>
+                </Section>
+              )}
+
+              {!hasCompanyVisibleCvs && user?.id && freelancer?.id === user.id && (
+                <section className="mt-7 rounded-[24px] border border-dashed border-[#cfc5e6] bg-white p-5 text-right">
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl" style={{ background: TEAL_SOFT, color: TEAL }}><FileText className="h-[18px] w-[18px]" /></div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-black text-stone-900">هێشتا CV ی گشتیت نییە</div>
+                      <p className="mt-1 text-xs font-medium leading-6 text-stone-500">CV ێک دروست بکە و وەک CV ی پرۆفایل دایبنێ، تا کۆمپانیاکان لێرە ببینن و بە PDF دایبگرن.</p>
+                      <button type="button" onClick={() => { onClose?.(); window.history.pushState({}, '', '/app/resumes'); window.dispatchEvent(new PopStateEvent('popstate')); }}
+                        className="mt-3 rounded-xl px-4 py-2.5 text-xs font-black text-white" style={{ background: `linear-gradient(135deg, ${TEAL_DEEP}, ${TEAL})` }}>CV ـەکانم</button>
+                    </div>
+                  </div>
+                </section>
+              )}
+
               {/* Skills */}
               {skillsList.length > 0 && (
                 <Section eyebrow="SKILLS" title="شارەزاییەکان" icon={Sparkles}>
-                  <div className="rounded-[24px] bg-white border border-stone-200/80 p-4 sm:p-5 shadow-[0_8px_30px_rgba(20,30,25,.04)]">
-                    <div className="flex flex-wrap gap-2">
-                      {skillsList.map((skill, index) => (
-                        <span
+                  <div className="mb-3 flex items-center justify-between px-1">
+                    <span className="text-[11px] font-bold text-stone-400">{skillsList.length} شارەزایی</span>
+                    {skillsList.length > 3 && <span className="text-[10px] font-black" style={{ color: isVip ? '#9a3d00' : TEAL_DEEP }}>سێ یەکەم = گرنگترینەکان</span>}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                    {skillsList.map((skill, index) => {
+                      const top = index < 3;
+                      const accent = isVip ? '#ff7a00' : TEAL;
+                      return (
+                        <div
                           key={index}
-                          className="px-3.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-black border transition-all hover:-translate-y-0.5"
+                          className="group flex items-center gap-3 rounded-2xl border bg-white px-4 py-3.5 transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_26px_rgba(100,27,217,.12)]"
                           style={{
-                            color: isVip ? '#9a3d00' : TEAL_DEEP,
-                            background: isVip ? '#fff4eb' : `${TEAL}08`,
-                            borderColor: isVip ? '#ffd1ad' : `${TEAL}22`
+                            borderColor: top ? `${accent}55` : '#e6e2ee',
+                            background: top ? `linear-gradient(135deg, #ffffff, ${accent}0d)` : '#ffffff',
+                            boxShadow: '0 5px 18px rgba(20,30,25,.035)',
                           }}
                         >
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
+                          <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: top ? `linear-gradient(135deg, ${accent}, ${isVip ? '#e23b00' : TEAL_DEEP})` : '#b9a3e8', boxShadow: top ? `0 0 0 4px ${accent}1f` : 'none' }} />
+                          <span dir="auto" className="min-w-0 flex-1 truncate text-xs font-black text-stone-800 sm:text-[13px]">{skill}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </Section>
               )}
@@ -911,84 +1011,6 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
               )}
 
               {/* COMPANY-VISIBLE CVS */}
-              {hasCompanyVisibleCvs && (
-                <Section
-                  eyebrow="PORTFOLIO / CV"
-                  title="CV ـە گشتییەکان"
-                  icon={FileText}
-                >
-                  <div className="rounded-[24px] bg-white border border-stone-200/80 p-4 sm:p-5 shadow-[0_8px_30px_rgba(20,30,25,.04)]">
-                    <div className="flex items-center justify-between gap-3 mb-4">
-                      <div className="text-xs sm:text-[13px] text-stone-500 font-medium leading-6">
-                        کۆمپانیاکان دەتوانن ئەم CV ـانە ببینن و هەڵیبژێرن.
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      {visibleCvs.map((cv, index) => {
-                        const isSelected = selectedCv?.id === cv.id;
-
-                        return (
-                          <button
-                            key={cv.id || index}
-                            onClick={() => handleViewCv(cv)}
-                            className="text-right rounded-2xl border p-3.5 transition-all hover:-translate-y-0.5 active:scale-[.99]"
-                            style={{
-                              background: isSelected ? `${TEAL}08` : '#fff',
-                              borderColor: isSelected ? `${TEAL}45` : '#e8e7e9'
-                            }}
-                          >
-                            <div className="flex items-center gap-3">
-                              <div
-                                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                                style={{
-                                  background: isSelected ? TEAL : TEAL_SOFT,
-                                  color: isSelected ? '#fff' : TEAL
-                                }}
-                              >
-                                <FileText className="w-[17px] h-[17px]" />
-                              </div>
-
-                              <div className="min-w-0 flex-1">
-                                <div className="text-xs sm:text-[13px] font-black text-stone-900 truncate">
-                                  {cv.title || `CV ${index + 1}`}
-                                </div>
-                                <div className="text-[10px] text-stone-400 font-bold mt-1">
-                                  {isExportingCv ? 'دەکرێتەوە...' : 'کرتە بکە بۆ بینین و داگرتن (PDF)'}
-                                </div>
-                              </div>
-
-                              <ChevronLeft
-                                className="w-4 h-4 shrink-0"
-                                style={{ color: isSelected ? TEAL : '#a8afac' }}
-                              />
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {selectedCv && (
-                      <button
-                        onClick={() => handleViewCv(selectedCv)}
-                        disabled={isExportingCv}
-                        className="w-full mt-3.5 py-3.5 rounded-2xl text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 active:scale-[.98] transition-transform disabled:opacity-60"
-                        style={{
-                          background: `linear-gradient(135deg, ${TEAL_DEEP}, ${TEAL})`,
-                          boxShadow: `0 8px 20px ${TEAL}28`
-                        }}
-                      >
-                        {isExportingCv ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <FileText className="w-4 h-4" />
-                        )}
-                        بینینی {selectedCv.title || 'CV'}
-                      </button>
-                    )}
-                  </div>
-                </Section>
-              )}
 
               {/* Categories */}
               {favCategories.length > 0 && (

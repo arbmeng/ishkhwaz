@@ -5316,6 +5316,10 @@ if (preg_match('#/resumes$#', $uri) && $method === 'POST') {
     $title = sanitize($input['title'] ?? '', 150);
     if ($title === '') $title = sanitize($data['personalInfo']['jobTitle'] ?? '', 150) ?: 'CV';
     $row = karnamaCreateAndStore($pdo, $authUser, $title, $templateId, $accent, $lang, $data);
+    // The first CV a person makes becomes their public profile CV (they can change it in My CVs).
+    if (empty($authUser['public_resume_id'])) {
+        $pdo->prepare('UPDATE users SET public_resume_id = ? WHERE id = ?')->execute([$row['id'], $authUser['id']]);
+    }
     echo json_encode(['success' => true, 'id' => $row['id'], 'resume' => $row]);
     exit(0);
 }
