@@ -116,6 +116,19 @@ export default function LandingPage({ onNavigate }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState(0);
   const { canInstall, installed, install } = useInstallPrompt();
+  const [activeNav, setActiveNav] = useState('home');
+
+  useEffect(() => {
+    const ids = NAV_ITEMS.map(i => i.id);
+    const els = ids.map(id => document.getElementById(id)).filter(Boolean);
+    if (!els.length || typeof IntersectionObserver === 'undefined') return undefined;
+    const io = new IntersectionObserver((entries) => {
+      const vis = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (vis) setActiveNav(vis.target.id);
+    }, { rootMargin: '-25% 0px -55% 0px', threshold: [0, .2, .5] });
+    els.forEach(el => io.observe(el));
+    return () => io.disconnect();
+  }, []);
 
   const stats = useMemo(() => [
     { value: '24/7', label: 'گەڕانی بەردەوام' },
@@ -159,6 +172,19 @@ export default function LandingPage({ onNavigate }) {
         .ish-cta{padding:70px 0}.ish-cta-box{position:relative;overflow:hidden;border-radius:32px;padding:55px 50px;background:linear-gradient(130deg,#0b5f54,#073e38);color:white;display:flex;align-items:center;justify-content:space-between;gap:30px}.ish-cta-box:after{content:"";position:absolute;width:340px;height:340px;border:1px solid rgba(255,255,255,.1);border-radius:50%;left:-120px;bottom:-190px}.ish-cta h2{font-size:clamp(24px,3.4vw,36px);line-height:1.5;margin:0 0 10px}.ish-cta p{color:#c5ded9;margin:0;line-height:1.9}.ish-cta .ish-soft{background:white;color:#0b5a50}
         .ish-footer{background:#061d1a;color:#bfd0cc;padding:48px 0 25px}.ish-footer-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:50px}.ish-footer p{font-size:12px;line-height:1.9;color:#819b95;max-width:420px}.ish-footer h4{color:white;margin:0 0 13px}.ish-footer-links{display:grid;gap:8px}.ish-footer button{background:none;border:0;color:#8ea6a1;text-align:right;cursor:pointer;font-size:11px}.ish-footer .ish-brand{cursor:default}.ish-footer-bottom{border-top:1px solid rgba(255,255,255,.08);margin-top:35px;padding-top:18px;font-size:10px;color:#6e8983;display:flex;justify-content:space-between;gap:10px}
         .ish-install{position:fixed;left:18px;bottom:18px;z-index:45;display:flex;align-items:center;gap:9px;padding:12px 14px;background:#fff;border:1px solid #d9e8e4;border-radius:15px;box-shadow:0 15px 40px rgba(7,48,43,.13);font-size:11px;font-weight:850;color:#173b35}.ish-install button{border:0;background:var(--ish-teal);color:white;border-radius:10px;padding:8px 11px;font-weight:850;cursor:pointer}.ish-modal-backdrop{position:fixed;inset:0;background:rgba(4,25,22,.55);backdrop-filter:blur(8px);z-index:80;display:grid;place-items:center;padding:20px}.ish-modal{width:min(460px,100%);background:white;border-radius:25px;padding:25px;box-shadow:0 30px 90px rgba(0,0,0,.25)}.ish-modal-head{display:flex;align-items:center;justify-content:space-between}.ish-close{border:0;background:#edf3f1;border-radius:10px;padding:8px;cursor:pointer}.ish-modal ol{padding-right:20px;color:#60706c;line-height:2;font-size:13px}.ish-modal p{color:#73817e;font-size:12px;line-height:1.9}
+        .ish-nav{background:linear-gradient(100deg,#1a6b58 0%,#238063 45%,#33956f 100%);border-bottom:0;box-shadow:0 10px 30px rgba(8,63,55,.18);color:#fff}
+        .ish-nav:before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.22) 1px,transparent 1.4px);background-size:22px 22px;opacity:.55}
+        .ish-nav .ish-nav-inner{position:relative}
+        .ish-nav .ish-brand{color:#fff}.ish-nav .ish-brand span{color:rgba(255,255,255,.7)}
+        .ish-logo-tile{display:grid;place-items:center;width:46px;height:46px;border-radius:15px;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.14)}
+        .ish-nav .ish-logo-tile img{width:30px;height:30px;border-radius:0}
+        .ish-nav .ish-links{padding:5px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(10px)}
+        .ish-nav .ish-links button{color:#fff;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:600;transition:.2s}
+        .ish-nav .ish-links button:hover{background:rgba(255,255,255,.16);color:#fff}
+        .ish-nav .ish-links button.on{background:#fff;color:#14604f;box-shadow:0 4px 12px rgba(0,0,0,.12)}
+        .ish-nav .ish-soft{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.25)}
+        .ish-nav .ish-primary{background:#fff;color:#14604f;box-shadow:0 10px 24px rgba(0,0,0,.16)}
+        .ish-nav .ish-menu{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.28);color:#fff}
         @media(max-width:980px){.ish-links{display:none}.ish-menu{display:block}.ish-nav-actions .ish-soft{display:none}.ish-hero-grid,.ish-tutorial{grid-template-columns:1fr;gap:45px}.ish-hero-copy{max-width:760px}.ish-hero-card{max-width:620px;width:100%;margin:auto}.ish-steps{grid-template-columns:repeat(2,1fr)}.ish-features{grid-template-columns:repeat(2,1fr)}.ish-roles{grid-template-columns:1fr}.ish-footer-grid{grid-template-columns:1fr 1fr}.ish-mobile-nav{display:grid!important}}
         .ish-mobile-nav{display:none;position:absolute;top:68px;right:0;left:0;background:rgba(255,255,255,.97);border:1px solid #dfe9e6;border-radius:18px;padding:9px;box-shadow:0 25px 60px rgba(8,45,40,.14)}.ish-mobile-nav button{border:0;background:transparent;text-align:right;padding:12px;width:100%;border-radius:11px;font-weight:750;color:#51625e}.ish-mobile-nav button:hover{background:#eef6f4}.ish-mobile-nav .ish-mobile-cta{background:var(--ish-teal);color:white;text-align:center;margin-top:5px}
         @media(max-width:640px){.ish-container{width:min(100% - 28px,1180px)}.ish-nav-inner{height:66px}.ish-brand strong{font-size:17px}.ish-brand img{width:38px;height:38px}.ish-hero{padding:112px 0 55px}.ish-hero h1{font-size:31px}.ish-hero p{font-size:14px;line-height:2}.ish-actions{display:grid;grid-template-columns:1fr}.ish-actions .ish-btn{width:100%}.ish-trust{flex-wrap:wrap;gap:9px 14px}.ish-window{padding:10px;border-radius:22px}.ish-preview{padding:12px;min-height:340px}.ish-stats{margin-top:-5px}.ish-stats-card{grid-template-columns:1fr;padding:8px}.ish-stat{border-left:0;border-bottom:1px solid #e6eeec;padding:11px}.ish-stat:last-child{border-bottom:0}.ish-section{padding:70px 0}.ish-title{font-size:25px}.ish-steps,.ish-features{grid-template-columns:1fr}.ish-step{min-height:auto}.ish-role{padding:22px}.ish-cta{padding:50px 0}.ish-cta-box{padding:34px 24px;display:block}.ish-cta-box .ish-actions{margin-top:22px}.ish-footer-grid{grid-template-columns:1fr}.ish-footer-bottom{display:block;line-height:1.8}.ish-install{left:10px;right:10px;bottom:10px;justify-content:space-between}.ish-tutorial-card{min-height:390px}.ish-phone{width:200px}.ish-phone-screen{height:275px}}
@@ -168,12 +194,12 @@ export default function LandingPage({ onNavigate }) {
       <header className="ish-nav">
         <div className="ish-container ish-nav-inner">
           <button className="ish-brand" onClick={() => scrollToId('home')}>
-            <img src="/logo-flat.png" alt="ئیش خواز" />
+            <span className="ish-logo-tile"><img src="/logo-flat.png" alt="ئیش خواز" /></span>
             <div><strong>ئیش خواز</strong><span>کار لە کوردستان</span></div>
           </button>
 
           <nav className="ish-links" aria-label="ناڤیگەیشن">
-            {NAV_ITEMS.map((item) => <button key={item.id} onClick={() => scrollToId(item.id)}>{item.label}</button>)}
+            {NAV_ITEMS.map((item) => <button key={item.id} className={activeNav === item.id ? 'on' : ''} onClick={() => { setActiveNav(item.id); scrollToId(item.id); }}>{item.label}</button>)}
           </nav>
 
           <div className="ish-nav-actions">

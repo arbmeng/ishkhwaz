@@ -29,6 +29,7 @@ const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
 // single accent color, dropped the candy-mint backgrounds for neutral gray.
 const TEAL = '#12796b';
 const TEAL_DEEP = '#0d5c50';
+const TEAL_SOFT = '#e7f4f1';
 const TEAL2 = '#245e56';
 const MINT = '#eef1f0';
 const MINT2 = '#f4f5f4';
@@ -723,7 +724,16 @@ export const UserProfilePage = ({ onNavigate }) => {
     );
   };
   const EditModalImpl = () => {
-    const [activeSection, setActiveSection] = useState(isEmployer ? 'company_info' : 'basic');
+    const firstSection = isEmployer ? 'company_info' : 'basic';
+    const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width:1023px)').matches);
+    // Phones get a hub of sections, each opening as its own page; desktop keeps the two-column editor.
+    const [activeSection, setActiveSection] = useState(() => (typeof window !== 'undefined' && window.matchMedia('(max-width:1023px)').matches ? null : firstSection));
+    useEffect(() => {
+      const mq = window.matchMedia('(max-width:1023px)');
+      const on = () => { setIsMobile(mq.matches); setActiveSection(cur => (mq.matches ? cur : (cur || firstSection))); };
+      mq.addEventListener('change', on);
+      return () => mq.removeEventListener('change', on);
+    }, []);
 
     // Tells main.jsx's service-worker updater not to force-reload the app
     // while this form is open (see main.jsx for the full reasoning) — a
@@ -758,86 +768,8 @@ export const UserProfilePage = ({ onNavigate }) => {
     const fieldCls = 'w-full bg-[#f6f7f8] border border-transparent rounded-2xl px-4 py-3.5 text-[13px] font-medium outline-none transition';
     const fieldStyle = { color: TXT };
     const fieldFocus = 'focus:bg-white focus:border-[#12796b]/40 focus:shadow-[0_0_0_4px_rgba(18,121,107,.08)]';
-    return (
-      <div className="ap-page" dir="rtl" style={{ fontFamily: NK }}>
-        <div className="ap-edit w-full bg-white rounded-[28px] border border-[#e5ece9] [overflow:clip]">
-          {/* Header — soft wash, round back button, big title (same look as the profile page) */}
-          <div className="ap-modal-head shrink-0">
-            <button onClick={() => setShowEdit(false)} className="ap-circle" aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
-            <h3>{isEmployer ? 'دەستکاری پڕۆفایلی کۆمپانیا' : 'دەستکاری پڕۆفایل'}</h3>
-          </div>
-
-          <div
-            className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-6"
-          >
-
-            {/* ──── RIGHT COLUMN: identity card + tab nav ──── */}
-            <div className="lg:col-span-4 p-5 lg:border-l border-[#eef3f1] space-y-4 bg-[#fbfdfc] order-1 lg:order-2">
-              <div className="bg-white rounded-xl p-5 border shadow-sm text-center" style={{ borderColor: '#e4eae7' }}>
-                <div className="relative w-20 h-20 mx-auto mb-3">
-                  <CompletionRing pct={completion} size={80} strokeW={3} />
-                  <div
-                    onClick={() => avatarRef.current?.click()}
-                    className={`absolute inset-2 ${isEmployer ? 'rounded-xl' : 'rounded-full'} overflow-hidden cursor-pointer group flex items-center justify-center border-2 border-white shadow-sm`}
-                    style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}
-                  >
-                    {displayAvatar ? (
-                      <img src={displayAvatar} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-xl font-black text-white">{initial}</span>
-                    )}
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white">
-                      <Camera className="w-4 h-4" />
-                    </div>
-                  </div>
-                </div>
-
-                <h4 className="text-base font-black truncate" style={{ color: TXT }}>{displayName}</h4>
-                <p className="text-xs font-bold mt-0.5 truncate" style={{ color: SUB }}>{displayTitle}</p>
-
-                <div className="mt-3 pt-3 border-t" style={{ borderColor: '#f0f4f2' }}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[11px] font-bold" style={{ color: MUTED }}>تەواوی پڕۆفایل</span>
-                    <span className="text-xs font-black font-mono" style={{ color: TEAL }}>{completion}%</span>
-                  </div>
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#eef3f1' }}>
-                    <div className="h-full rounded-full transition-all" style={{ width: `${completion}%`, background: `linear-gradient(90deg, ${TEAL}, ${TEAL_DEEP})` }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Navigation Tabs — icon-badge style, active tab gets a
-                  colored accent bar + tinted background instead of a plain
-                  highlighted row */}
-              <div className="space-y-1.5 text-xs font-bold">
-                {tabs.map(tab => {
-                  const Icon = tab.icon;
-                  const isActive = activeSection === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveSection(tab.id)}
-                      className="w-full flex items-center gap-3 py-2.5 px-3 rounded-xl transition-all relative overflow-hidden"
-                      style={isActive
-                        ? { background: '#eef7f5', color: TEAL_DEEP, fontWeight: 900 }
-                        : { color: SUB }}
-                    >
-                      {isActive && <span className="absolute right-0 top-1.5 bottom-1.5 w-[3px] rounded-full" style={{ background: TEAL }} />}
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
-                        style={isActive ? { background: TEAL, color: '#fff' } : { background: '#f0f4f2', color: SUB }}
-                      >
-                        <Icon className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="flex-1 text-right">{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* ──── LEFT COLUMN: Main Tab Content Area ──── */}
-            <div className="lg:col-span-8 p-6 lg:p-8 space-y-5 order-2 lg:order-1">
+    const sectionContent = (
+      <>
 
               {/* ── TAB 1: BASIC INFO (FREELANCER) ── */}
               {activeSection === 'basic' && (
@@ -1146,11 +1078,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                 <div className="animate-fadeIn">
                   <SectionCard title="ڕێکخستن" icon={Settings}>
                     <div className="flex items-center justify-between">
-                      <button type="button" onClick={handleTogglePush} disabled={pushBusy}
-                        className="w-12 h-6 rounded-full p-1 flex items-center transition-colors duration-300"
-                        style={{ background: pushEnabled ? TEAL : '#cbd5d3', justifyContent: pushEnabled ? 'flex-end' : 'flex-start' }}>
-                        <span className="w-4 h-4 rounded-full bg-white shadow-sm block" />
-                      </button>
+                      <button type="button" role="switch" aria-checked={pushEnabled} aria-label="ئاگادارکردنەوەکان" onClick={handleTogglePush} disabled={pushBusy} className="ap-switch"><i /></button>
                       <div>
                         <div className="text-xs font-bold" style={{ color: TXT }}>ئاگادارکردنەوەکانی نۆتیفیکەیشن</div>
                         <div className="text-[11px] mt-0.5" style={{ color: MUTED }}>{pushEnabled ? 'چالاککراوە' : 'ناچالاکە'}</div>
@@ -1160,17 +1088,174 @@ export const UserProfilePage = ({ onNavigate }) => {
                 </div>
               )}
 
-            </div>
+      </>
+    );
 
-          </div>
-
-          {/* Footer — always-reachable save pill */}
+    const footerBar = (
           <div className="ap-modal-foot shrink-0">
             <button type="button" onClick={() => setShowEdit(false)} className="ap-ghost">داخستن</button>
             <button type="button" onClick={handleSave} disabled={saving} className="ap-save">
               {saved ? <><CheckCircle2 className="w-4 h-4" /> پاشەکەوتکرا</> : <><Save className="w-4 h-4" /> {saving ? 'خەریکی...' : 'پاشەکەوتکردن'}</>}
             </button>
           </div>
+    );
+
+    // short "what is in there" line for each row of the mobile hub
+    const socialCount = Object.values(social).filter(Boolean).length;
+    const hint = {
+      basic: [name, profession].filter(Boolean).join(' · '),
+      company_info: [companyName, industry].filter(Boolean).join(' · '),
+      location: location,
+      photos: displayAvatar ? 'وێنە دانراوە' : 'وێنە نییە',
+      branding: displayAvatar ? 'لۆگۆ دانراوە' : 'لۆگۆ نییە',
+      skills: skills.length ? `${skills.length} شارەزایی` : 'زیادی بکە',
+      experience: experiences.length ? `${experiences.length} ئەزموون` : 'زیادی بکە',
+      more: [languages.length ? `${languages.length} زمان` : '', education.length ? `${education.length} بڕوانامە` : ''].filter(Boolean).join(' · ') || 'زیادی بکە',
+      social: socialCount ? `${socialCount} بەستەر` : 'زیادی بکە',
+      cv: 'بەڕێوەبردنی CV',
+      settings: pushEnabled ? 'ئاگادارکردنەوە چالاکە' : 'ئاگادارکردنەوە ناچالاکە',
+    };
+
+    if (isMobile) {
+      const cur = tabs.find(t => t.id === activeSection);
+      return (
+        <div className="ap-page ap-mobile-edit" dir="rtl" style={{ fontFamily: NK }}>
+          <div className="ap-hdr">
+            <PageHeader
+              title={cur ? cur.label : (isEmployer ? 'دەستکاری کۆمپانیا' : 'دەستکاری پڕۆفایل')}
+              subtitle={cur ? 'گۆڕانکارییەکان بپارێزە' : `${completion}% تەواوە`}
+              onBack={() => (cur ? setActiveSection(null) : setShowEdit(false))}
+            />
+          </div>
+
+          {!cur ? (
+            <div className="space-y-4 px-1">
+              <div className="flex items-center gap-4 rounded-[24px] border bg-white p-4" style={{ borderColor: '#e5ece9' }}>
+                <div className="relative h-[72px] w-[72px] shrink-0">
+                  <CompletionRing pct={completion} size={72} strokeW={3} />
+                  <button type="button" onClick={() => avatarRef.current?.click()} className={`absolute inset-2 flex items-center justify-center overflow-hidden ${isEmployer ? 'rounded-xl' : 'rounded-full'} border-2 border-white text-lg font-black text-white`} style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }} aria-label="گۆڕینی وێنە">
+                    {displayAvatar ? <img src={displayAvatar} alt="" className="h-full w-full object-cover" /> : initial}
+                  </button>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-base font-bold" style={{ color: TXT }}>{displayName}</div>
+                  <div className="mt-0.5 truncate text-xs font-medium" style={{ color: MUTED }}>{displayTitle}</div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e8eeec]"><div className="h-full rounded-full" style={{ width: `${completion}%`, background: `linear-gradient(90deg, ${TEAL}, #43bea4)` }} /></div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                {tabs.map(t => {
+                  const TIcon = t.icon;
+                  return (
+                    <button key={t.id} type="button" onClick={() => { soundService.playTick?.(); setActiveSection(t.id); }}
+                      className="flex w-full items-center gap-3 rounded-[20px] border bg-white px-4 py-3.5 text-right transition active:scale-[.99]" style={{ borderColor: '#e5ece9' }}>
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl" style={{ background: TEAL_SOFT, color: TEAL }}><TIcon className="h-5 w-5" /></span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[14px] font-bold" style={{ color: TXT }}>{t.label}</span>
+                        <span className="mt-0.5 block truncate text-[11px] font-medium" style={{ color: MUTED }}>{hint[t.id] || ''}</span>
+                      </span>
+                      <ChevronLeft className="h-4 w-4 shrink-0" style={{ color: '#b4b9bf' }} />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 px-1">{sectionContent}</div>
+          )}
+
+          {footerBar}
+        </div>
+      );
+    }
+
+    return (
+      <div className="ap-page" dir="rtl" style={{ fontFamily: NK }}>
+        <div className="ap-edit w-full bg-white rounded-[28px] border border-[#e5ece9] [overflow:clip]">
+          {/* Header — soft wash, round back button, big title (same look as the profile page) */}
+          <div className="ap-modal-head shrink-0">
+            <button onClick={() => setShowEdit(false)} className="ap-circle" aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
+            <h3>{isEmployer ? 'دەستکاری پڕۆفایلی کۆمپانیا' : 'دەستکاری پڕۆفایل'}</h3>
+          </div>
+
+          <div
+            className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-6"
+          >
+
+            {/* ──── RIGHT COLUMN: identity card + tab nav ──── */}
+            <div className="lg:col-span-4 p-5 lg:border-l border-[#eef3f1] space-y-4 bg-[#fbfdfc] order-1 lg:order-2">
+              <div className="bg-white rounded-xl p-5 border shadow-sm text-center" style={{ borderColor: '#e4eae7' }}>
+                <div className="relative w-20 h-20 mx-auto mb-3">
+                  <CompletionRing pct={completion} size={80} strokeW={3} />
+                  <div
+                    onClick={() => avatarRef.current?.click()}
+                    className={`absolute inset-2 ${isEmployer ? 'rounded-xl' : 'rounded-full'} overflow-hidden cursor-pointer group flex items-center justify-center border-2 border-white shadow-sm`}
+                    style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}
+                  >
+                    {displayAvatar ? (
+                      <img src={displayAvatar} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-xl font-black text-white">{initial}</span>
+                    )}
+                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition text-white">
+                      <Camera className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+
+                <h4 className="text-base font-black truncate" style={{ color: TXT }}>{displayName}</h4>
+                <p className="text-xs font-bold mt-0.5 truncate" style={{ color: SUB }}>{displayTitle}</p>
+
+                <div className="mt-3 pt-3 border-t" style={{ borderColor: '#f0f4f2' }}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[11px] font-bold" style={{ color: MUTED }}>تەواوی پڕۆفایل</span>
+                    <span className="text-xs font-black font-mono" style={{ color: TEAL }}>{completion}%</span>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#eef3f1' }}>
+                    <div className="h-full rounded-full transition-all" style={{ width: `${completion}%`, background: `linear-gradient(90deg, ${TEAL}, ${TEAL_DEEP})` }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Navigation Tabs — icon-badge style, active tab gets a
+                  colored accent bar + tinted background instead of a plain
+                  highlighted row */}
+              <div className="space-y-1.5 text-xs font-bold">
+                {tabs.map(tab => {
+                  const Icon = tab.icon;
+                  const isActive = activeSection === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveSection(tab.id)}
+                      className="w-full flex items-center gap-3 py-2.5 px-3 rounded-xl transition-all relative overflow-hidden"
+                      style={isActive
+                        ? { background: '#eef7f5', color: TEAL_DEEP, fontWeight: 900 }
+                        : { color: SUB }}
+                    >
+                      {isActive && <span className="absolute right-0 top-1.5 bottom-1.5 w-[3px] rounded-full" style={{ background: TEAL }} />}
+                      <div
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                        style={isActive ? { background: TEAL, color: '#fff' } : { background: '#f0f4f2', color: SUB }}
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="flex-1 text-right">{tab.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ──── LEFT COLUMN: Main Tab Content Area ──── */}
+            <div className="lg:col-span-8 p-6 lg:p-8 space-y-5 order-2 lg:order-1">
+              {sectionContent}
+            </div>
+
+          </div>
+
+          {footerBar}
 
         </div>
       </div>
@@ -1376,6 +1461,7 @@ export const UserProfilePage = ({ onNavigate }) => {
         .ap-ghost{height:50px;padding:0 22px;border-radius:999px;background:var(--soft);border:0;font-size:13px;font-weight:700;color:var(--sub)}
         @media(min-width:640px){.ap-overlay{align-items:center;padding:22px}.ap-sheet{border-radius:32px;max-height:90vh}}
         .ap-cols{display:block}
+        @media(max-width:1023px){.ap-page input,.ap-page textarea,.ap-page select{font-size:16px!important}}
         .ap-hdr{margin:-12px -14px 16px}@media(min-width:640px){.ap-hdr{margin:-20px -20px 20px}}@media(min-width:1024px){.ap-hdr{margin:-20px -32px 28px}}
         .ap-page{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding-bottom:36px}
         .ap-page .ap-modal-foot{position:sticky;bottom:calc(74px + env(safe-area-inset-bottom));z-index:5;border:1px solid var(--line);border-radius:26px;margin:0 12px 12px;box-shadow:0 12px 34px rgba(13,60,52,.12)}
