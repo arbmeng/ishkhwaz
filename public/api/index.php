@@ -1527,6 +1527,22 @@ $pdo->exec("
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
 
+// Messages sent from the public Contact page (kept in the database; admins are also notified).
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS contact_messages (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(64) NULL,
+    name VARCHAR(120) NOT NULL,
+    email VARCHAR(150) NOT NULL,
+    phone VARCHAR(30) NULL,
+    message TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'new',
+    ip VARCHAR(64) NULL,
+    created_at VARCHAR(32) NOT NULL,
+    INDEX idx_contact_status (status, id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+
 // Bring an already-existing plan_tiers table up to the current shape —
 // CREATE TABLE IF NOT EXISTS above is a no-op once the table exists.
 foreach ([
@@ -2144,6 +2160,29 @@ if (preg_match('#/auth/resend-verification$#', $uri) && $method === 'POST') {
 
     $sent = sendVerificationEmail($authUser['email'], $authUser['name'], $newToken, issueEmailOtp($pdo, $authUser['id']));
     echo json_encode(['success' => true, 'sent' => $sent, 'message' => 'ئیمەیلی دڵنیاکردنەوە نێردرایەوە.']);
+    exit(0);
+}
+
+// ================================================================
+// Contact form  POST /contact  { name, email, phone?, message }
+//   (public — signed-in users are linked to their account; rate limited)
+// ================================================================
+if (preg_match('#/contact$#', $uri) && $method === 'POST') {
+    if (!rateLimitCheck($pdo, $clientIp, 'contact')) jsonErr(429, 'زۆر جار نامەت ناردووە. کەمێک چاوەڕوان بە.');
+    $input = safeJson();
+    $cName = sanitize($input['name'] ?? '', 120);
+    $cEmail = sanitize($input['email'] ?? '', 150);
+    $cPhone = sanitize($input['phone'] ?? '', 30);
+    $cMsg = sanitize($input['message'] ?? '', 2000);
+    if (mb_strlen($cName) < 2) jsonErr(400, 'ناوەکەت بنووسە.');
+    if (!filter_var($cEmail, FILTER_VALIDATE_EMAIL)) jsonErr(400, 'ئیمەیڵێکی دروست بنووسە.');
+    if (mb_strlen($cMsg) < 10) jsonErr(400, 'نامەکەت زۆر کورتە (لانیکم ١٠ پیت).');
+
+    $cUser = optionalAuthUser($pdo);
+    $pdo->prepare('INSERT INTO contact_messages (user_id, name, email, phone, message, ip, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        ->execute([$cUser['id'] ?? null, $cName, $cEmail, $cPhone !== '' ? $cPhone : null, $cMsg, $clientIp, date('Y-m-d H:i:s')]);
+    notifyAdmins($pdo, 'contact_message', ['name' => $cName, 'email' => $cEmail]);
+    echo json_encode(['success' => true, 'message' => 'نامەکەت نێردرا. بە زوویی وەڵامت دەدەینەوە.']);
     exit(0);
 }
 

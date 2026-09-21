@@ -30,6 +30,8 @@ import { SearchPage } from './components/search/SearchPage';
 import { MessagesInboxPage } from './components/messages/MessagesInboxPage';
 import { AdminPage } from './components/admin/AdminPage';
 import { HowItWorksPage } from './components/layout/HowItWorksPage';
+import { AboutPage } from './components/layout/AboutPage';
+import { ContactPage } from './components/layout/ContactPage';
 import { NotificationsPage } from './components/layout/NotificationsPage';
 import { VerifyEmailPage } from './components/auth/VerifyEmailPage';
 import { ForgotPasswordPage } from './components/auth/ForgotPasswordPage';
@@ -123,6 +125,8 @@ function MainAppContent() {
       if (target === 'install') return 'install_app';
       if (target === 'admin') return 'admin';
       if (target === 'how-it-works' || target === 'how_it_works' || target === 'guide') return 'how_it_works';
+      if (target === 'about' || target === 'about-us') return 'about';
+      if (target === 'contact' || target === 'contact-us') return 'contact';
       if (target === 'notifications' || target === 'alerts') return 'notifications';
       if (target === 'verify-email' || target === 'verify_email') return 'verify_email';
       if (target === 'forgot-password' || target === 'forgot_password') return 'forgot_password';
@@ -201,6 +205,8 @@ function MainAppContent() {
       else if (tabId === 'install_app') path = '/install';
       else if (tabId === 'admin') path = '/admin';
       else if (tabId === 'how_it_works') path = '/how-it-works';
+      else if (tabId === 'about') path = '/about';
+      else if (tabId === 'contact') path = '/contact';
       else if (tabId === 'notifications') path = '/notifications';
       else if (tabId === 'verify_email') path = '/verify-email';
       else if (tabId === 'forgot_password') path = '/forgot-password';
@@ -231,7 +237,7 @@ function MainAppContent() {
   // now requires login to view, so it's excluded below even though 'search'
   // itself is public. /install is public too — a link people share before
   // they even have an account.
-  const PUBLIC_TABS = ['landing', 'register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'job_detail', 'verify_email', 'forgot_password', 'reset_password'];
+  const PUBLIC_TABS = ['about', 'contact', 'landing', 'register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'job_detail', 'verify_email', 'forgot_password', 'reset_password'];
   useEffect(() => {
     if (!user) {
       if (activeTab === 'search' && initialShareLinkQuery) {
@@ -303,7 +309,7 @@ function MainAppContent() {
     const handlePopState = () => {
       const initial = getInitialTab();
       setViewJobId(getJobIdFromUrl());
-      const allowedLoggedOut = ['landing', 'register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'job_detail', 'verify_email', 'forgot_password', 'reset_password'];
+      const allowedLoggedOut = ['about', 'contact', 'landing', 'register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'job_detail', 'verify_email', 'forgot_password', 'reset_password'];
       if (!user && !allowedLoggedOut.includes(initial)) {
         setActiveTabState('login');
       } else {
@@ -358,7 +364,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'landing') {
-      return <LandingPage onNavigate={(path) => setActiveTab(path === '/register' ? 'register' : path === '/install' ? 'install_app' : 'login')} />;
+      return <LandingPage onNavigate={(path) => setActiveTab(path === '/register' ? 'register' : path === '/install' ? 'install_app' : path === '/contact' ? 'contact' : path === '/about' ? 'about' : 'login')} />;
     }
 
     if (activeTab === 'login') {
@@ -462,6 +468,14 @@ function MainAppContent() {
 
     if (activeTab === 'admin') {
       return <AdminPage onBack={() => setActiveTab('home')} />;
+    }
+
+    if (activeTab === 'about') {
+      return <AboutPage onBack={() => setActiveTab(user ? 'home' : 'landing')} onNavigate={setActiveTab} />;
+    }
+
+    if (activeTab === 'contact') {
+      return <ContactPage onBack={() => setActiveTab(user ? 'home' : 'landing')} />;
     }
 
     if (activeTab === 'how_it_works') {

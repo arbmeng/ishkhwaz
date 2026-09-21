@@ -130,6 +130,22 @@ export const apiService = {
     }
   },
 
+  // Public contact form (signed-in users are linked to their account).
+  async sendContactMessage(payload, token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+
   // Confirms the emailed 6-digit code (needs the account's own session token).
   async verifyEmailOtp(otp, token) {
     try {

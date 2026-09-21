@@ -12,7 +12,7 @@ import { AboutModal } from '../layout/AboutModal';
 import { PlanBadge } from '../ui/PlanBadge';
 import { canSeePlans } from '../../config/features';
 import {
-  Settings, Share2, Camera, FileText, Eye, CheckCircle2, Save, Pencil, ChevronRight,
+  MessageCircle, Settings, Share2, Camera, FileText, Eye, CheckCircle2, Save, Pencil, ChevronRight,
   Heart, Trash2, Briefcase, ChevronLeft, LogOut, User,
   Bell, MapPin, Plus, X, Layers, Sparkles, Building2,
   ExternalLink, ShieldCheck, FileCheck,
@@ -580,7 +580,6 @@ export const UserProfilePage = ({ onNavigate }) => {
           <h1 className="ap-title">{isEmployer ? 'پڕۆفایلی کۆمپانیا' : 'پڕۆفایل'}</h1>
           <div className="ap-top-actions">
             <button type="button" className="ap-circle" onClick={handleShare} aria-label="هاوبەشکردن"><Share2 className="w-[18px] h-[18px]" /></button>
-            <button type="button" className="ap-circle" onClick={() => { soundService.playTick?.(); setShowSettings(true); }} aria-label="ڕێکخستنەکان" aria-haspopup="dialog"><Settings className="w-[18px] h-[18px]" /></button>
           </div>
         </header>
 
@@ -592,6 +591,7 @@ export const UserProfilePage = ({ onNavigate }) => {
           </div>
         )}
 
+        <div className="ap-cols"><div className="ap-col">
         <section className="ap-id">
           <div className="ap-avatar-wrap">
             <button type="button" className="ap-avatar" onClick={() => avatarRef.current?.click()} aria-label="گۆڕینی وێنە">
@@ -635,7 +635,8 @@ export const UserProfilePage = ({ onNavigate }) => {
           {row('viewers', Eye, 'بینەرانی پڕۆفایل', { hint: profileViews, onClick: () => setShowViewers(true) })}
         </div>
 
-        <div className="ap-label">دەربارە</div>
+        </div><div className="ap-col">
+        <div className="ap-label ap-first">دەربارە</div>
         <section className="ap-card">
           <div className="ap-card-head"><span>{isEmployer ? 'دەربارەی کۆمپانیا' : 'دەربارەی من'}</span><button onClick={() => setShowEdit(true)}>دەستکاری</button></div>
           <p>{bio || user?.bio || (isEmployer ? 'کورتەیەک دەربارەی کۆمپانیاکەت بنووسە.' : 'کورتەیەک دەربارەی خۆت و ئەزموونەکانت بنووسە.')}</p>
@@ -677,9 +678,13 @@ export const UserProfilePage = ({ onNavigate }) => {
             <span className="ap-row-t">ئاگادارکردنەوەکان</span>
             <button type="button" role="switch" aria-checked={pushEnabled} aria-label="ئاگادارکردنەوەکان" className="ap-switch" onClick={handleTogglePush} disabled={pushBusy}><i /></button>
           </div>
-          {row('settings', Settings, 'ڕێکخستنەکان', { onClick: () => setShowSettings(true) })}
+          {canSeePlans(user) && row('plans', Sparkles, 'پلانەکانی ئیش خواز', { hint: userPlanTier?.name_ku || '', onClick: () => onNavigate?.('plans') })}
+          {row('how', HelpCircle, 'چۆنیەتی کارکردنی ئەپ', { onClick: () => onNavigate?.('how_it_works') })}
+          {row('about', Info, 'دەربارەی ئیش خواز', { onClick: () => onNavigate?.('about') })}
+          {row('contact', MessageCircle, 'پەیوەندیمان پێوە بکە', { onClick: () => onNavigate?.('contact') })}
           {row('logout', LogOut, 'چوونەدەرەوە', { onClick: () => setShowLogout(true), danger: true })}
         </div>
+        </div></div>
       </div>
     );
   };
@@ -717,23 +722,16 @@ export const UserProfilePage = ({ onNavigate }) => {
     const fieldStyle = { color: TXT };
     const fieldFocus = 'focus:bg-white focus:border-[#12796b]/40 focus:shadow-[0_0_0_4px_rgba(18,121,107,.08)]';
     return (
-      <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-0 lg:p-6"
-        style={{ animation: 'profileFadeUp 0.25s ease both' }}>
-        <div
-          className="ap-edit w-full max-w-full lg:max-w-4xl bg-white rounded-none lg:rounded-[32px] min-h-screen lg:min-h-0 max-h-screen lg:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
-          onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}
-        >
+      <div className="ap-page" dir="rtl" style={{ fontFamily: NK }}>
+        <div className="ap-edit w-full bg-white rounded-[28px] border border-[#e5ece9] [overflow:clip]">
           {/* Header — soft wash, round back button, big title (same look as the profile page) */}
-          <div className="ap-modal-head shrink-0" style={{ paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 12px))' }}>
+          <div className="ap-modal-head shrink-0">
             <button onClick={() => setShowEdit(false)} className="ap-circle" aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
             <h3>{isEmployer ? 'دەستکاری پڕۆفایلی کۆمپانیا' : 'دەستکاری پڕۆفایل'}</h3>
           </div>
 
           <div
-            className="flex-1 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-6"
-            style={{
-              paddingBottom: 'max(24px, calc(env(safe-area-inset-bottom) + 24px))',
-            }}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-6"
           >
 
             {/* ──── RIGHT COLUMN: identity card + tab nav ──── */}
@@ -1076,7 +1074,7 @@ export const UserProfilePage = ({ onNavigate }) => {
           </div>
 
           {/* Footer — always-reachable save pill */}
-          <div className="ap-modal-foot shrink-0" style={{ paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 14px))' }}>
+          <div className="ap-modal-foot shrink-0">
             <button type="button" onClick={() => setShowEdit(false)} className="ap-ghost">داخستن</button>
             <button type="button" onClick={handleSave} disabled={saving} className="ap-save">
               {saved ? <><CheckCircle2 className="w-4 h-4" /> پاشەکەوتکرا</> : <><Save className="w-4 h-4" /> {saving ? 'خەریکی...' : 'پاشەکەوتکردن'}</>}
@@ -1088,64 +1086,10 @@ export const UserProfilePage = ({ onNavigate }) => {
     );
   };
 
-  /* ── Settings sheet ── bottom sheet on mobile, centred card on desktop.
-     Portalled to <body>: inside this page's isolated stacking context the
-     sticky desktop header (z-50) would otherwise paint over the backdrop. */
-  const renderSettings = () => {
-    const go = (fn) => () => { soundService.playTick?.(); setShowSettings(false); fn(); };
-    const item = (Icon, title, hint, fn, danger) => (
-      <button type="button" className={`ap-row${danger ? ' ap-danger' : ''}`} onClick={go(fn)}>
-        <span className="ap-row-ic"><Icon className="w-[19px] h-[19px]" /></span>
-        <span className="ap-row-t">{title}{hint && <small>{hint}</small>}</span>
-        {!danger && <ChevronLeft className="ap-chev w-4 h-4" />}
-      </button>
-    );
-    return createPortal(
-      <div className="ap-overlay" onClick={() => setShowSettings(false)}>
-        <div className="ap-sheet" role="dialog" aria-modal="true" aria-label="ڕێکخستنەکان" dir="rtl" onClick={e => e.stopPropagation()}>
-          <div className="ap-modal-head">
-            <button type="button" className="ap-circle" onClick={() => setShowSettings(false)} aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
-            <h2>ڕێکخستنەکان</h2>
-          </div>
-          <div className="ap-sheet-body">
-            <div className="ap-account">
-              <div className="ap-account-av">{displayAvatar ? <img src={displayAvatar} alt="" /> : <span>{initial}</span>}</div>
-              <div className="min-w-0 flex-1"><strong>{displayName}</strong><span dir="ltr">{user?.email || user?.phone || ''}</span></div>
-              <button type="button" onClick={go(() => setShowEdit(true))}>دەستکاری</button>
-            </div>
-
-            <div className="ap-label">ئاگادارکردنەوە</div>
-            <div className="ap-group">
-              <div className="ap-row ap-static">
-                <span className="ap-row-ic"><Bell className="w-[19px] h-[19px]" /></span>
-                <span className="ap-row-t">ئاگادارکردنەوەی ئامێر<small>{pushEnabled ? 'چالاکە' : 'ناچالاکە'}</small></span>
-                <button type="button" role="switch" aria-checked={pushEnabled} aria-label="ئاگادارکردنەوەی ئامێر" className="ap-switch" onClick={handleTogglePush} disabled={pushBusy}><i /></button>
-              </div>
-            </div>
-
-            <div className="ap-label">هەژمار و یارمەتی</div>
-            <div className="ap-group">
-              {canSeePlans(user) && item(Sparkles, 'پلانەکانی ئیش خواز', userPlanTier ? `پلانی ئێستا: ${userPlanTier.name_ku}` : 'بەرزکردنەوەی هەژمار', () => onNavigate?.('plans'))}
-              {item(HelpCircle, 'چۆنیەتی کارکردنی ئەپ', 'چوونەژوورەوە و بەکارهێنانی سیستەم', () => onNavigate?.('how_it_works'))}
-              {item(Info, 'دەربارەی ئیش خواز', 'زانیاری و پەیوەندی پشتگیری', () => setShowAbout(true))}
-            </div>
-
-            <div className="ap-group" style={{ marginTop: 18 }}>
-              {item(LogOut, 'چوونەدەرەوە', '', () => setShowLogout(true), true)}
-            </div>
-          </div>
-        </div>
-      </div>,
-      document.body
-    );
-  };
-
   /* ── Saved jobs modal ── */
   const SavedModalImpl = () => (
-    <div className="fixed inset-0 z-50 bg-[#07110f]/55 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4"
-      style={{ animation: 'profileFadeUp 0.25s ease both' }}>
-      <div className="w-full max-w-lg bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
-        onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
+    <div className="ap-page" dir="rtl" style={{ fontFamily: NK }}>
+      <div className="ap-sub w-full max-w-2xl mx-auto bg-white rounded-[28px] border border-[#e5ece9] flex flex-col [overflow:clip]">
         <div className="ap-modal-head">
           <button onClick={() => setShowSaved(false)} className="ap-circle" aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
           <h3>
@@ -1183,10 +1127,8 @@ export const UserProfilePage = ({ onNavigate }) => {
 
   /* ── Viewers modal ── */
   const ViewersModalImpl = () => (
-    <div className="fixed inset-0 z-50 bg-[#07110f]/55 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4"
-      style={{ animation: 'profileFadeUp 0.25s ease both' }}>
-      <div className="w-full max-w-md bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
-        onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
+    <div className="ap-page" dir="rtl" style={{ fontFamily: NK }}>
+      <div className="ap-sub w-full max-w-2xl mx-auto bg-white rounded-[28px] border border-[#e5ece9] flex flex-col [overflow:clip]">
         <div className="ap-modal-head">
           <button onClick={() => setShowViewers(false)} className="ap-circle" aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
           <h3>بینەرانی پڕۆفایل</h3>
@@ -1236,6 +1178,8 @@ export const UserProfilePage = ({ onNavigate }) => {
     </div>
     , document.body);
 
+  useEffect(() => { window.scrollTo(0, 0); }, [showEdit, showSaved, showViewers]);
+
   const ProfileHero = useStable(ProfileHeroImpl);
   const EditModal = useStable(EditModalImpl);
   const SavedModal = useStable(SavedModalImpl);
@@ -1253,66 +1197,66 @@ export const UserProfilePage = ({ onNavigate }) => {
       <input ref={coverRef} type="file" accept="image/*" onChange={handleCoverChange} className="hidden" />
 
       <style>{`
-        .profile-page-shell{position:relative;isolation:isolate;overflow:hidden;background:#fff!important}
+        .profile-page-shell{position:relative;isolation:isolate;overflow:hidden;background:#f4f7f6!important}
         .profile-page-shell:before{content:"";position:absolute;inset:0 0 auto 0;height:420px;z-index:0;pointer-events:none;
-          background:radial-gradient(52% 70% at 8% 0%,rgba(255,205,232,.75),transparent 62%),radial-gradient(60% 80% at 92% 6%,rgba(178,232,255,.85),transparent 64%),radial-gradient(70% 60% at 50% 46%,rgba(196,222,255,.45),transparent 70%)}
+          background:radial-gradient(60% 90% at 92% 0%,rgba(18,121,107,.13),transparent 66%),radial-gradient(50% 70% at 4% 10%,rgba(18,121,107,.06),transparent 68%)}
         .profile-page-shell .profile-ambient{display:none}
-        :root{--ink:#111315;--sub:#4b5259;--muted:#8a9096;--soft:#f6f7f8;--line:#ebedf0;--teal:#12796b;--teal-deep:#0d5c50;--mint:#e7f4f1;--danger:#dc2626}
+        :root{--ink:#111d1a;--sub:#4a5b55;--muted:#7b8e88;--soft:#fff;--line:#e5ece9;--teal:#12796b;--teal-deep:#0d5c50;--mint:#e7f4f1;--danger:#dc2626}
         .ap{position:relative;z-index:1;max-width:640px;margin:0 auto;color:var(--ink);padding-bottom:36px}
         .ap button:focus-visible,.ap-sheet button:focus-visible,.ap-edit button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
         .ap-top{display:flex;align-items:center;justify-content:space-between;height:64px}
         .ap-title{margin:0;font-size:26px;font-weight:800}
         .ap-top-actions{display:flex;gap:8px}
-        .ap-circle{width:42px;height:42px;border-radius:50%;border:1px solid rgba(17,19,21,.06);background:rgba(255,255,255,.75);backdrop-filter:blur(8px);display:inline-flex;align-items:center;justify-content:center;color:var(--ink);transition:.18s;flex:0 0 auto}
+        .ap-circle{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:#fff;display:inline-flex;align-items:center;justify-content:center;color:var(--ink);transition:.18s;flex:0 0 auto}
         .ap-circle:hover{background:#fff;transform:translateY(-1px)}
         .ap-alert{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#fffaf0;border:1px solid #f2dfae;border-radius:18px;margin:4px 0 12px}
         .ap-alert strong,.ap-alert span{display:block;font-size:11px;font-weight:700}.ap-alert span{color:var(--muted);margin-top:2px;direction:ltr;text-align:right}
         .ap-alert button{border:0;background:var(--teal);color:#fff;border-radius:999px;padding:8px 14px;font-size:11px;font-weight:700}
         .ap-id{display:flex;align-items:center;gap:16px;margin:10px 0 18px}
         .ap-avatar-wrap{position:relative;width:88px;height:88px;flex:0 0 auto}
-        .ap-avatar{width:88px;height:88px;border-radius:50%;overflow:hidden;border:0;padding:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#bfe9f5,#e9d5ff);color:var(--teal-deep);font-size:32px;font-weight:800;box-shadow:0 8px 24px rgba(30,60,90,.12)}
+        .ap-avatar{width:88px;height:88px;border-radius:50%;overflow:hidden;border:0;padding:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;font-size:32px;font-weight:800;box-shadow:0 8px 24px rgba(18,121,107,.22)}
         .ap-avatar img{width:100%;height:100%;object-fit:cover}
-        .ap-pencil{position:absolute;bottom:2px;left:2px;width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center}
+        .ap-pencil{position:absolute;bottom:2px;left:2px;width:26px;height:26px;border-radius:50%;background:var(--teal);color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center}
         .ap-id-text{min-width:0}
         .ap-id-text h2{margin:0;font-size:24px;line-height:1.3;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
         .ap-id-text p{margin:2px 0 8px;font-size:12px;color:var(--muted);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .ap-chip{display:inline-block;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.8);border:1px solid var(--line);font-size:11px;font-weight:600;color:var(--sub)}
+        .ap-chip{display:inline-block;padding:5px 12px;border-radius:999px;background:#e7f4f1;border:1px solid var(--line);font-size:11px;font-weight:600;color:var(--sub)}
         .ap-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-        .ap-stat{background:var(--soft);border:0;border-radius:20px;padding:14px 8px;text-align:center;transition:.18s}
+        .ap-stat{border:1px solid var(--line);background:var(--soft);border-radius:20px;padding:14px 8px;text-align:center;transition:.18s}
         .ap-stat:hover{background:var(--mint)}
         .ap-stat strong{display:block;font-size:22px;font-weight:800;line-height:1.1}
         .ap-stat span{display:block;margin-top:5px;font-size:11px;color:var(--muted);font-weight:600}
-        .ap-progress-card{background:var(--soft);border-radius:20px;padding:14px 16px;margin-top:10px}
+        .ap-progress-card{border:1px solid var(--line);background:var(--soft);border-radius:20px;padding:14px 16px;margin-top:10px}
         .ap-progress-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:var(--sub)}
         .ap-progress-top strong{font-size:14px;color:var(--teal-deep)}
         .ap-bar{height:6px;border-radius:99px;background:#e3e6e9;margin-top:10px;overflow:hidden}
         .ap-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--teal),#43bea4);transition:width .5s ease}
         .ap-progress-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
         .ap-progress-foot small{font-size:11px;color:var(--muted)}
-        .ap-progress-foot button{border:0;background:#fff;border-radius:999px;padding:7px 14px;font-size:11px;font-weight:700;color:var(--teal-deep);box-shadow:0 2px 8px rgba(0,0,0,.05)}
+        .ap-progress-foot button{border:0;background:#e7f4f1;border-radius:999px;padding:7px 14px;font-size:11px;font-weight:700;color:var(--teal-deep);}
         .ap-label{margin:24px 4px 8px;font-size:12px;color:var(--muted);font-weight:600}
         .ap-group{display:flex;flex-direction:column;gap:8px}
-        .ap-row{width:100%;min-height:58px;display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--soft);border:0;border-radius:20px;text-align:right;color:var(--ink);font-size:14px;font-weight:600;transition:background .16s,transform .16s}
-        button.ap-row:hover{background:#eff1f2}button.ap-row:active{transform:scale(.99)}
+        .ap-row{border:1px solid var(--line);width:100%;min-height:58px;display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--soft);border-radius:20px;text-align:right;color:var(--ink);font-size:14px;font-weight:600;transition:background .16s,transform .16s}
+        button.ap-row:hover{background:#f7fbfa;border-color:#cfe6df}button.ap-row:active{transform:scale(.99)}
         .ap-static{cursor:default}
         .ap-row-ic{display:flex;color:#2a2f33;flex:0 0 auto}
         .ap-row-t{flex:1;min-width:0}
         .ap-row-t small{display:block;margin-top:2px;font-size:11px;font-weight:500;color:var(--muted)}
-        .ap-row-hint{min-width:26px;padding:3px 9px;border-radius:999px;background:#fff;font-size:12px;font-weight:700;color:var(--sub);text-align:center}
+        .ap-row-hint{min-width:26px;padding:3px 9px;border-radius:999px;background:#e7f4f1;color:var(--teal-deep);font-size:12px;font-weight:700;color:var(--sub);text-align:center}
         .ap-chev{color:#b4b9bf;flex:0 0 auto}
         .ap-danger{background:#fff4f4;color:var(--danger)}.ap-danger .ap-row-ic{color:var(--danger)}
         button.ap-danger:hover{background:#ffeaea}
         .ap-switch{width:48px;height:28px;border-radius:99px;background:#dcdfe3;padding:3px;display:flex;justify-content:flex-start;border:0;transition:background .2s;flex:0 0 auto}
         .ap-switch i{width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);display:block;transition:transform .2s}
         .ap-switch[aria-checked=true]{background:var(--teal);justify-content:flex-end}.ap-switch:disabled{opacity:.6}
-        .ap-card{background:var(--soft);border-radius:20px;padding:16px;margin-bottom:8px}
+        .ap-card{border:1px solid var(--line);background:var(--soft);border-radius:20px;padding:16px;margin-bottom:8px}
         .ap-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
         .ap-card-head span{font-size:13px;font-weight:700}
-        .ap-card-head button{border:0;background:#fff;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--teal-deep)}
+        .ap-card-head button{border:0;background:#e7f4f1;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--teal-deep)}
         .ap-card>p{margin:0;font-size:13px;line-height:2;color:var(--sub);font-weight:500}
         .ap-place{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:var(--muted);font-weight:600}
         .ap-chips{display:flex;flex-wrap:wrap;gap:7px}
-        .ap-chips span{padding:7px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--teal-deep)}
+        .ap-chips span{padding:7px 12px;border-radius:999px;background:#e7f4f1;border:1px solid #cfe6df;font-size:12px;font-weight:600;color:var(--teal-deep)}
         .ap-chips small,.ap-empty{font-size:12px;color:var(--muted)}
         .ap-timeline{display:flex;flex-direction:column;gap:14px}
         .ap-exp{display:grid;grid-template-columns:10px 1fr;gap:12px}
@@ -1326,31 +1270,38 @@ export const UserProfilePage = ({ onNavigate }) => {
         .ap-overlay{position:fixed;inset:0;z-index:9000;background:rgba(15,20,25,.45);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;animation:apFade .2s ease both;font-family:${NK};color:var(--ink)}
         .ap-sheet{position:relative;width:100%;max-width:540px;max-height:94vh;background:#fff;border-radius:32px 32px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -24px 80px rgba(0,0,0,.25);animation:apUp .3s cubic-bezier(.22,1,.36,1) both}
         .ap-modal-head{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:18px 20px 12px;
-          background:radial-gradient(60% 120% at 6% 0%,rgba(255,205,232,.7),transparent 62%),radial-gradient(70% 130% at 96% 0%,rgba(178,232,255,.8),transparent 64%),#fff}
+          background:radial-gradient(70% 130% at 96% 0%,rgba(18,121,107,.14),transparent 66%),#fff}
         .ap-modal-head h2,.ap-modal-head h3{margin:0;font-size:24px;font-weight:800;color:var(--ink)}
         .ap-sheet-body{padding:6px 18px calc(22px + env(safe-area-inset-bottom));overflow-y:auto}
-        .ap-account{display:flex;align-items:center;gap:12px;background:var(--soft);border-radius:22px;padding:12px 14px}
-        .ap-account-av{width:52px;height:52px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#bfe9f5,#e9d5ff);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:var(--teal-deep);flex:0 0 auto}
+        .ap-account{border:1px solid var(--line);display:flex;align-items:center;gap:12px;background:var(--soft);border-radius:22px;padding:12px 14px}
+        .ap-account-av{width:52px;height:52px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--teal),var(--teal-deep));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#fff;flex:0 0 auto}
         .ap-account-av img{width:100%;height:100%;object-fit:cover}
         .ap-account strong{display:block;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .ap-account span{display:block;font-size:11px;color:var(--muted);margin-top:2px;text-align:right}
-        .ap-account>button{border:0;background:#fff;border-radius:999px;padding:8px 14px;font-size:11px;font-weight:700;color:var(--teal-deep);box-shadow:0 2px 8px rgba(0,0,0,.05)}
+        .ap-account>button{border:0;background:#fff;border-radius:999px;padding:8px 14px;font-size:11px;font-weight:700;color:var(--teal-deep);}
         .ap-modal-foot{display:flex;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--line);background:#fff}
         .ap-save{flex:1;height:50px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;font-size:13px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 10px 24px rgba(18,121,107,.22);transition:.18s}
         .ap-save:active{transform:scale(.98)}.ap-save:disabled{opacity:.7}
         .ap-ghost{height:50px;padding:0 22px;border-radius:999px;background:var(--soft);border:0;font-size:13px;font-weight:700;color:var(--sub)}
         @media(min-width:640px){.ap-overlay{align-items:center;padding:22px}.ap-sheet{border-radius:32px;max-height:90vh}}
+        .ap-cols{display:block}
+        .ap-page{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding-bottom:36px}
+        .ap-page .ap-modal-foot{position:sticky;bottom:calc(74px + env(safe-area-inset-bottom));z-index:5;border:1px solid var(--line);border-radius:26px;margin:0 12px 12px;box-shadow:0 12px 34px rgba(13,60,52,.12)}
+        .ap-page .ap-modal-head{padding-top:18px}
+        @media(min-width:1024px){
+          .ap{max-width:1140px}
+          .ap-title{font-size:30px}
+          .ap-cols{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:32px;align-items:start}
+          .ap-col{min-width:0}
+          .ap-col:first-child{position:sticky;top:96px}
+          .ap-first{margin-top:6px}
+          .ap-page .ap-modal-foot{bottom:16px}
+        }
         @media(max-width:640px){.profile-page-shell{padding-left:14px!important;padding-right:14px!important}.ap-title{font-size:24px}}
         @media(prefers-reduced-motion:reduce){.ap *,.ap-sheet,.ap-overlay{animation:none!important;transition:none!important}}
       `}</style>
-      <ProfileHero />
-
-      {/* Modals are portalled to <body>: inside this page's isolated stacking
-          context the sticky desktop header would paint over their backdrop. */}
-      {showEdit && createPortal(<EditModal />, document.body)}
-      {showSettings && renderSettings()}
-      {showSaved && createPortal(<SavedModal />, document.body)}
-      {showViewers && createPortal(<ViewersModal />, document.body)}
+      {/* Edit / saved / viewers are pages of their own (not popups); only the small confirm dialogs float. */}
+      {showEdit ? <EditModal /> : showSaved ? <SavedModal /> : showViewers ? <ViewersModal /> : <ProfileHero />}
       {showLogout && <LogoutModal />}
       {showAbout && createPortal(<AboutModal onClose={() => setShowAbout(false)} />, document.body)}
     </div>

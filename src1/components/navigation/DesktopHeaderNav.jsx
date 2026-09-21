@@ -4,7 +4,8 @@ import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { apiService } from '../../services/api';
 import { realtimeService } from '../../services/realtimeService';
-import { Search, Bell, MessageSquare, Briefcase } from 'lucide-react';
+import { Search, Bell, MessageSquare, Briefcase, Crown } from 'lucide-react';
+import { getPlanIcon, getPlanColor } from '../../utils/planPresets';
 import { FEATURES, canSeePlans } from '../../config/features';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
@@ -12,7 +13,7 @@ const TEAL = '#12796b';
 
 export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
   const { user, token, logout } = useAuth();
-  const { unreadNotifCount = 0 } = useStore();
+  const { unreadNotifCount = 0, planTiers = [] } = useStore();
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [headerSearch, setHeaderSearch] = useState('');
 
@@ -40,6 +41,11 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
 
   // Search, companies and freelancers are one place now (tabs inside the search page).
   const searchActive = ['search', 'companies', 'freelancers'].includes(activeTab);
+
+  const myTier = planTiers.find(t => t.id === user?.plan);
+  const paidTier = myTier && Number(myTier.price) > 0 ? myTier : null;
+  const PlanIcon = paidTier ? getPlanIcon(paidTier.icon) : Crown;
+  const planColor = paidTier ? getPlanColor(paidTier.color) : null;
 
   const handleNav = (tabId) => {
     soundService.playTick?.();
@@ -107,6 +113,17 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
                 <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />
               )}
             </button>
+
+            {['about', 'contact'].map((id) => (
+              <button
+                key={id}
+                onClick={() => handleNav(id)}
+                className={`px-3.5 py-2 rounded-xl transition-all relative ${activeTab === id ? 'text-[#12796b] font-black' : 'text-[#5a6b65] hover:text-[#111d1a]'}`}
+              >
+                {id === 'about' ? 'دەربارە' : 'پەیوەندی'}
+                {activeTab === id && <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />}
+              </button>
+            ))}
 
             {FEATURES.map && (
 <button
@@ -204,13 +221,28 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
             )}
           </button>
 
+          {/* Plan badge — opens the plans page (crown = upgrade, plan icon/colour once subscribed) */}
+          {user && canSeePlans(user) && (
+            <button
+              onClick={() => handleNav('plans')}
+              title={paidTier ? (paidTier.name_ku || 'پلان') : 'پلانەکان'}
+              aria-label="پلانەکان"
+              className="w-10 h-10 rounded-full flex items-center justify-center border transition active:scale-95 hover:brightness-105"
+              style={paidTier
+                ? { background: planColor.gradient || planColor.accent, borderColor: 'transparent', color: '#0b0f0a' }
+                : { background: '#fff8e6', borderColor: '#f2dfae', color: '#c98a1f' }}
+            >
+              <PlanIcon className="w-[18px] h-[18px]" />
+            </button>
+          )}
+
           {/* User Profile Pill Button */}
           {user ? (
             <button
               onClick={() => handleNav('profile')}
               className="flex items-center gap-2.5 py-1.5 px-3 rounded-full bg-[#f4f7f6] hover:bg-[#eaf5f2] border border-[#e8eeed] transition active:scale-95 cursor-pointer"
             >
-              <span className="text-xs font-black text-[#111d1a]">
+              <span className="text-xs font-black text-[#111d1a] max-w-[120px] truncate" title={displayName}>
                 {displayName}
               </span>
               <div className="w-8 h-8 rounded-full bg-[#c8eee6] flex items-center justify-center text-[#12796b] font-black text-xs shrink-0 overflow-hidden border border-white">
