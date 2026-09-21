@@ -5,6 +5,7 @@ import { soundService } from '../../services/soundService';
 import { readFileAsDataUri } from '../../utils/file';
 import { apiService } from '../../services/api';
 import { HeroControls } from '../layout/HeroControls';
+import { StickyProfileBar } from '../layout/StickyProfileBar';
 import { JobDescription } from './JobDescription';
 import { sectorLabel } from '../../data/jobSectors';
 import { useScrollLock } from '../../utils/useScrollLock';
@@ -326,6 +327,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
     >
       {/* Premium page shell */}
       <div className="min-h-[100dvh]">
+        <StickyProfileBar title={title} subtitle={companyName} avatar={companyLogo} onBack={() => { soundService.playTick?.(); onClose(); }} onShare={handleShare} />
 
         {/* Hero */}
         <section className="relative overflow-hidden bg-[#14101b] text-white" style={{ marginTop: 'calc(-1 * env(safe-area-inset-top))' }}>
@@ -341,7 +343,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
             }}
           />
 
-          <div className="relative mx-auto w-full max-w-[1480px] px-4 py-8 sm:px-6 sm:py-10 lg:px-10 lg:py-14">
+          <div className="relative mx-auto w-full max-w-[1480px] px-4 pb-8 sm:px-6 sm:pb-10 lg:px-10 lg:pb-14" style={{ paddingTop: 'calc(88px + env(safe-area-inset-top))' }}>
             <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
               <div className="min-w-0">
                 <div className="mb-5 flex items-center gap-4">
