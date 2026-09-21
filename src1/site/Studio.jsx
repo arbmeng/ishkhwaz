@@ -7,12 +7,11 @@ import {
 import { siteStore } from './siteStore';
 
 // ───────────────────────── The visual website editor ─────────────────────────
-// Opened by the Zera console (Ishkhwaz → Website editor) inside an iframe, or by an owner at /?studio=1.
+// Opened ONLY by the Zera console (Ishkhwaz → Website editor) inside its iframe — never on the public website.
 // Click anything on the page → change its text, colours, size, spacing, border, shadow, image or hide it.
 // Changes show live; "Save draft" keeps them private, "Publish" puts them on the real website.
 
 const BRAND = '#641bd9';
-const TOKEN_KEY = 'ishkhwaz_studio_token';
 const PAGE_URLS = { landing: '/', about: '/app/about', contact: '/app/contact', how: '/app/how-it-works', install: '/app/install', login: '/app/login', register: '/app/register' };
 const FONT = "'Vazirmatn','IBM Plex Sans Arabic',system-ui,sans-serif";
 
@@ -66,7 +65,8 @@ const Sec = ({ title, children }) => (
 );
 
 export default function Studio() {
-  const [token, setToken] = useState(() => { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } });
+  // the admin session is handed over by the Zera console (postMessage) and only ever lives in memory
+  const [token, setToken] = useState('');
   const [page, setPage] = useState(null);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
@@ -97,17 +97,14 @@ export default function Studio() {
     const onMsg = (e) => {
       if (!/^https:\/\/([a-z0-9-]+\.)?zeraworld\.com$|^http:\/\/localhost(:\d+)?$/.test(e.origin)) return;
       if (e.data?.type === 'ishkhwaz-studio-token' && typeof e.data.token === 'string' && e.data.token) {
-        try { sessionStorage.setItem(TOKEN_KEY, e.data.token); } catch { /* ignore */ }
         setToken(e.data.token);
       }
     };
     window.addEventListener('message', onMsg);
     let ping;
-    if (window.parent !== window && !token) {
+    if (!token) {
       const send = () => window.parent.postMessage({ type: 'ishkhwaz-studio-ready' }, '*');
       send(); ping = setInterval(send, 1000);
-    } else if (!token) {
-      try { const t = localStorage.getItem('ishkhwaz_token'); if (t) setToken(t); } catch { /* ignore */ }
     }
     return () => { window.removeEventListener('message', onMsg); clearInterval(ping); };
   }, [token]);
@@ -220,9 +217,8 @@ export default function Studio() {
 
   const goPage = (p) => {
     if (dirty && !window.confirm('گۆڕانکارییە هەڵنەگیراوەکانت هەیە. بڕۆیت؟')) return;
-    window.location.assign(PAGE_URLS[p] + '?studio=1');
+    window.location.assign(PAGE_URLS[p]);
   };
-  const exit = () => { try { sessionStorage.removeItem('ishkhwaz_studio'); } catch { /* ignore */ } window.name = ''; window.location.assign(window.location.pathname); };
 
   // ── the selected element
   const el = sel?.el, key = sel?.key;
@@ -242,7 +238,7 @@ export default function Studio() {
 
   if (!token) return (
     <div data-studio-ui style={{ position: 'fixed', inset: 'auto 0 0 0', zIndex: 99999, padding: 14, background: '#1d0740', color: '#fff', fontFamily: FONT, textAlign: 'center', fontSize: 13 }} dir="rtl">
-      دەبێت لە ڕێگەی کۆنسۆڵی Zera ئەم دەستکاریکەرە بکەیتەوە، یان وەک خاوەن بچیتە ژوورەوە و ئەم لینکە دووبارە بکەرەوە.
+      چاوەڕێی چوونەژوورەوەی کۆنسۆڵی Zera دەکرێت...
     </div>
   );
 
@@ -266,7 +262,6 @@ export default function Studio() {
         <Btn onClick={discard} disabled={busy}>سڕینەوەی ڕەشنووس</Btn>
         <Btn onClick={save} disabled={busy || !dirty} title="Ctrl+S">هەڵگرتنی ڕەشنووس</Btn>
         <Btn tone="good" onClick={publish} disabled={busy || (!dirty && !hasChanges(content) && !status)}>بڵاوکردنەوە</Btn>
-        <Btn onClick={exit}>✕</Btn>
       </div>
 
       {/* side panel */}
