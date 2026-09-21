@@ -918,12 +918,12 @@ export const apiService = {
       return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
     }
   },
-  async setPublicResume(id, token) {
+  async setPublicResume(id, isPublic, token) {
     try {
       const res = await fetch(`${API_BASE_URL}/resumes/set-public`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id: id || '' }),
+        body: JSON.stringify({ id: id || '', public: !!isPublic }),
       });
       const data = await res.json();
       if (!res.ok) return { success: false, message: data.message };

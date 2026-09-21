@@ -1743,6 +1743,8 @@ foreach ([
     "ALTER TABLE resumes ADD COLUMN accent_color VARCHAR(20) NULL",
     "ALTER TABLE resumes ADD COLUMN language VARCHAR(5) NULL",
     "ALTER TABLE resumes ADD COLUMN expires_at VARCHAR(32) NULL",
+    // Each CV can be shown to companies on the profile (several at once).
+    "ALTER TABLE resumes ADD COLUMN is_public TINYINT NOT NULL DEFAULT 0",
     // Emailed 6-digit reset code (stored only as an HMAC, 10 min life, max 5 wrong tries) —
     // see /auth/forgot-password and /auth/verify-reset-otp.
     "ALTER TABLE users ADD COLUMN password_reset_otp_hash VARCHAR(64) NULL",
@@ -1976,6 +1978,16 @@ try {
         $pdo->exec("DELETE FROM resumes WHERE karnama_id IS NULL");
         $pdo->exec("UPDATE users SET public_resume_id = NULL WHERE public_resume_id IS NOT NULL AND public_resume_id NOT IN (SELECT id FROM resumes)");
         $pdo->prepare("INSERT IGNORE INTO settings (`key`, value, updated_at) VALUES ('karnama_legacy_cvs_purged', '1', ?)")->execute([date('Y-m-d H:i:s')]);
+    }
+} catch (Throwable $e) { /* retried on the next request */ }
+
+// One-time: CVs made before "show to companies" existed become visible (people can hide them in My CVs).
+try {
+    $pub = $pdo->prepare("SELECT value FROM settings WHERE `key` = 'karnama_cvs_published_v1'");
+    $pub->execute();
+    if (!$pub->fetchColumn()) {
+        $pdo->exec("UPDATE resumes SET is_public = 1 WHERE karnama_id IS NOT NULL");
+        $pdo->prepare("INSERT IGNORE INTO settings (`key`, value, updated_at) VALUES ('karnama_cvs_published_v1', '1', ?)")->execute([date('Y-m-d H:i:s')]);
     }
 } catch (Throwable $e) { /* retried on the next request */ }
 
@@ -3681,6 +3693,12 @@ if (preg_match('#/freelancers$#', $uri) && $method === 'GET') {
         ORDER BY (plan_boost_until IS NOT NULL AND plan_boost_until > NOW()) DESC, created_at DESC
     ");
     $freelancers = $stmt->fetchAll();
+    $pubCvs = [];
+    foreach ($pdo->query("SELECT id, user_id, title, template_id, view_url, embed_url FROM resumes WHERE is_public = 1 AND karnama_id IS NOT NULL ORDER BY updated_at DESC")->fetchAll() as $cv) {
+        $pubCvs[$cv['user_id']][] = ['id' => $cv['id'], 'title' => $cv['title'], 'template_id' => $cv['template_id'], 'view_url' => $cv['view_url'], 'embed_url' => $cv['embed_url']];
+    }
+    foreach ($freelancers as &$fr0) { $fr0['public_resumes'] = $pubCvs[$fr0['id']] ?? []; }
+    unset($fr0);
     // Phone numbers are shown to signed-in users only (never to anonymous visitors / crawlers).
     if (optionalAuthUser($pdo)) {
         $phones = $pdo->query("SELECT id, phone FROM users WHERE role = 'freelancer' AND status = 'active'")->fetchAll(PDO::FETCH_KEY_PAIR);
@@ -5273,7 +5291,7 @@ if (preg_match('#/admin/plans/delete$#', $uri) && $method === 'POST') {
 // ================================================================
 if (preg_match('#/resumes$#', $uri) && $method === 'GET') {
     $authUser = requireAuth($pdo);
-    $stmt = $pdo->prepare('SELECT id, title, template_id, resume_data, karnama_id, view_url, embed_url, accent_color, language, created_at, updated_at FROM resumes WHERE user_id = ? AND karnama_id IS NOT NULL ORDER BY updated_at DESC');
+    $stmt = $pdo->prepare('SELECT id, title, template_id, resume_data, karnama_id, view_url, embed_url, accent_color, language, is_public, created_at, updated_at FROM resumes WHERE user_id = ? AND karnama_id IS NOT NULL ORDER BY updated_at DESC');
     $stmt->execute([$authUser['id']]);
     $rows = $stmt->fetchAll();
     foreach ($rows as &$r) { $r['resume_data'] = json_decode($r['resume_data'], true); }
@@ -5317,7 +5335,10 @@ if (preg_match('#/resumes$#', $uri) && $method === 'POST') {
     if ($title === '') $title = sanitize($data['personalInfo']['jobTitle'] ?? '', 150) ?: 'CV';
     $row = karnamaCreateAndStore($pdo, $authUser, $title, $templateId, $accent, $lang, $data);
     // The first CV a person makes becomes their public profile CV (they can change it in My CVs).
-    if (empty($authUser['public_resume_id'])) {
+    $anyPublic = $pdo->prepare('SELECT COUNT(*) FROM resumes WHERE user_id = ? AND is_public = 1 AND id <> ?');
+    $anyPublic->execute([$authUser['id'], $row['id']]);
+    if ((int)$anyPublic->fetchColumn() === 0) {
+        $pdo->prepare('UPDATE resumes SET is_public = 1 WHERE id = ?')->execute([$row['id']]);
         $pdo->prepare('UPDATE users SET public_resume_id = ? WHERE id = ?')->execute([$row['id'], $authUser['id']]);
     }
     echo json_encode(['success' => true, 'id' => $row['id'], 'resume' => $row]);
@@ -5390,22 +5411,26 @@ if (preg_match('#/resumes/delete$#', $uri) && $method === 'POST') {
     exit(0);
 }
 
-// Resumes: Set/clear which one is public  POST /resumes/set-public  { id }
-// Pass id = null/'' to unpublish (profile shows no CV button at all).
+// Resumes: show / hide a CV to companies  POST /resumes/set-public  { id, public }
+// Any number of CVs can be public; they all appear on the freelancer profile. id = '' hides all.
 if (preg_match('#/resumes/set-public$#', $uri) && $method === 'POST') {
     $authUser = requireAuth($pdo);
     $input = safeJson();
     $id = sanitize($input['id'] ?? '', 40);
-
-    if ($id !== '') {
-        $owned = $pdo->prepare('SELECT 1 FROM resumes WHERE id = ? AND user_id = ?');
-        $owned->execute([$id, $authUser['id']]);
-        if (!$owned->fetch()) jsonErr(404, 'سیڤیەکە نەدۆزرایەوە.');
-        $pdo->prepare('UPDATE users SET public_resume_id = ? WHERE id = ?')->execute([$id, $authUser['id']]);
+    if ($id === '') {
+        $pdo->prepare('UPDATE resumes SET is_public = 0 WHERE user_id = ?')->execute([$authUser['id']]);
     } else {
-        $pdo->prepare('UPDATE users SET public_resume_id = NULL WHERE id = ?')->execute([$authUser['id']]);
+        $ex = $pdo->prepare('SELECT is_public FROM resumes WHERE id = ? AND user_id = ? AND karnama_id IS NOT NULL');
+        $ex->execute([$id, $authUser['id']]);
+        $row = $ex->fetch();
+        if (!$row) jsonErr(404, 'سیڤیەکە نەدۆزرایەوە.');
+        $want = array_key_exists('public', $input) ? (!empty($input['public']) ? 1 : 0) : ((int)$row['is_public'] ? 0 : 1);
+        $pdo->prepare('UPDATE resumes SET is_public = ? WHERE id = ? AND user_id = ?')->execute([$want, $id, $authUser['id']]);
     }
-    echo json_encode(['success' => true, 'public_resume_id' => $id !== '' ? $id : null]);
+    $first = $pdo->prepare('SELECT id FROM resumes WHERE user_id = ? AND is_public = 1 AND karnama_id IS NOT NULL ORDER BY updated_at DESC LIMIT 1');
+    $first->execute([$authUser['id']]);
+    $pdo->prepare('UPDATE users SET public_resume_id = ? WHERE id = ?')->execute([$first->fetchColumn() ?: null, $authUser['id']]);
+    echo json_encode(['success' => true]);
     exit(0);
 }
 
@@ -5416,13 +5441,8 @@ if (preg_match('#/resumes/public$#', $uri) && $method === 'GET') {
     $userId = sanitize($_GET['user_id'] ?? '', 64);
     if (empty($userId)) jsonErr(400, 'User ID required.');
 
-    $u = $pdo->prepare('SELECT public_resume_id FROM users WHERE id = ?');
-    $u->execute([$userId]);
-    $u = $u->fetch();
-    if (!$u || empty($u['public_resume_id'])) jsonErr(404, 'ئەم بەکارهێنەرە هیچ CV ی گشتی نییە.');
-
-    $stmt = $pdo->prepare('SELECT id, title, template_id, view_url, embed_url FROM resumes WHERE id = ? AND user_id = ? AND karnama_id IS NOT NULL');
-    $stmt->execute([$u['public_resume_id'], $userId]);
+    $stmt = $pdo->prepare('SELECT id, title, template_id, view_url, embed_url FROM resumes WHERE user_id = ? AND is_public = 1 AND karnama_id IS NOT NULL ORDER BY updated_at DESC LIMIT 1');
+    $stmt->execute([$userId]);
     $resume = $stmt->fetch();
     if (!$resume) jsonErr(404, 'ئەم بەکارهێنەرە هیچ CV ی گشتی نییە.');
 

@@ -35,7 +35,7 @@ export const ResumesPage = ({ onBack, onCreateNew, onEdit }) => {
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
-  const [publicResumeId, setPublicResumeId] = useState(user?.public_resume_id || null);
+  const [publicIds, setPublicIds] = useState(new Set());
   const [settingPublicId, setSettingPublicId] = useState(null);
   const [viewing, setViewing] = useState(null);
 
@@ -46,7 +46,7 @@ export const ResumesPage = ({ onBack, onCreateNew, onEdit }) => {
   const load = async () => {
     setLoading(true);
     const res = await apiService.getResumes(token);
-    if (res?.success) setResumes(res.resumes || []);
+    if (res?.success) { setResumes(res.resumes || []); setPublicIds(new Set((res.resumes || []).filter(r => Number(r.is_public) === 1).map(r => r.id))); }
     setLoading(false);
   };
   useEffect(() => { if (token) load(); }, [token]);
@@ -59,21 +59,21 @@ export const ResumesPage = ({ onBack, onCreateNew, onEdit }) => {
     setDeletingId(null);
     if (res?.success) {
       setResumes(prev => prev.filter(r => r.id !== id));
-      if (publicResumeId === id) setPublicResumeId(null);
+      setPublicIds(prev => { const n = new Set(prev); n.delete(id); return n; });
       addToast?.({ title: 'سڕایەوە', message: 'سیڤیەکە سڕایەوە.', type: 'info' });
     } else addToast?.({ title: 'سەرنەکەوت', message: res?.message || 'سڕینەوە سەرکەوتوو نەبوو.', type: 'error' });
   };
 
-  // Only ONE CV is public on the freelancer's own profile (companies see it there); picking another un-picks the old one.
+  // Any number of CVs can be shown to companies on the freelancer profile.
   const handleTogglePublic = async (id) => {
     soundService.playTick?.();
-    const nextId = publicResumeId === id ? null : id;
+    const want = !publicIds.has(id);
     setSettingPublicId(id);
-    const res = await apiService.setPublicResume(nextId, token);
+    const res = await apiService.setPublicResume(id, want, token);
     setSettingPublicId(null);
     if (res?.success) {
-      setPublicResumeId(nextId);
-      addToast?.({ title: nextId ? 'کرایە گشتی ✓' : 'گشتی نەما', message: nextId ? 'ئێستا کۆمپانیاکان دەتوانن ئەم CV یە ببینن لە پرۆفایلەکەت.' : 'ئیتر هیچ CV یەک لە پرۆفایلەکەت نابینرێت.', type: 'success' });
+      setPublicIds(prev => { const n = new Set(prev); if (want) n.add(id); else n.delete(id); return n; });
+      addToast?.({ title: want ? 'بۆ کۆمپانیاکان دیارە ✓' : 'شاردرایەوە', message: want ? 'کۆمپانیاکان دەتوانن ئەم CV یە لە پرۆفایلەکەتدا ببینن و بیکەنەوە.' : 'ئەم CV یە ئیتر لە پرۆفایلەکەتدا نابینرێت.', type: 'success' });
     } else addToast?.({ title: 'سەرنەکەوت', message: res?.message || 'کێشەیەک ڕوویدا.', type: 'error' });
   };
 
@@ -106,7 +106,7 @@ export const ResumesPage = ({ onBack, onCreateNew, onEdit }) => {
         ) : (
           <div className="space-y-3">
             {resumes.map(r => {
-              const isPublic = publicResumeId === r.id;
+              const isPublic = publicIds.has(r.id);
               return (
                 <div key={r.id} className={`space-y-3 rounded-3xl border bg-white p-4 ${isPublic ? 'border-[#641bd9]' : 'border-stone-200'}`}>
                   <div className="flex items-start gap-3.5">
@@ -114,7 +114,7 @@ export const ResumesPage = ({ onBack, onCreateNew, onEdit }) => {
                     <div className="min-w-0 flex-1 pt-1">
                       <h3 className="truncate text-sm font-black text-stone-900">{r.title}</h3>
                       <p className="mt-0.5 text-[11px] font-bold text-stone-400">{r.template_id} · {fmt(r.updated_at)}</p>
-                      {isPublic && <span className="mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-black" style={{ background: TEAL_SOFT, color: TEAL_DEEP }}>گشتی · لە پرۆفایلەکەت</span>}
+                      {isPublic && <span className="mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-black" style={{ background: TEAL_SOFT, color: TEAL_DEEP }}>دیارە بۆ کۆمپانیاکان</span>}
                       <div className="mt-3 flex flex-wrap gap-2">
                         <button onClick={() => { soundService.playTick?.(); setViewing(r); }} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-black text-white" style={{ background: TEAL }}><Eye className="h-3.5 w-3.5" />بینین / PDF</button>
                         <button onClick={() => { soundService.playTick?.(); onEdit?.(r.id); }} className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-[11px] font-black text-stone-600"><Pencil className="h-3.5 w-3.5" />دەستکاری</button>
@@ -129,7 +129,7 @@ export const ResumesPage = ({ onBack, onCreateNew, onEdit }) => {
                     className={`flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition active:scale-95 disabled:opacity-50 ${isPublic ? 'text-white' : 'border border-stone-200 bg-stone-50 text-stone-500'}`}
                     style={isPublic ? { background: TEAL } : {}}>
                     {settingPublicId === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
-                    {isPublic ? 'دیارە لەسەر پرۆفایل — کرتە بکە بۆ شاردنەوە' : 'وەک CV ی پرۆفایل دایبنێ'}
+                    {isPublic ? 'دیارە لەسەر پرۆفایل — کرتە بکە بۆ شاردنەوە' : 'نیشانی کۆمپانیاکان بدە لە پرۆفایلەکەم'}
                   </button>
                 </div>
               );
