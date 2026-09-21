@@ -1462,7 +1462,7 @@ export const UserProfilePage = ({ onNavigate }) => {
         @media(min-width:640px){.ap-overlay{align-items:center;padding:22px}.ap-sheet{border-radius:32px;max-height:90vh}}
         .ap-cols{display:block}
         @media(max-width:1023px){.ap-page input,.ap-page textarea,.ap-page select{font-size:16px!important}}
-        .ap-hdr{margin:-12px -14px 16px}@media(min-width:640px){.ap-hdr{margin:-20px -20px 20px}}@media(min-width:1024px){.ap-hdr{margin:-20px -32px 28px}}
+        .ap-hdr{margin:-12px -14px 16px;position:sticky;top:0;z-index:30}.ap-hdr>div{position:relative!important}@media(min-width:1024px){.ap-hdr{position:relative}}@media(min-width:640px){.ap-hdr{margin:-20px -20px 20px}}@media(min-width:1024px){.ap-hdr{margin:-20px -32px 28px}}
         .ap-page{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding-bottom:36px}
         .ap-page .ap-modal-foot{position:sticky;bottom:calc(74px + env(safe-area-inset-bottom));z-index:5;border:1px solid var(--line);border-radius:26px;margin:0 12px 12px;box-shadow:0 12px 34px rgba(31,12,61,.12)}
         .ap-page .ap-modal-head{padding-top:18px}
