@@ -189,6 +189,10 @@ function MainAppContent() {
   // /search?...&job= share link into the /jobs/{id} page without a Back loop).
   // every page opens at its top, never at the previous page's scroll position
   useEffect(() => { window.scrollTo(0, 0); }, [activeTab]);
+  // remember the page we came from, so a page's back button returns there instead of always going home
+  const tabTrail = React.useRef({ cur: activeTab, prev: null });
+  useEffect(() => { if (tabTrail.current.cur !== activeTab) tabTrail.current = { cur: activeTab, prev: tabTrail.current.cur }; }, [activeTab]);
+  const backTo = (fallback) => { const p = tabTrail.current.prev; setActiveTab(p && p !== activeTab && !['login', 'register', 'landing'].includes(p) ? p : fallback); };
 
   const setActiveTab = (tabId, params) => {
     // A guest tapping Profile / Plans / Messages... gets a toast with a "log in" button instead of being thrown at the login page.
@@ -414,7 +418,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'install_app') {
-      return <InstallPage onBack={() => setActiveTab(user ? 'home' : 'landing')} />;
+      return <InstallPage onBack={() => backTo(user ? 'home' : 'landing')} />;
     }
 
     if (activeTab === 'connect') {
@@ -473,7 +477,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'plans') {
-      return <PlansPage onBack={() => setActiveTab('profile')} />;
+      return <PlansPage onBack={() => backTo('profile')} />;
     }
 
     if (activeTab === 'freelancers' || activeTab === 'companies') {
@@ -489,7 +493,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'job_view') {
-      return <JobDetailPage jobId={viewJobId} onBack={() => setActiveTab('my_company_dashboard')} />;
+      return <JobDetailPage jobId={viewJobId} onBack={() => backTo('my_company_dashboard')} />;
     }
 
     if (activeTab === 'messages') {
@@ -501,19 +505,19 @@ function MainAppContent() {
     }
 
     if (activeTab === 'about') {
-      return <AboutPage onBack={() => setActiveTab(user ? 'home' : 'landing')} onNavigate={setActiveTab} />;
+      return <AboutPage onBack={() => backTo(user ? 'home' : 'landing')} onNavigate={setActiveTab} />;
     }
 
     if (activeTab === 'contact') {
-      return <ContactPage onBack={() => setActiveTab(user ? 'home' : 'landing')} />;
+      return <ContactPage onBack={() => backTo(user ? 'home' : 'landing')} />;
     }
 
     if (activeTab === 'how_it_works') {
-      return <HowItWorksPage onBack={() => setActiveTab('profile')} onNavigate={setActiveTab} onStartTour={() => setShowTour(true)} />;
+      return <HowItWorksPage onBack={() => backTo('profile')} onNavigate={setActiveTab} onStartTour={() => setShowTour(true)} />;
     }
 
     if (activeTab === 'notifications') {
-      return <NotificationsPage onBack={() => setActiveTab('home')} />;
+      return <NotificationsPage onBack={() => backTo('home')} />;
     }
 
     if (activeTab === 'verify_email') {

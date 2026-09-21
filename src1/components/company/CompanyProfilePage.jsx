@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HeroControls } from '../layout/HeroControls';
+import { StickyProfileBar } from '../layout/StickyProfileBar';
 import { SocialLinks } from '../ui/SocialLinks';
 import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
@@ -494,6 +495,7 @@ export const CompanyProfilePage = ({
         dir="rtl"
         className="company-page company-page-scroll fixed inset-0 z-[60] overflow-y-auto font-vazirmatn text-stone-900"
       >
+        <StickyProfileBar title={getCompanyName(company)} subtitle={[displayIndustry, displayGov].filter(Boolean).join('، ')} avatar={company.logo || company.company_logo} onBack={goBack} onShare={handleShareCompany} />
         {/* Top navigation — the shared page header (same as every other page) */}
 
         {/* Hero */}
@@ -522,7 +524,7 @@ export const CompanyProfilePage = ({
               </div>
             )}
 
-            <div className="relative company-page-shell min-h-[310px] sm:min-h-[370px] lg:min-h-[440px] px-4 sm:px-8 lg:px-10 pt-10 pb-10 flex items-end">
+            <div className="relative company-page-shell min-h-[310px] sm:min-h-[370px] lg:min-h-[440px] px-4 sm:px-8 lg:px-10 pb-10 flex items-end" style={{ paddingTop: 'calc(88px + env(safe-area-inset-top))' }}>
               <div className="w-full">
                 <div className="flex flex-col sm:flex-row sm:items-end gap-5 lg:gap-7">
                   <div className="shrink-0">

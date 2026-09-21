@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { SocialLinks, parseSocial } from '../ui/SocialLinks';
+import { StickyProfileBar } from '../layout/StickyProfileBar';
 import { kurdistanGovernorates } from '../../data/kurdistanLocations';
 import { createPortal } from 'react-dom';
 import { soundService } from '../../services/soundService';
@@ -556,6 +557,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
           }}
         />
 
+        <StickyProfileBar title={name} subtitle={[roleLabel, govDisplay].filter(Boolean).join(' · ')} avatar={avatarUrl} onBack={onClose} onShare={handleShare} gradient={isVip ? 'linear-gradient(135deg,#2a0b02,#7a2600 55%,#2b0b02)' : undefined} />
         {/* HERO */}
         <header className="relative">
           <div
