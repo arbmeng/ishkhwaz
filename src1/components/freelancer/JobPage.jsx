@@ -5,6 +5,7 @@ import { soundService } from '../../services/soundService';
 import { readFileAsDataUri } from '../../utils/file';
 import { apiService } from '../../services/api';
 import { HeroControls } from '../layout/HeroControls';
+import { shareLink } from '../../utils/shareLink';
 import { StickyProfileBar } from '../layout/StickyProfileBar';
 import { JobDescription } from './JobDescription';
 import { sectorLabel } from '../../data/jobSectors';
@@ -300,17 +301,10 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
     currentPlanName.includes('pro plus') ||
     currentPlanName.includes('premium');
 
+  // Crawler-aware link (real per-job title/image in WhatsApp/Telegram) — see GET /share/job/{id}.
   const handleShare = () => {
     soundService.playTick?.();
-    // Crawler-aware share preview (real per-job title/image for
-    // WhatsApp/Telegram/etc.) — see GET /share/job/{id} in public/api/index.php.
-    const url = `${window.location.origin}/share/job/${job.id}`;
-    if (navigator.share) {
-      navigator.share({ title: `${title} — ${companyName}`, url }).catch(() => {});
-    } else {
-      navigator.clipboard?.writeText(url);
-      addToast?.({ title: 'کۆپیکرا ✓', message: 'لینکی کارەکە کۆپیکرا.', type: 'success' });
-    }
+    shareLink(`${window.location.origin}/share/job/${job.id}`, addToast, 'لینکی کارەکە کۆپیکرا.');
   };
   const detailStats = [
     ['مووچە', salaryText, 'text-[#641bd9]'],

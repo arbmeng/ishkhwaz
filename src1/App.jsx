@@ -270,19 +270,12 @@ function MainAppContent() {
   // for anything account-specific. Plain browsing of jobs/companies (home,
   // search, the companies directory) stays open to guests — but a shared
   // job/company link specifically (search with a ?company=/&job= deep link)
-  // now requires login to view, so it's excluded below even though 'search'
-  // itself is public. /install is public too — a link people share before
+  // is public too: anyone with the link can open it (applying/messaging still asks to log in).
+  // /install is public too — a link people share before
   // they even have an account.
   const PUBLIC_TABS = ['about', 'contact', 'landing', 'register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'job_detail', 'verify_email', 'forgot_password', 'reset_password'];
   useEffect(() => {
     if (!user) {
-      if (activeTab === 'search' && initialShareLinkQuery) {
-        // Remember exactly which shared link they opened so, once they log
-        // in, they land back on the same job/company instead of just home.
-        try { sessionStorage.setItem('ishkhwaz_pending_share_link', initialShareLinkQuery); } catch (e) { }
-        setActiveTab('login');
-        return;
-      }
       if (!PUBLIC_TABS.includes(activeTab)) {
         setActiveTab('login');
       }

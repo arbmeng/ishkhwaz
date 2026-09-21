@@ -50,7 +50,12 @@ export const SearchPage = ({ initialTab = 'companies', onNavigate }) => {
   useEffect(() => { const on = () => setCompact(c => (c ? window.scrollY > 24 : window.scrollY > 110)); on(); window.addEventListener('scroll', on, { passive: true }); return () => window.removeEventListener('scroll', on); }, []);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedGovernorate, setSelectedGovernorate] = useState('all');
-  const [activeTab, setActiveTab] = useState(() => isEmployer ? 'freelancers' : initialTab);
+  const [activeTab, setActiveTab] = useState(() => {
+    if (isEmployer) return 'freelancers';
+    const sub = (typeof window !== 'undefined' ? getAppPath() : '').split('/')[2];
+    return sub === 'freelancers' ? 'freelancers' : sub === 'jobs' ? 'jobs' : initialTab;
+  });
+  const deepLinkedFreelancerRef = useRef(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [initialJobId, setInitialJobId] = useState(null);
   const [viewingFreelancerProfile, setViewingFreelancerProfile] = useState(null);
@@ -77,11 +82,19 @@ export const SearchPage = ({ initialTab = 'companies', onNavigate }) => {
   }, [safeJobs, companies, liveCategories]);
 
   useEffect(() => { if (isEmployer && activeTab !== 'freelancers') setActiveTab('freelancers'); }, [isEmployer, activeTab]);
-  useEffect(() => { const slug = activeTab === 'companies' ? 'company' : activeTab; const path = `/search/${slug}`; if (getAppPath() !== path) { try { window.history.pushState({ tabId: 'search', sub: slug }, '', path) } catch { } } }, [activeTab]);
+  useEffect(() => { const slug = activeTab === 'companies' ? 'company' : activeTab; const path = `/search/${slug}`; if (!getAppPath().startsWith(path)) { try { window.history.pushState({ tabId: 'search', sub: slug }, '', path) } catch { } } }, [activeTab]);
   useEffect(() => {
     const params = new URLSearchParams(initialSearchParams), cq = params.get('company'), jq = params.get('job');
     if (cq) { setSelectedCompany(allCompanies.find(c => c.name.toLowerCase() === cq.toLowerCase()) || { name: cq, logo: '', cover: '', governorateId: 'sulaymaniyah', industry: 'کۆمپانیا و بازرگانی' }); if (jq) setInitialJobId(jq); }
   }, [initialSearchParams, allCompanies]);
+  // Opened from a shared link: /search/freelancers/<id> shows that profile as soon as the list is loaded.
+  useEffect(() => {
+    if (deepLinkedFreelancerRef.current) return;
+    const parts = getAppPath().split('/');
+    if (parts[2] !== 'freelancers' || !parts[3]) { deepLinkedFreelancerRef.current = true; return; }
+    const f = liveFreelancers.find(x => String(x.id) === parts[3]);
+    if (f) { deepLinkedFreelancerRef.current = true; setViewingFreelancerProfile(f); }
+  }, [liveFreelancers]);
   useEffect(() => {
     const onPop = () => {
       const parts = getAppPath().split('/'), sub = parts[2] || '', fid = parts[3] || null;

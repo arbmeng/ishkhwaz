@@ -10,6 +10,7 @@ import { apiService } from '../../services/api';
 import { SendOfferModal } from '../requests/SendOfferModal';
 import { StarRatingDisplay } from '../ui/StarRating';
 import { CvViewerModal } from '../ui/CvViewerModal';
+import { shareLink } from '../../utils/shareLink';
 import {
   ArrowLeft, Send, Share2, BadgeCheck, Phone, Mail, ExternalLink,
   Rocket, Crown, MapPin, BriefcaseBusiness, Star, FileText, Loader2,
@@ -300,23 +301,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
 
   const handleShare = () => {
     soundService.playTick?.();
-
-    const shareData = {
-      title: `${name} — ئیش خواز`,
-      text: `${name} | ${roleLabel} · ${govDisplay}`,
-      url: profileUrl
-    };
-
-    if (navigator.share) {
-      navigator.share(shareData).catch(() => { });
-    } else if (navigator.clipboard) {
-      navigator.clipboard.writeText(profileUrl);
-      addToast?.({
-        title: 'کۆپیکرا ✓',
-        message: 'لینکی پڕۆفایلی فریلانسەر کۆپیکرا.',
-        type: 'success'
-      });
-    }
+    shareLink(profileUrl, addToast, 'لینکی پڕۆفایلی کارخواز کۆپیکرا.');
   };
 
   const handleSendOffer = () => {

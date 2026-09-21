@@ -5,6 +5,7 @@ import { soundService } from '../../services/soundService';
 import { EditJobModal } from './EditJobModal';
 import { ConfirmationModal } from '../ui/ConfirmationModal';
 import { HeroControls } from '../layout/HeroControls';
+import { shareLink } from '../../utils/shareLink';
 import { StickyProfileBar } from '../layout/StickyProfileBar';
 import { positionsInfo } from '../../utils/jobPositions';
 import { sectorLabel } from '../../data/jobSectors';
@@ -74,7 +75,7 @@ const parseDescription = (text) => String(text || '').split(/\n{2,}/).map(b => b
 // The job comes from the store by id, so a refresh or a shared/bookmarked link works.
 export const JobDetailPage = ({ jobId, onBack }) => {
   const { user } = useAuth();
-  const { jobs = [], workTypes = [], deleteJob } = useStore();
+  const { jobs = [], workTypes = [], deleteJob, addToast } = useStore();
   const [copied, setCopied] = useState(false);
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -111,14 +112,11 @@ export const JobDetailPage = ({ jobId, onBack }) => {
   const status = STATUS[job.status] || STATUS.active;
 
   const handleShare = async () => {
-    const text = `${title} — ${companyName}\n${location}`;
-    try {
-      if (navigator.share) { await navigator.share({ title, text }); return; }
-      await navigator.clipboard?.writeText(text);
+    soundService.playTick?.();
+    if (await shareLink(`${window.location.origin}/share/job/${encodeURIComponent(job.id)}`, addToast, 'لینکی هەلی کارەکە کۆپیکرا.')) {
       setCopied(true);
-      soundService.playTick?.();
       setTimeout(() => setCopied(false), 1600);
-    } catch { /* user dismissed the share sheet */ }
+    }
   };
 
   const pos = positionsInfo(job);

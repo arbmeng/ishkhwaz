@@ -12,6 +12,7 @@ import { AboutModal } from '../layout/AboutModal';
 import { PlanBadge } from '../ui/PlanBadge';
 import { PageHeader } from '../layout/PageHeader';
 import { FeedbackSheet } from '../ui/FeedbackSheet';
+import { shareLink } from '../../utils/shareLink';
 import { SocialLinks, SOCIAL_FIELDS, parseSocial } from '../ui/SocialLinks';
 import { canSeePlans } from '../../config/features';
 import {
@@ -320,20 +321,12 @@ export const UserProfilePage = ({ onNavigate }) => {
   const savedList = jobs.filter(j => savedJobIds.includes(j.id));
 
   /* ── handlers ── */
-  const handleShare = () => {
+  const handleShare = async () => {
     soundService.playTick?.();
     const link = isEmployer
       ? `${window.location.origin}/share/company/${encodeURIComponent(user?.id || '')}`
       : `${window.location.origin}/share/freelancer/${encodeURIComponent(user?.id || '')}`;
-
-    if (navigator.share) {
-      navigator.share({ title: `${displayName} — ئیش خواز`, url: link }).catch(() => { });
-    } else if (navigator.clipboard) {
-      navigator.clipboard.writeText(link);
-      setCopied(true);
-      addToast?.({ title: 'کۆپیکرا ✓', message: 'لینکی پڕۆفایل کۆپیکرا.', type: 'success' });
-      setTimeout(() => setCopied(false), 2500);
-    }
+    if (await shareLink(link, addToast, 'لینکی پڕۆفایلەکەت کۆپیکرا.')) { setCopied(true); setTimeout(() => setCopied(false), 2500); }
   };
 
   const handleAvatarChange = async (e) => {

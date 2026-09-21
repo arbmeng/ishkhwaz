@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HeroControls } from '../layout/HeroControls';
+import { shareLink } from '../../utils/shareLink';
 import { StickyProfileBar } from '../layout/StickyProfileBar';
 import { SocialLinks } from '../ui/SocialLinks';
 import { useStore } from '../../context/StoreContext';
@@ -377,59 +378,13 @@ export const CompanyProfilePage = ({
   const handleShareJob = (job, event) => {
     event?.stopPropagation();
     soundService.playTick?.();
-
-    const shareUrl = `${window.location.origin}/share/job/${encodeURIComponent(job.id)}`;
-
-    if (navigator.share) {
-      navigator
-        .share({
-          title: `${job.title_ku || job.title || 'هەلی کار'} — ${getCompanyName(company)}`,
-          url: shareUrl,
-        })
-        .catch(() => { });
-      return;
-    }
-
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        addToast?.({
-          title: 'کۆپیکرا ✓',
-          message: 'لینکی هەلی کارەکە کۆپیکرا.',
-          type: 'success',
-        });
-      });
-    }
+    shareLink(`${window.location.origin}/share/job/${encodeURIComponent(job.id)}`, addToast, 'لینکی هەلی کارەکە کۆپیکرا.');
   };
 
-  const handleShareCompany = () => {
+  const handleShareCompany = async () => {
     soundService.playTick?.();
-
-    const companyUrl = `${window.location.origin}/share/company/${encodeURIComponent(
-      company.id || ''
-    )}`;
-
-    if (navigator.share) {
-      navigator
-        .share({
-          title: `${getCompanyName(company)} — ئیش خواز`,
-          url: companyUrl,
-        })
-        .catch(() => { });
-      return;
-    }
-
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(companyUrl).then(() => {
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 1800);
-
-        addToast?.({
-          title: 'کۆپیکرا ✓',
-          message: 'لینکی پڕۆفایلی کۆمپانیا کۆپیکرا.',
-          type: 'success',
-        });
-      });
-    }
+    const ok = await shareLink(`${window.location.origin}/share/company/${encodeURIComponent(company.id || '')}`, addToast, 'لینکی کۆمپانیا کۆپیکرا.');
+    if (ok) { setCopied(true); window.setTimeout(() => setCopied(false), 1800); }
   };
 
   const goBack = () => {
