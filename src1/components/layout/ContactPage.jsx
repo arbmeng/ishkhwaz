@@ -48,8 +48,8 @@ export const ContactPage = ({ onBack }) => {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#f4f7f6] text-right text-[#111d1a]" style={{ fontFamily: NK }}>
-      <PageHeader title="پەیوەندیمان پێوە بکە" onBack={onBack} />
+    <div dir="rtl" className="min-h-screen overflow-x-clip bg-[#f4f7f6] text-right text-[#111d1a]" style={{ fontFamily: NK }}>
+      <PageHeader title="پەیوەندیمان پێوە بکە" subtitle="نامەیەکمان بۆ بنێرە و بە زوویی وەڵامت دەدەینەوە" onBack={onBack} />
 
       <main className="relative mx-auto grid max-w-6xl items-start gap-10 px-4 py-8 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:py-16">
         <div className="pointer-events-none absolute -right-24 top-0 h-72 w-72 rounded-full bg-[#12796b]/8 blur-3xl" />

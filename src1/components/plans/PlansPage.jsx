@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import { soundService } from '../../services/soundService';
+import { PageHeader } from '../layout/PageHeader';
 import { getPlanIcon, getPlanColor, getContrastColor, hexToRgba, tintToward, formatCredits } from '../../utils/planPresets';
-import { ArrowRight, Check, X, Loader2, CheckCircle2, Zap, ShieldCheck, Sparkles, Crown, Rocket, TrendingUp, BadgePercent } from 'lucide-react';
+import { Check, X, Loader2, CheckCircle2, Zap, ShieldCheck, Sparkles, Crown, Rocket, TrendingUp, BadgePercent } from 'lucide-react';
 
 const NK = "'IBM Plex Sans Arabic','Noto Kufi Arabic','Vazirmatn',system-ui,sans-serif";
 const TEAL = '#12796b';
@@ -13,6 +14,27 @@ const GRAD = 'linear-gradient(155deg,#12897a 0%,#0d6a5d 48%,#083f37 100%)';
 const INK = '#0b1211';
 const BORDER = '#e5ece9';
 const MUTED = '#7b8e88';
+
+// Plan feature texts are typed with the numbers inside them ("3 CVs", "10 CVs", "unlimited CVs"...), so the same
+// feature would show as several unrelated rows. Merge them into one row and show each plan's own value.
+const zw = (t) => String(t)
+  .replace(/\u0647\u200c/g, '\u06d5')          // "ه" + ZWNJ is how "ە" was typed in the plan texts
+  .replace(/[\u200c\u200d]/g, '')
+  .replace(/\u0643/g, '\u06a9').replace(/\u064a/g, '\u06cc').replace(/\u0631\u06c6\u0698/g, '\u0695\u06c6\u0698');
+// the plan-name words inside a text ("Pro" badge / "VIP" badge) — not "پرۆفایل"
+const PLAN_WORD = /(VIP|\u067e\u0631\u06c6(?!\u0641))/;
+const featureKey = (label) => zw(label).replace(/\+.*$/, '').replace(/\u0628\u06c6 \u0645\u0627\u0648\u06d5\u06cc\s*\d+\s*\u0695\u06c6\u0698/g, '').replace(/\u0628\u06ce \u0633\u0646\u0648\u0648\u0631\u06cc?/g, '#').replace(/[0-9\u0660-\u0669]+/g, '#').replace(PLAN_WORD, '#').replace(/[.\s]+/g, ' ').trim();
+const featureValue = (label) => {
+  const t = zw(label).replace(/\+.*$/, '');
+  const m = t.match(/[0-9]+/);
+  if (m) return m[0];
+  if (/\u0628\u06ce \u0633\u0646\u0648\u0648\u0631/.test(t)) return '\u0628\u06ce \u0633\u0646\u0648\u0648\u0631';
+  const w = t.match(PLAN_WORD);
+  if (w) return /VIP/.test(w[0]) ? 'VIP' : 'Pro';
+  return null;
+};
+const featureExtra = (label) => { const m = String(label).match(/\+\s*(.+?)\.?$/); return m ? m[1].trim() : ''; };
+const featureTitle = (label) => String(label).replace(/\+.*$/, '').replace(/[0-9\u0660-\u0669]+/g, '').replace(/(VIP|\u067e\u0631\u06c6(?!\u0641))/g, '').replace(/[.]+\s*$/, '').replace(/\s+/g, ' ').trim();
 
 const okLabels = (p) => new Set(p.features.filter(f => f.ok && f.label).map(f => f.label));
 
@@ -69,6 +91,18 @@ export const PlansPage = ({ onBack }) => {
     const labels = new Set();
     PLANS.forEach(p => p.features.forEach(f => { if (f.label) labels.add(f.label); }));
     return Array.from(labels);
+  }, [PLANS]);
+  // One row per feature, with each plan's own value (or a tick / cross). The CV-offering and boost rows are
+  // shown separately above from the plan's real credits / boost days, so they are left out here.
+  const FEATURE_ROWS = useMemo(() => {
+    const map = new Map();
+    PLANS.forEach(p => p.features.forEach(f => {
+      if (!f.label) return;
+      const k = featureKey(f.label);
+      if (!map.has(k)) map.set(k, { key: k, title: featureTitle(f.label), cells: {} });
+      map.get(k).cells[p.id] = { ok: !!f.ok, val: featureValue(f.label), extra: featureExtra(f.label) };
+    }));
+    return [...map.values()].filter(r => !/\u06a9\u0627\u0631\u0646\u0627\u0645\u06d5 \u0628\u06c6 \u062e\u0627\u0648\u06d5\u0646\u06a9\u0627\u0631/.test(r.key) && !/\u0628\u06d5\u0631\u0632\u06a9\u0631\u062f\u0646\u06d5\u0648\u06d5\u06cc \u067e\u0631\u06c6\u0641\u0627\u06cc\u0644/.test(r.key));
   }, [PLANS]);
   const maxCredits = Math.max(1, ...PLANS.map(p => (p.credits > 200 ? 0 : p.credits)));
   const maxBoost = Math.max(1, ...PLANS.map(p => p.boostDays));
@@ -213,23 +247,11 @@ export const PlansPage = ({ onBack }) => {
   return (
     <div dir="rtl" className="min-h-screen pb-28 text-[#111d1a]" style={{ background: '#f4f7f6', fontFamily: NK }}>
 
-      {/* hero — the back button lives inside the green card on phones (PC has the site header) */}
-      <section className="relative overflow-hidden text-white" style={{ background: GRAD }}>
-        <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#43d1b8]/25 blur-3xl" />
-        <div className="pointer-events-none absolute inset-0 opacity-[.07]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.9) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.9) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
-        <div className="relative mx-auto max-w-6xl px-4 pb-16 sm:px-6 sm:pb-20 lg:px-8" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
-          {onBack && (
-            <button type="button" onClick={onBack} aria-label="گەڕانەوە" className="mb-5 grid h-11 w-11 place-items-center rounded-2xl bg-white/15 backdrop-blur active:scale-95 lg:hidden"><ArrowRight className="h-5 w-5" /></button>
-          )}
-          <div className="grid items-end gap-6 lg:grid-cols-[1.2fr_1fr] lg:pt-10">
-            <div>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#c8fff3]"><Sparkles className="h-3.5 w-3.5" />کڕینێکی یەکجارە، بێ تێچووی شاراوەی مانگانە</span>
-              <h1 className="mt-4 text-[30px] font-bold leading-[1.45] sm:text-[42px]">پلانەکان و بەرزکردنەوە</h1>
-              <p className="mt-3 max-w-xl text-[14px] leading-8 text-white/75">پلانێک هەڵبژێرە بۆ زیاتر کرێدیت و بەرزکردنەوەی پڕۆفایلەکەت. جیاوازی نێوان هەر پلانێک بە ڕوونی لە خوارەوە دیارە.</p>
-            </div>
+      <PageHeader title="پلانەکان و بەرزکردنەوە" subtitle="کڕینێکی یەکجارە، بێ تێچووی شاراوەی مانگانە" onBack={onBack} />
 
-            {/* current plan */}
-            <div className="rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur-md sm:p-5">
+      <div className="relative mx-auto max-w-6xl space-y-10 px-4 pt-6 sm:px-6 lg:px-8">
+        {/* current plan */}
+            <div className="rounded-[26px] p-4 text-white shadow-[0_14px_34px_rgba(8,63,55,.2)] sm:p-5" style={{ background: GRAD }}>
               <div className="flex items-center gap-3">
                 <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-[#0d5c50]"><CurrentIcon className="h-6 w-6" /></span>
                 <div className="min-w-0 flex-1">
@@ -248,11 +270,6 @@ export const PlansPage = ({ onBack }) => {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      </section>
-
-      <div className="relative mx-auto -mt-10 max-w-6xl space-y-10 px-4 sm:px-6 lg:px-8">
         {purchaseError && (
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#f2c6c6] bg-[#fdf2f2] px-4 py-3 text-xs font-bold text-[#b91c1c] shadow-sm">
             <span>{purchaseError}</span>
@@ -290,7 +307,7 @@ export const PlansPage = ({ onBack }) => {
                 </thead>
                 <tbody>
                   <tr className="border-b" style={{ borderColor: '#f0f4f2' }}>
-                    <td className="sticky right-0 bg-white px-5 py-4 text-xs font-bold">کرێدیت</td>
+                    <td className="sticky right-0 bg-white px-5 py-4 text-xs font-bold">پێشکەشکردنی کارنامە<span className="block text-[10px] font-medium" style={{ color: MUTED }}>بۆ خاوەنکارەکان</span></td>
                     {PLANS.map(p => (
                       <td key={p.id} className="px-3 py-4 text-center" style={(user?.plan || 'free') === p.id ? { background: '#f3faf8' } : undefined}>
                         <div className="text-sm font-bold" style={{ color: TEAL_DEEP }}>{formatCredits(p.credits)}</div>
@@ -307,15 +324,27 @@ export const PlansPage = ({ onBack }) => {
                       </td>
                     ))}
                   </tr>
-                  {ALL_FEATURE_LABELS.map((label) => (
-                    <tr key={label} className="border-b transition hover:bg-[#fafcfb]" style={{ borderColor: '#f0f4f2' }}>
-                      <td className="sticky right-0 bg-white px-5 py-3.5 text-xs font-medium leading-6">{label}</td>
+                  {FEATURE_ROWS.map((row) => (
+                    <tr key={row.key} className="border-b transition hover:bg-[#fafcfb]" style={{ borderColor: '#f0f4f2' }}>
+                      <td className="sticky right-0 bg-white px-5 py-3.5 text-xs font-medium leading-6">{row.title}</td>
                       {PLANS.map(p => {
-                        const f = p.features.find(x => x.label === label);
-                        const ok = !!f?.ok;
+                        const c = row.cells[p.id];
+                        const ok = !!c?.ok;
                         return (
                           <td key={p.id} className="px-3 py-3.5 text-center" style={(user?.plan || 'free') === p.id ? { background: '#f3faf8' } : undefined}>
-                            <span className="inline-grid h-6 w-6 place-items-center rounded-full" style={ok ? { background: TEAL_SOFT, color: TEAL_DEEP } : { background: '#f1f4f3', color: '#c3cdc9' }}>{ok ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <X className="h-3.5 w-3.5" />}</span>
+                            {ok && c.val ? (
+                              <span className="inline-flex flex-col items-center gap-0.5">
+                                {c.val === 'Pro' || c.val === 'VIP'
+                                  ? <span className="rounded-full px-3 py-1 text-[11px] font-bold" style={{ background: p.color.accent, color: getContrastColor(p.color.accent) }}>{c.val}</span>
+                                  : <span className="text-sm font-bold" style={{ color: TEAL_DEEP }}>{c.val}</span>}
+                                {c.extra && <span className="rounded-full bg-[#fff3d6] px-2 py-0.5 text-[9px] font-bold text-[#9a6a00]">+ {/AI/.test(c.extra) ? 'AI' : c.extra}</span>}
+                              </span>
+                            ) : (
+                              <span className="inline-flex flex-col items-center gap-0.5">
+                                <span className="inline-grid h-6 w-6 place-items-center rounded-full" style={ok ? { background: TEAL_SOFT, color: TEAL_DEEP } : { background: '#f1f4f3', color: '#c3cdc9' }}>{ok ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <X className="h-3.5 w-3.5" />}</span>
+                                {ok && c.extra && <span className="rounded-full bg-[#fff3d6] px-2 py-0.5 text-[9px] font-bold text-[#9a6a00]">+ {/AI/.test(c.extra) ? 'AI' : c.extra}</span>}
+                              </span>
+                            )}
                           </td>
                         );
                       })}

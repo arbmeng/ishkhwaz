@@ -7,6 +7,7 @@ import { realtimeService } from '../../services/realtimeService';
 import { MessageThreadModal } from './MessageThreadModal';
 import { KarnamaAiChatModal } from './KarnamaAiChatModal';
 import { AppGuideChatModal } from './AppGuideChatModal';
+import { PageHeader } from '../layout/PageHeader';
 import { MessageSquare, Loader2, Search, X, Headphones, Briefcase, Sparkles, Lock, HelpCircle } from 'lucide-react';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
@@ -132,19 +133,8 @@ export const MessagesInboxPage = ({ onNavigate, onEditResumeStyle }) => {
       className="min-h-screen pb-28 select-none"
       style={{ background: '#f4f7f6', fontFamily: NK }}
     >
-      <div className="max-w-2xl mx-auto px-4 pt-4 sm:pt-6 space-y-4">
-
-        {/* ── Header Title: پەیامەکان ─────────────────────── */}
-        <div className="flex items-center justify-between pt-1">
-          <h1
-            className="text-[26px] sm:text-[28px] font-black text-[#111d1a] tracking-tight text-right leading-none"
-          >
-            پەیامەکان
-          </h1>
-        </div>
-
-        {/* ── Search Bar: گەڕان لە پەیامەکان ─────────────────── */}
-        <div className="relative">
+      <PageHeader title="پەیامەکان" subtitle="گفتوگۆکانت لەگەڵ کۆمپانیا و کارخوازان">
+        <div className="relative max-w-2xl">
           <Search
             className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
             style={{ color: '#9faea9' }}
@@ -166,6 +156,9 @@ export const MessagesInboxPage = ({ onNavigate, onEditResumeStyle }) => {
             </button>
           )}
         </div>
+      </PageHeader>
+
+      <div className="max-w-2xl mx-auto px-4 pt-5 sm:pt-6 space-y-4">
 
         {/* ── Pinned: Karnama AI (VIP-only conversational CV builder) ── */}
         <button
@@ -296,24 +289,6 @@ export const MessagesInboxPage = ({ onNavigate, onEditResumeStyle }) => {
             })
           )}
         </section>
-
-        {/* ── Empty Thread Note at bottom ── */}
-        <div className="flex flex-col items-center text-center gap-3 pt-8 pb-10 px-6">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xs"
-            style={{ background: '#eaf5f2' }}
-          >
-            <MessageSquare className="w-6 h-6 text-[#12796b]" />
-          </div>
-          <div className="space-y-1">
-            <h4 className="text-sm font-black text-[#111d1a] m-0">
-              هیچ پەیامێکی تر نییە
-            </h4>
-            <p className="text-xs text-[#8a9e98] font-medium leading-relaxed max-w-[280px] m-0">
-              کاتێک کۆمپانیایەک وەڵامی داواکاریت دەداتەوە، لێرە دەردەکەوێت.
-            </p>
-          </div>
-        </div>
 
       </div>
 

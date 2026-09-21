@@ -352,6 +352,9 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
     }
   };
 
+  // The guide has one more step than the form: the emailed code. Once it is confirmed, every step is done.
+  const guideStep = step === COMPLETE_STEP && !otpPending ? step + 1 : step;
+
   const governorates = ['سلێمانی', 'هەولێر', 'دهۆک', 'هەڵەبجە', 'کەرکووک'];
 
   // City -> district (قەزا) -> sub-district (ناحیە), from the real administrative data.
@@ -416,8 +419,8 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         <div className="reg-grid" />
       </div>
 
-      <AuthBrandPanel variant="register" step={step} isRecruiter={isRecruiter} />
-      <AuthAssistant variant="register" step={step} isRecruiter={isRecruiter} actions={{ login: onBack }} />
+      <AuthBrandPanel variant="register" step={guideStep} isRecruiter={isRecruiter} />
+      <AuthAssistant variant="register" step={guideStep} isRecruiter={isRecruiter} actions={{ login: onBack }} />
 
       {step <= TOTAL_STEPS && (
         <header
@@ -1041,7 +1044,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
               )}
 
               <button type="submit" disabled={isSubmitting} className={primaryBtnCls} style={primaryBtnStyle}>
-                {isSubmitting ? 'خەریکی دروستکردنە...' : 'تەواوکردنی تۆمارکردن'}
+                {isSubmitting ? 'خەریکی دروستکردنە...' : 'دروستکردنی هەژمار و ناردنی کۆد'}
               </button>
             </form>
           </div>

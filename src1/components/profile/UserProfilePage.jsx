@@ -10,6 +10,7 @@ import { apiService } from '../../services/api';
 import { pushService } from '../../services/pushService';
 import { AboutModal } from '../layout/AboutModal';
 import { PlanBadge } from '../ui/PlanBadge';
+import { PageHeader } from '../layout/PageHeader';
 import { canSeePlans } from '../../config/features';
 import {
   MessageCircle, Settings, Share2, Camera, FileText, Eye, CheckCircle2, Save, Pencil, ChevronRight,
@@ -575,13 +576,9 @@ export const UserProfilePage = ({ onNavigate }) => {
     const skillList = skills.length ? skills : parseJsonArray(user?.skills);
 
     return (
+      <>
+      <div className="ap-hdr"><PageHeader title={isEmployer ? 'پڕۆفایلی کۆمپانیا' : 'پڕۆفایل'} subtitle="زانیاری، کارنامە و ڕێکخستنەکانت" actions={[{ icon: Share2, label: 'هاوبەشکردن', onClick: handleShare, mobileOnly: true }]} /></div>
       <div className="ap" dir="rtl" style={{ fontFamily: NK }}>
-        <header className="ap-top">
-          <h1 className="ap-title">{isEmployer ? 'پڕۆفایلی کۆمپانیا' : 'پڕۆفایل'}</h1>
-          <div className="ap-top-actions">
-            <button type="button" className="ap-circle lg:hidden" onClick={handleShare} aria-label="هاوبەشکردن"><Share2 className="w-[18px] h-[18px]" /></button>
-          </div>
-        </header>
 
         {needsEmailVerification && (
           <div className="ap-alert">
@@ -686,6 +683,7 @@ export const UserProfilePage = ({ onNavigate }) => {
         </div>
         </div></div>
       </div>
+      </>
     );
   };
   const EditModalImpl = () => {
@@ -1285,6 +1283,7 @@ export const UserProfilePage = ({ onNavigate }) => {
         .ap-ghost{height:50px;padding:0 22px;border-radius:999px;background:var(--soft);border:0;font-size:13px;font-weight:700;color:var(--sub)}
         @media(min-width:640px){.ap-overlay{align-items:center;padding:22px}.ap-sheet{border-radius:32px;max-height:90vh}}
         .ap-cols{display:block}
+        .ap-hdr{margin:-12px -14px 16px}@media(min-width:640px){.ap-hdr{margin:-20px -20px 20px}}@media(min-width:1024px){.ap-hdr{margin:-20px -32px 28px}}
         .ap-page{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding-bottom:36px}
         .ap-page .ap-modal-foot{position:sticky;bottom:calc(74px + env(safe-area-inset-bottom));z-index:5;border:1px solid var(--line);border-radius:26px;margin:0 12px 12px;box-shadow:0 12px 34px rgba(13,60,52,.12)}
         .ap-page .ap-modal-head{padding-top:18px}
