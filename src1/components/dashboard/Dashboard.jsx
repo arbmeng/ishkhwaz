@@ -562,8 +562,7 @@ export const Dashboard = ({ onNavigate }) => {
       </div>
 
       <PageHeader
-        title={isEmployer ? 'داشبۆردی کۆمپانیا' : 'داواکارییەکانم'}
-        actions={[{ icon: RefreshCw, label: 'نوێکردنەوە', onClick: handleRefresh, active: refreshing }]}
+        title={isEmployer ? 'داشبۆردی کۆمپانیا' : 'داواکارییەکانم'}
       />
 
       <main className="relative mx-auto w-full max-w-[1500px] px-3 pb-8 pt-4 sm:px-6 sm:pt-7 lg:px-8">
@@ -768,18 +767,6 @@ export const Dashboard = ({ onNavigate }) => {
           </section>
         )}
 
-        {/* Small mobile quick action rail */}
-        <div className="mt-5 grid grid-cols-3 gap-2 sm:hidden">
-          {[
-            { label: 'گەڕان', icon: Search, action: () => onNavigate?.('search') },
-            { label: 'پەیامەکان', icon: MessageCircle, action: () => onNavigate?.('messages') },
-            { label: 'پرۆفایل', icon: UserRound, action: () => onNavigate?.('profile') },
-          ].map(({ label, icon: Icon, action }) => (
-            <button key={label} onClick={action} className="rounded-2xl border border-[#e8e5ec] bg-white py-3 text-[9px] font-black text-[#65766f]">
-              <Icon className="mx-auto mb-1 h-4 w-4 text-[#641bd9]" />{label}
-            </button>
-          ))}
-        </div>
       </main>
 
       {isEmployer && editingJob && <EditJobModal job={editingJob} isOpen={!!editingJob} onClose={() => setEditingJob(null)} />}
