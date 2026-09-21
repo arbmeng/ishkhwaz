@@ -392,12 +392,12 @@ export const apiService = {
     }
   },
 
-  async respondToInvitation(invitationId, status, token) {
+  async respondToInvitation(invitationId, status, token, note = '') {
     try {
       const res = await fetch(`${API_BASE_URL}/invitations/${invitationId}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, note }),
       });
       const data = await res.json();
       if (!res.ok) return { success: false, message: data.message };
@@ -554,6 +554,19 @@ export const apiService = {
     } catch (e) { /* best-effort */ }
   },
 
+  async sendFeedback(payload, token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify(payload),
+      });
+      return await res.json();
+    } catch (e) {
+      return { success: false, message: 'پەیوەندی ئینتەرنێت بپشکنە.' };
+    }
+  },
+
   async registerJobView(jobId) {
     try {
       await fetch(`${API_BASE_URL}/jobs/view`, {
@@ -697,12 +710,12 @@ export const apiService = {
     }
   },
 
-  async updateCompanyApplicantStatus(applicationId, status, token) {
+  async updateCompanyApplicantStatus(applicationId, status, token, note = '') {
     try {
       const res = await fetch(`${API_BASE_URL}/applications/${applicationId}/company-status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ company_status: status })
+        body: JSON.stringify({ company_status: status, note })
       });
       return await res.json();
     } catch (e) {

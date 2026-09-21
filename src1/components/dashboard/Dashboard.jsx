@@ -13,6 +13,7 @@ import { StarRatingInput } from '../ui/StarRating';
 import { TrendChart } from '../ui/TrendChart';
 import { HScroll } from '../ui/HScroll';
 import { positionsInfo } from '../../utils/jobPositions';
+import { ReasonSheet } from '../ui/ReasonSheet';
 import { PageHeader } from '../layout/PageHeader';
 import {
   Plus, Check, X, Crown, Edit, Trash2, MessageCircle, FileText, Send,
@@ -298,6 +299,9 @@ const ApplicationCard = ({ req, dispute, expanded, onExpand, onRate, rated, rati
         </div>
         <StatusPill type={accepted ? 'success' : rejected ? 'danger' : 'warning'}>{STAGE_LABELS[req.stage]}</StatusPill>
       </div>
+      {rejected && req.note && (
+        <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs leading-6 text-rose-800"><b>هۆکاری ڕەتکردنەوە:</b><p className="mt-0.5">{req.note}</p></div>
+      )}
 
       <div className="my-4 h-px bg-[#efedf2]" />
 
@@ -368,7 +372,7 @@ export const Dashboard = ({ onNavigate }) => {
     jobs = [], applications = [], freelancers = [], invitations = [],
     categories: liveCategories = [],
     updateCompanyApplicantStatus, rateApplication, toggleJobStatus,
-    respondToInvitation, syncBackendData, addToast,
+    respondToInvitation, syncBackendData, addToast, workTypes = [],
   } = useStore();
 
   const isEmployer = user?.role === 'employer' || user?.role === 'owner' || user?.role === 'admin';
@@ -457,6 +461,7 @@ export const Dashboard = ({ onNavigate }) => {
     appliedAt: app.created_at ? new Date(app.created_at).toLocaleDateString('en-GB') : '',
     sentAgo: daysAgoLabel(app.created_at),
     txId: app.payment_tx_id || '',
+    note: app.company_note || '',
   })), [applications]);
 
   const filteredSentRequests = useMemo(() => statusFilter === 'all'
@@ -471,6 +476,15 @@ export const Dashboard = ({ onNavigate }) => {
     status: inv.status || 'pending',
     offeredAt: inv.created_at ? new Date(inv.created_at).toLocaleDateString('en-GB') : '',
     message: inv.message || '',
+    jobId: inv.job_id || '',
+    jobStatus: inv.job_status || '',
+    logo: inv.job_company_logo || '',
+    details: (() => { try { return inv.details ? JSON.parse(inv.details) : {}; } catch { return {}; } })(),
+    job: inv.job_id ? {
+      description: inv.job_description || '', type: inv.job_job_type || '', workplace: inv.job_workplace_type || '',
+      gov: inv.job_governorate_id || '', location: inv.job_location_detail || '', deadline: inv.job_deadline || '',
+      skills: (() => { try { const v = JSON.parse(inv.job_required_skills || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } })(),
+    } : null,
   })), [invitations]);
 
   useEffect(() => {
@@ -507,10 +521,10 @@ export const Dashboard = ({ onNavigate }) => {
     if (ok) { setRatedIds(prev => new Set(prev).add(appId)); setRatingOpenId(null); }
   };
 
-  const decideApplicant = async (appId, decision) => {
+  const decideApplicant = async (appId, decision, note = '') => {
     const previous = statusOverrides[appId];
     setStatusOverrides(prev => ({ ...prev, [appId]: decision }));
-    const ok = await updateCompanyApplicantStatus?.(appId, decision);
+    const ok = await updateCompanyApplicantStatus?.(appId, decision, note);
     if (ok) return true;
     setStatusOverrides(prev => {
       const next = { ...prev };
@@ -528,9 +542,21 @@ export const Dashboard = ({ onNavigate }) => {
     }
   };
 
-  const handleRejectApplicant = async (id) => {
+  const handleRejectApplicant = (id) => {
     soundService.playTick?.();
-    if (await decideApplicant(id, 'rejected')) addToast?.({ title: 'ڕەتکرایەوە', message: 'کاندید ڕەتکرایەوە.', type: 'info' });
+    setReasonFor({ kind: 'applicant', id });
+  };
+
+  const confirmReason = async (note) => {
+    const target = reasonFor;
+    if (!target) return;
+    if (target.kind === 'offer') {
+      const ok = await respondToInvitation(target.id, 'rejected', note);
+      if (ok) addToast?.({ title: 'ڕەتکرایەوە', message: 'هۆکارەکەت بۆ کۆمپانیا نێردرا.', type: 'info' });
+    } else if (await decideApplicant(target.id, 'rejected', note)) {
+      addToast?.({ title: 'ڕەتکرایەوە', message: 'هۆکارەکەت بۆ کاندید نێردرا.', type: 'info' });
+    }
+    setReasonFor(null);
   };
 
   const handleOpenCv = (app) => {
@@ -562,9 +588,9 @@ export const Dashboard = ({ onNavigate }) => {
     if (ok) addToast?.({ title: 'پیرۆزە! 🎉', message: `ئۆفەری کۆمپانیای "${companyName}" قبووڵکرا.`, type: 'success' });
   };
 
-  const handleRejectOffer = async (offerId) => {
+  const handleRejectOffer = (offerId) => {
     soundService.playTick?.();
-    await respondToInvitation(offerId, 'rejected');
+    setReasonFor({ kind: 'offer', id: offerId });
   };
 
 
@@ -580,6 +606,8 @@ export const Dashboard = ({ onNavigate }) => {
 
   const sentOffers = useMemo(() => safeArray(invitations).filter(i => String(i.company_id) === String(user?.id)), [invitations, user]);
   const [offerFilter, setOfferFilter] = useState('all');
+  const [openOffer, setOpenOffer] = useState(null);
+  const [reasonFor, setReasonFor] = useState(null); // { kind: 'offer' | 'applicant', id }
 
   const employerTabs = [
     { id: 'applicants', label: 'داواکارییەکان', Icon: Users, count: combinedApplicants.length },
@@ -603,7 +631,7 @@ export const Dashboard = ({ onNavigate }) => {
       </div>
 
       <PageHeader
-        title={isEmployer ? 'داشبۆردی کۆمپانیا' : 'داواکارییەکانم'}
+        title={isEmployer ? 'داشبۆردی کۆمپانیا' : 'داواکارییەکانم'}
       />
 
       <main className="relative mx-auto w-full max-w-[1500px] px-3 pb-8 pt-4 sm:px-6 sm:pt-7 lg:px-8">
@@ -743,6 +771,7 @@ export const Dashboard = ({ onNavigate }) => {
                                 {det.location && <span>{det.location}</span>}
                                 {det.start_date && <span dir="ltr">{det.start_date}</span>}
                               </div>
+                              {o.status === 'rejected' && o.response_note && <div className="mt-2 rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-[11.5px] font-medium leading-6 text-rose-800"><b>هۆکاری ڕەتکردنەوە:</b> {o.response_note}</div>}
                               {(o.message || det.description) && <p className="mt-2 line-clamp-2 text-[11.5px] font-medium leading-6 text-[#6b647d]">{o.message || det.description}</p>}
                             </div>
                             <div className="mt-2.5 flex items-center justify-between text-[10px] font-bold text-[#9a94aa]">
@@ -834,34 +863,89 @@ export const Dashboard = ({ onNavigate }) => {
               <div className="space-y-3">
                 {receivedOffers.length === 0 ? (
                   <EmptyState icon={Inbox} title="هیچ ئۆفەرێکی نوێت نییە" description="کاتێک کۆمپانیاکان بەپێی سیڤیەکەت داوات دەکەن، ئۆفەرەکان لێرە دەردەکەون." />
-                ) : receivedOffers.map(offer => (
-                  <article key={offer.id} className="rounded-[26px] border border-[#e8e5ec] bg-white p-4 sm:p-5 shadow-[0_4px_18px_rgba(31,17,54,.03)]">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eeeaf5] text-[#641bd9]"><Building2 className="h-5 w-5" /></div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-sm sm:text-base font-black text-[#1c1723]">{offer.title}</h3>
-                        <p className="mt-1 truncate text-[11px] font-bold text-[#7b8e88]">ئۆفەر لە: {offer.company}</p>
-                      </div>
-                      {offer.salary && <span className="shrink-0 rounded-xl bg-[#641bd9] px-3 py-1.5 font-mono text-[10px] font-black text-white">{offer.salary}</span>}
-                    </div>
-
-                    {offer.message && <div className="mt-4 rounded-2xl bg-[#f6f5f8] p-4 text-xs leading-6 text-[#53645e]"><b className="text-[#1c1723]">پەیامی کۆمپانیا:</b><p className="mt-1">{offer.message}</p></div>}
-
-                    <div className="mt-4 flex flex-col gap-3 border-t border-[#efedf2] pt-4 sm:flex-row sm:items-center sm:justify-between">
-                      <span className="text-[9px] font-mono font-bold text-[#8a9994]">نێردراوە: {offer.offeredAt}</span>
-                      {offer.status === 'pending' ? (
-                        <div className="grid grid-cols-2 gap-2">
-                          <button onClick={() => handleRejectOffer(offer.id)} className="rounded-2xl bg-rose-50 px-4 py-3 text-[10px] font-black text-rose-700 transition hover:bg-rose-100"><XCircle className="mr-1 inline h-4 w-4" />ڕەتکردنەوە</button>
-                          <button onClick={() => handleAcceptOffer(offer.id, offer.company)} className="rounded-2xl bg-[#641bd9] px-4 py-3 text-[10px] font-black text-white shadow-[0_8px_22px_rgba(100,27,217,.18)] transition hover:bg-[#4b13a5]"><CheckCircle2 className="mr-1 inline h-4 w-4" />قبووڵکردن</button>
+                ) : receivedOffers.map(offer => {
+                  const d = offer.details || {};
+                  const j = offer.job || {};
+                  const WP = { onSite: 'لەسەر شوێن', remote: 'دوورکاری', hybrid: 'تێکەڵ' };
+                  const GOV = { sulaymaniyah: 'سلێمانی', erbil: 'هەولێر', duhok: 'دهۆک', kirkuk: 'کەرکووک', halabja: 'هەڵەبجە' };
+                  const typeName = workTypes.find(t => t.id === (j.type || ''))?.name_ku || d.job_type || '';
+                  const where = [GOV[j.gov], j.location].filter(Boolean).join('، ') || d.location || '';
+                  const when = j.deadline || d.start_date || '';
+                  const desc = (j.description || d.description || '').trim();
+                  const skills = j.skills || [];
+                  const isOpen = openOffer === offer.id;
+                  const facts = [
+                    [Briefcase, 'جۆری کار', typeName],
+                    [Building2, 'شێوازی کار', WP[j.workplace || d.workplace_type] || ''],
+                    [MapPin, 'شوێن', where],
+                    [Clock, j.deadline ? 'کۆتا وادە' : 'دەستپێکردن', when],
+                  ].filter(f => f[2]);
+                  return (
+                    <article key={offer.id} className="overflow-hidden rounded-[26px] border border-[#e8e5ec] bg-white shadow-[0_4px_18px_rgba(31,17,54,.03)]">
+                      <div className="flex items-start gap-3 p-4 sm:p-5">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#eeeaf5] text-[#641bd9]">
+                          {offer.logo ? <img src={offer.logo} alt="" className="h-full w-full object-cover" /> : <Building2 className="h-5 w-5" />}
                         </div>
-                      ) : offer.status === 'accepted' ? (
-                        <StatusPill type="success"><CheckCheck className="h-3.5 w-3.5" />ئەم ئۆفەرەت قبووڵ کردووە</StatusPill>
-                      ) : (
-                        <StatusPill type="danger"><XCircle className="h-3.5 w-3.5" />ئەم ئۆفەرە ڕەتکرایەوە</StatusPill>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="truncate text-sm font-black text-[#1c1723] sm:text-base">{offer.title}</h3>
+                          <p className="mt-1 truncate text-[11px] font-bold text-[#7b8e88]">ئۆفەر لە: {offer.company}</p>
+                          {offer.jobId && offer.jobStatus && offer.jobStatus !== 'active' && <span className="mt-1.5 inline-block rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-700">ئەم کارە ئێستا وەستێنراوە</span>}
+                        </div>
+                        {offer.salary && <span dir="ltr" className="shrink-0 rounded-xl bg-gradient-to-br from-[#7229e8] to-[#4b13a5] px-3 py-1.5 font-mono text-[10px] font-black text-white">{offer.salary}</span>}
+                      </div>
+
+                      {facts.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 px-4 sm:px-5">
+                          {facts.map(([Ic, l, v]) => (
+                            <div key={l} className="flex items-center gap-2.5 rounded-2xl bg-[#f8f6fc] px-3 py-2.5">
+                              <Ic className="h-4 w-4 shrink-0 text-[#641bd9]" />
+                              <div className="min-w-0"><div className="text-[9px] font-bold text-[#8d86a0]">{l}</div><div className="truncate text-[12px] font-black text-[#1c1723]" dir={l === 'شوێن' || l === 'جۆری کار' || l === 'شێوازی کار' ? undefined : 'ltr'} style={{ textAlign: 'right' }}>{v}</div></div>
+                            </div>
+                          ))}
+                        </div>
                       )}
-                    </div>
-                  </article>
-                ))}
+
+                      {desc && (
+                        <div className="px-4 pt-3 sm:px-5">
+                          <div className="rounded-2xl bg-[#f6f5f8] p-3.5 text-xs leading-6 text-[#4a4358]">
+                            <b className="text-[#1c1723]">وردەکاری کار</b>
+                            <p className={`mt-1 whitespace-pre-line ${isOpen ? '' : 'line-clamp-4'}`}>{desc}</p>
+                            {desc.length > 160 && <button type="button" onClick={() => setOpenOffer(isOpen ? null : offer.id)} className="mt-1.5 text-[11px] font-black text-[#641bd9]">{isOpen ? 'کەمتر' : 'زیاتر ببینە'}</button>}
+                          </div>
+                        </div>
+                      )}
+
+                      {skills.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 px-4 pt-3 sm:px-5">
+                          {skills.slice(0, 8).map((sk, i) => <span key={i} className="rounded-full bg-[#ece7f4] px-2.5 py-1 text-[10px] font-black text-[#4b13a5]">{sk}</span>)}
+                        </div>
+                      )}
+
+                      {offer.message && <div className="mx-4 mt-3 rounded-2xl border border-[#e6e0f1] bg-white p-3.5 text-xs leading-6 text-[#53645e] sm:mx-5"><b className="text-[#1c1723]">پەیامی کۆمپانیا:</b><p className="mt-1">{offer.message}</p></div>}
+
+                      {offer.jobId && (
+                        <button type="button" onClick={() => { soundService.playTick?.(); onNavigate?.('job_detail', { jobId: offer.jobId }); }}
+                          className="mx-4 mt-3 flex items-center justify-center gap-2 rounded-2xl border border-[#d8cee9] bg-[#f3effb] py-2.5 text-[11px] font-black text-[#4b13a5] sm:mx-5" style={{ width: 'calc(100% - 2rem)' }}>
+                          <ArrowUpRight className="h-4 w-4" /> بینینی هەلی کارەکە
+                        </button>
+                      )}
+
+                      <div className="mt-4 flex flex-col gap-3 border-t border-[#efedf2] p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                        <span className="text-[9px] font-mono font-bold text-[#8a9994]">نێردراوە: {offer.offeredAt}</span>
+                        {offer.status === 'pending' ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <button onClick={() => handleRejectOffer(offer.id)} className="rounded-2xl bg-rose-50 px-4 py-3 text-[10px] font-black text-rose-700 transition hover:bg-rose-100"><XCircle className="ml-1.5 inline h-3.5 w-3.5" />ڕەتکردنەوە</button>
+                            <button onClick={() => handleAcceptOffer(offer.id, offer.company)} className="rounded-2xl bg-gradient-to-br from-[#7229e8] to-[#4b13a5] px-4 py-3 text-[10px] font-black text-white shadow-[0_8px_22px_rgba(100,27,217,.25)]"><CheckCheck className="ml-1.5 inline h-3.5 w-3.5" />قبووڵکردن</button>
+                          </div>
+                        ) : offer.status === 'accepted' ? (
+                          <StatusPill type="success"><CheckCheck className="h-3.5 w-3.5" />ئەم ئۆفەرەت قبووڵ کردووە</StatusPill>
+                        ) : (
+                          <StatusPill type="danger"><XCircle className="h-3.5 w-3.5" />ئەم ئۆفەرە ڕەتکرایەوە</StatusPill>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>
@@ -869,6 +953,16 @@ export const Dashboard = ({ onNavigate }) => {
 
       </main>
 
+      <ReasonSheet
+        open={!!reasonFor}
+        title={reasonFor?.kind === 'offer' ? 'بۆچی ئەم ئۆفەرە ڕەتدەکەیتەوە؟' : 'بۆچی ئەم کاندیدە ڕەتدەکەیتەوە؟'}
+        subtitle={reasonFor?.kind === 'offer' ? 'هۆکارەکەت بۆ کۆمپانیا دەنێردرێت.' : 'هۆکارەکەت بۆ کاندیدەکە دەنێردرێت و دەتوانێت بیبینێت.'}
+        reasons={reasonFor?.kind === 'offer'
+          ? ['مووچە کەمە', 'شوێنەکە دوورە', 'کارێکی دیکەم هەیە', 'گونجاو نییە بۆ بوارەکەم', 'کاتەکەی نایەتەوە']
+          : ['ئەزموونی پێویست نییە', 'شارەزایی گونجاو نییە', 'شوێنەکە ناگونجێت', 'کەسێکی دیکە هەڵبژێردرا', 'زانیاری تەواو نییە']}
+        onConfirm={confirmReason}
+        onClose={() => setReasonFor(null)}
+      />
       {isEmployer && editingJob && <EditJobModal job={editingJob} isOpen={!!editingJob} onClose={() => setEditingJob(null)} />}
       {isEmployer && viewingFreelancer && <FreelancerProfileModal freelancer={viewingFreelancer} isOpen={!!viewingFreelancer} onClose={() => setViewingFreelancer(null)} />}
       {isEmployer && showBrandingModal && <CompanyBrandingModal isOpen={showBrandingModal} onClose={() => setShowBrandingModal(false)} jobs={companyJobs} />}

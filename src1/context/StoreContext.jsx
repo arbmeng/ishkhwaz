@@ -254,10 +254,10 @@ export const StoreProvider = ({ children }) => {
     return false;
   };
 
-  const respondToInvitation = async (invitationId, status) => {
-    const res = await apiService.respondToInvitation(invitationId, status, token);
+  const respondToInvitation = async (invitationId, status, note = '') => {
+    const res = await apiService.respondToInvitation(invitationId, status, token, note);
     if (res?.success) {
-      setInvitations(prev => prev.map(i => i.id === invitationId ? { ...i, status } : i));
+      setInvitations(prev => prev.map(i => i.id === invitationId ? { ...i, status, response_note: note || null } : i));
       return true;
     }
     return false;
@@ -285,8 +285,8 @@ export const StoreProvider = ({ children }) => {
     return false;
   };
 
-  const updateCompanyApplicantStatus = async (applicationId, companyStatus) => {
-    const res = await apiService.updateCompanyApplicantStatus(applicationId, companyStatus, token);
+  const updateCompanyApplicantStatus = async (applicationId, companyStatus, note = '') => {
+    const res = await apiService.updateCompanyApplicantStatus(applicationId, companyStatus, token, note);
     if (res && res.success) {
       syncBackendData();
       return true;

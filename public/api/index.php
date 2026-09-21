@@ -1607,6 +1607,23 @@ $pdo->exec("
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
 
+// In-app feedback (rating + message) from any signed-in or guest user.
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS app_feedback (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id VARCHAR(64) NULL,
+    user_name VARCHAR(120) NULL,
+    role VARCHAR(20) NULL,
+    rating TINYINT NOT NULL,
+    category VARCHAR(20) NOT NULL DEFAULT 'other',
+    message TEXT NULL,
+    page VARCHAR(80) NULL,
+    ip VARCHAR(64) NULL,
+    created_at VARCHAR(32) NOT NULL,
+    INDEX idx_feedback_created (id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+
 // Bring an already-existing plan_tiers table up to the current shape —
 // CREATE TABLE IF NOT EXISTS above is a no-op once the table exists.
 foreach ([
@@ -1716,6 +1733,9 @@ foreach ([
     // An offer can point at one of the company's own jobs (job_id) or carry the details of a brand-new one (details JSON).
     "ALTER TABLE invitations ADD COLUMN job_id VARCHAR(64) NULL",
     "ALTER TABLE invitations ADD COLUMN details TEXT NULL",
+    // Why an offer / application was turned down (shown to the other side).
+    "ALTER TABLE invitations ADD COLUMN response_note VARCHAR(500) NULL",
+    "ALTER TABLE applications ADD COLUMN company_note VARCHAR(500) NULL",
     // Emailed 6-digit reset code (stored only as an HMAC, 10 min life, max 5 wrong tries) —
     // see /auth/forgot-password and /auth/verify-reset-otp.
     "ALTER TABLE users ADD COLUMN password_reset_otp_hash VARCHAR(64) NULL",
@@ -2292,6 +2312,22 @@ if (preg_match('#/auth/resend-verification$#', $uri) && $method === 'POST') {
 // Contact form  POST /contact  { name, email, phone?, message }
 //   (public — signed-in users are linked to their account; rate limited)
 // ================================================================
+if (preg_match('#/feedback$#', $uri) && $method === 'POST') {
+    if (!rateLimitCheck($pdo, $clientIp, 'feedback')) jsonErr(429, 'زۆر جار ڕات ناردووە. کەمێک چاوەڕوان بە.');
+    $input = safeJson();
+    $fbRating = (int)($input['rating'] ?? 0);
+    if ($fbRating < 1 || $fbRating > 5) jsonErr(400, 'ئەستێرەیەک هەڵبژێرە.');
+    $fbCat = in_array($input['category'] ?? '', ['praise', 'idea', 'bug', 'other'], true) ? $input['category'] : 'other';
+    $fbMsg = trim(sanitize($input['message'] ?? '', 1500));
+    if (($fbCat === 'bug' || $fbCat === 'idea' || $fbRating <= 2) && mb_strlen($fbMsg) < 5) jsonErr(400, 'تکایە کورتە وردەکارییەک بنووسە.');
+    $fbUser = optionalAuthUser($pdo);
+    $pdo->prepare('INSERT INTO app_feedback (user_id, user_name, role, rating, category, message, page, ip, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        ->execute([$fbUser['id'] ?? null, $fbUser['name'] ?? null, $fbUser['role'] ?? null, $fbRating, $fbCat, $fbMsg !== '' ? $fbMsg : null, sanitize($input['page'] ?? '', 80), $clientIp, date('Y-m-d H:i:s')]);
+    notifyAdmins($pdo, 'app_feedback', ['rating' => $fbRating, 'category' => $fbCat]);
+    echo json_encode(['success' => true, 'message' => 'سوپاس بۆ ڕاکەت!']);
+    exit(0);
+}
+
 if (preg_match('#/contact$#', $uri) && $method === 'POST') {
     if (!rateLimitCheck($pdo, $clientIp, 'contact')) jsonErr(429, 'زۆر جار نامەت ناردووە. کەمێک چاوەڕوان بە.');
     $input = safeJson();
@@ -4713,13 +4749,14 @@ if (preg_match('#/applications/.*?/company-status$#', $uri) && $method === 'POST
 
     // accepted_at is only meaningful for an acceptance — a rejection (or a reset
     // to pending) used to stamp it with "now" as well.
-    $pdo->prepare('UPDATE applications SET company_status = ?, accepted_at = ? WHERE id = ?')
-        ->execute([$status, $status === 'accepted' ? date('Y-m-d H:i:s') : null, $appId]);
+    $decisionNote = $status === 'rejected' ? trim(sanitize($input['note'] ?? '', 500)) : '';
+    $pdo->prepare('UPDATE applications SET company_status = ?, accepted_at = ?, company_note = ? WHERE id = ?')
+        ->execute([$status, $status === 'accepted' ? date('Y-m-d H:i:s') : null, $decisionNote !== '' ? $decisionNote : null, $appId]);
 
     if ($status !== 'pending' && $app['freelancer_id']) {
         $label = $status === 'accepted' ? 'وەرگیرایت! 🎉' : 'ڕەتکرایەوە';
         notifyUser($pdo, $app['freelancer_id'], "داواکارییەکەت {$label}",
-            "\"{$app['job_title']}\" لەلایەن {$app['company_name']}", '/cvs');
+            "\"{$app['job_title']}\" لەلایەن {$app['company_name']}" . ($decisionNote !== '' ? " — هۆکار: {$decisionNote}" : ''), '/cvs');
     }
 
     // Enough freelancers accepted for this job -> pause it so it stops taking applications.
@@ -6139,7 +6176,14 @@ if (preg_match('#/invitations$#', $uri) && $method === 'GET') {
     if ($authUser['role'] === 'employer') {
         $stmt = $pdo->prepare('SELECT i.*, u.avatar AS freelancer_avatar, u.profession AS freelancer_profession FROM invitations i LEFT JOIN users u ON u.id = i.freelancer_id WHERE i.company_id = ? ORDER BY i.created_at DESC');
     } else {
-        $stmt = $pdo->prepare('SELECT * FROM invitations WHERE freelancer_id = ? ORDER BY created_at DESC');
+        $stmt = $pdo->prepare('
+            SELECT i.*, j.description AS job_description, j.job_type AS job_job_type, j.workplace_type AS job_workplace_type,
+                   j.governorate_id AS job_governorate_id, j.location_detail AS job_location_detail,
+                   j.salary_min AS job_salary_min, j.salary_max AS job_salary_max, j.deadline AS job_deadline,
+                   j.status AS job_status, j.required_skills AS job_required_skills, j.company_logo AS job_company_logo
+            FROM invitations i LEFT JOIN jobs j ON j.id = i.job_id
+            WHERE i.freelancer_id = ? ORDER BY i.created_at DESC
+        ');
     }
     $stmt->execute([$authUser['id']]);
     echo json_encode(['success' => true, 'invitations' => $stmt->fetchAll()]);
@@ -6160,12 +6204,13 @@ if (preg_match('#/invitations/.*?/respond$#', $uri) && $method === 'POST') {
     $inv = $inv->fetch();
     if (!$inv) jsonErr(404, 'Invitation not found.');
 
-    $pdo->prepare('UPDATE invitations SET status = ?, responded_at = ? WHERE id = ?')
-        ->execute([$status, date('Y-m-d H:i:s'), $invId]);
+    $respNote = $status === 'rejected' ? trim(sanitize($input['note'] ?? '', 500)) : '';
+    $pdo->prepare('UPDATE invitations SET status = ?, responded_at = ?, response_note = ? WHERE id = ?')
+        ->execute([$status, date('Y-m-d H:i:s'), $respNote !== '' ? $respNote : null, $invId]);
 
     $label = $status === 'accepted' ? 'قبووڵکرا ✓' : 'ڕەتکرایەوە';
     notifyUser($pdo, $inv['company_id'], "ئۆفەرەکەت {$label}",
-        "{$authUser['name']} ئۆفەرەکەت بۆ \"{$inv['job_title']}\" {$label}", '/dashboard');
+        "{$authUser['name']} ئۆفەرەکەت بۆ \"{$inv['job_title']}\" {$label}" . ($respNote !== '' ? " — هۆکار: {$respNote}" : ''), '/dashboard');
 
     echo json_encode(['success' => true]);
     exit(0);

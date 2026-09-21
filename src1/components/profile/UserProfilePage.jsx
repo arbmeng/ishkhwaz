@@ -11,6 +11,7 @@ import { pushService } from '../../services/pushService';
 import { AboutModal } from '../layout/AboutModal';
 import { PlanBadge } from '../ui/PlanBadge';
 import { PageHeader } from '../layout/PageHeader';
+import { FeedbackSheet } from '../ui/FeedbackSheet';
 import { SocialLinks, SOCIAL_FIELDS, parseSocial } from '../ui/SocialLinks';
 import { canSeePlans } from '../../config/features';
 import {
@@ -18,7 +19,7 @@ import {
   Heart, Trash2, Briefcase, ChevronLeft, LogOut, User,
   Bell, MapPin, Plus, X, Layers, Sparkles, Building2,
   ExternalLink, ShieldCheck, FileCheck,
-  HelpCircle, Info, MailWarning, Loader2, Activity, Award, Target, UserRoundCheck, Zap, Globe2
+  Star, HelpCircle, Info, MailWarning, Loader2, Activity, Award, Target, UserRoundCheck, Zap, Globe2
 } from 'lucide-react';
 
 /* ─── Design tokens ─────────────────────────────────────────────── */
@@ -126,6 +127,7 @@ export const UserProfilePage = ({ onNavigate }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
   const [showViewers, setShowViewers] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -727,6 +729,7 @@ export const UserProfilePage = ({ onNavigate }) => {
           {canSeePlans(user) && row('plans', Sparkles, 'پلانەکانی ئیش خواز', { hint: userPlanTier?.name_ku || '', onClick: () => onNavigate?.('plans') })}
           {row('how', HelpCircle, 'چۆنیەتی کارکردنی ئەپ', { onClick: () => onNavigate?.('how_it_works') })}
           {row('about', Info, 'دەربارەی ئیش خواز', { onClick: () => onNavigate?.('about') })}
+          {row('feedback', Star, 'ڕا و پێشنیارت بنووسە', { onClick: () => setShowFeedback(true) })}
           {row('contact', MessageCircle, 'پەیوەندیمان پێوە بکە', { onClick: () => onNavigate?.('contact') })}
           {row('logout', LogOut, 'چوونەدەرەوە', { onClick: () => setShowLogout(true), danger: true })}
         </div>
@@ -1516,6 +1519,7 @@ export const UserProfilePage = ({ onNavigate }) => {
       `}</style>
       {/* Edit / saved / viewers are pages of their own (not popups); only the small confirm dialogs float. */}
       {showEdit ? <EditModal /> : showSaved ? <SavedModal /> : showViewers ? <ViewersModal /> : <ProfileHero />}
+      <FeedbackSheet open={showFeedback} onClose={() => setShowFeedback(false)} page="profile" />
       {showLogout && <LogoutModal />}
       {showAbout && createPortal(<AboutModal onClose={() => setShowAbout(false)} />, document.body)}
     </div>
