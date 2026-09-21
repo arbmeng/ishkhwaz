@@ -72,8 +72,18 @@ function MainAppContent() {
   // via the same 'ishkhwaz_splash_seen' flag, checked inside SplashOnboarding.
   // The landing page is the front door now, so the old first-visit carousel
   // is retired: mark it seen up front so the splash is only the brief brand flash.
+  // Opening the app from a push notification goes straight to the page (no splash); the marker is stripped from the URL.
   const [showSplash, setShowSplash] = useState(() => {
     try { localStorage.setItem('ishkhwaz_splash_seen', 'true'); } catch { /* private mode */ }
+    try {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get('from') === 'push') {
+        q.delete('from');
+        const rest = q.toString();
+        window.history.replaceState(window.history.state, '', window.location.pathname + (rest ? '?' + rest : '') + window.location.hash);
+        return false;
+      }
+    } catch { /* ignore */ }
     return true;
   });
 
@@ -328,6 +338,18 @@ function MainAppContent() {
       }
     }
   }, [user, needsProfileCompletion, activeTab]);
+
+  // A notification tapped while the app is already open: the service worker asks us to go to its page.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return undefined;
+    const onMsg = (e) => {
+      if (e.data?.type !== 'push-navigate' || !e.data.url) return;
+      window.history.pushState({}, '', e.data.url);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    };
+    navigator.serviceWorker.addEventListener('message', onMsg);
+    return () => navigator.serviceWorker.removeEventListener('message', onMsg);
+  }, []);
 
   // Sync browser back/forward buttons
   useEffect(() => {

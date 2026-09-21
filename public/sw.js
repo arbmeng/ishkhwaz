@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ishkhwaz-pwa-v12';
+const CACHE_NAME = 'ishkhwaz-pwa-v13';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -68,17 +68,22 @@ self.addEventListener('notificationclick', (event) => {
     self.navigator.clearAppBadge().catch(() => {});
   }
 
-  const targetUrl = event.notification.data?.url || '/';
+  // Notification urls are app paths ('/cvs', '/dashboard'...); the app itself lives under /app.
+  const rawUrl = event.notification.data?.url || '/';
+  const target = rawUrl.startsWith('/app') ? rawUrl : '/app' + (rawUrl === '/' ? '/' : rawUrl);
+  const coldUrl = target + (target.includes('?') ? '&' : '?') + 'from=push';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if (client.url && 'focus' in client) {
+          // App already open: focus it and route inside it (no reload, no splash).
+          client.postMessage({ type: 'push-navigate', url: target });
           return client.focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
+        return clients.openWindow(coldUrl);
       }
     })
   );
