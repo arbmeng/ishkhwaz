@@ -7,8 +7,8 @@ import { ArrowRight, ArrowLeft, HelpCircle, RotateCcw } from 'lucide-react';
 import { ConfirmationModal } from '../ui/ConfirmationModal';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
 
 const formatClock = (isoOrText) => {
   if (!isoOrText) return '';
@@ -128,29 +128,29 @@ export const AppGuideChatModal = ({ onClose }) => {
     <div
       ref={containerRef}
       dir="rtl"
-      className="fixed inset-x-0 top-0 z-[9999] bg-[#f4f7f6] flex flex-col font-vazirmatn select-none animate-fadeIn"
+      className="fixed inset-x-0 top-0 z-[9999] bg-[#f5f4f7] flex flex-col font-vazirmatn select-none animate-fadeIn"
       style={{ fontFamily: NK, height: '100dvh' }}
     >
       {/* ── Header ── */}
       <div
-        className="shrink-0 bg-white border-b border-[#e8eeed] px-4 pb-3 flex items-center justify-between shadow-2xs"
+        className="shrink-0 bg-white border-b border-[#eae8ee] px-4 pb-3 flex items-center justify-between shadow-2xs"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}
       >
         <div className="flex items-center gap-2.5 min-w-0">
-          <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-white border border-[#e8eeed] flex items-center justify-center text-[#111d1a] shrink-0 active:scale-90 transition-transform shadow-2xs" aria-label="گەڕانەوە">
-            <ArrowRight className="w-5 h-5 text-[#111d1a]" />
+          <button onClick={onClose} className="w-10 h-10 rounded-2xl bg-white border border-[#eae8ee] flex items-center justify-center text-[#16111d] shrink-0 active:scale-90 transition-transform shadow-2xs" aria-label="گەڕانەوە">
+            <ArrowRight className="w-5 h-5 text-[#16111d]" />
           </button>
           <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-sm" style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}>
             <HelpCircle className="w-5 h-5" />
           </div>
           <div className="text-right min-w-0">
-            <h3 className="text-sm font-black text-[#111d1a] truncate leading-tight">ڕێبەری ئەپ</h3>
+            <h3 className="text-sm font-black text-[#16111d] truncate leading-tight">ڕێبەری ئەپ</h3>
             <p className="text-[10.5px] font-bold truncate" style={{ color: TEAL }}>یاریدەدەری بەکارهێنانی ئیش خواز</p>
           </div>
         </div>
 
         {messages.length > 0 && (
-          <button onClick={() => setShowRestartConfirm(true)} className="w-10 h-10 rounded-2xl bg-white border border-[#e8eeed] flex items-center justify-center text-[#62736e] shrink-0 active:scale-90 transition-transform shadow-2xs" aria-label="دەستپێکردنەوە">
+          <button onClick={() => setShowRestartConfirm(true)} className="w-10 h-10 rounded-2xl bg-white border border-[#eae8ee] flex items-center justify-center text-[#62736e] shrink-0 active:scale-90 transition-transform shadow-2xs" aria-label="دەستپێکردنەوە">
             <RotateCcw className="w-4 h-4" />
           </button>
         )}
@@ -168,18 +168,18 @@ export const AppGuideChatModal = ({ onClose }) => {
       />
 
       {/* ── Body ── */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5" style={{ background: '#f4f7f6' }}>
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5" style={{ background: '#f5f4f7' }}>
         {loading ? (
           <div className="flex items-center justify-center py-10">
-            <div className="w-6 h-6 border-2 border-[#12796b] border-t-transparent rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-[#641bd9] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center gap-3">
-            <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: '#e7f4f1' }}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ background: '#ece7f4' }}>
               <HelpCircle className="w-6 h-6" style={{ color: TEAL }} />
             </div>
             <div className="max-w-[300px] space-y-1">
-              <p className="text-sm font-black" style={{ color: '#111d1a' }}>سڵاو! من ڕێبەری ئەپی ئیش خوازم</p>
+              <p className="text-sm font-black" style={{ color: '#16111d' }}>سڵاو! من ڕێبەری ئەپی ئیش خوازم</p>
               <p className="text-xs font-bold" style={{ color: '#8a9e98' }}>
                 هەر پرسیارێکت هەبێت دەربارەی چۆنیەتی بەکارهێنانی ئەپەکە، لێرە پرسیار بکە — یان یەکێک لەم پرسیارە ئامادەکراوانە هەڵبژێرە.
               </p>
@@ -193,8 +193,8 @@ export const AppGuideChatModal = ({ onClose }) => {
                 <div
                   className={`max-w-[82%] px-4 py-3 text-xs sm:text-[13px] font-bold leading-relaxed whitespace-pre-line ${
                     isMine
-                      ? 'bg-[#c2eae1] text-[#113d36] rounded-2xl rounded-tl-xs shadow-2xs'
-                      : 'bg-white text-[#111d1a] border border-[#e8eeec] rounded-2xl rounded-tr-xs shadow-[0_1px_4px_rgba(0,0,0,0.03)]'
+                      ? 'bg-[#d1c1eb] text-[#22103e] rounded-2xl rounded-tl-xs shadow-2xs'
+                      : 'bg-white text-[#16111d] border border-[#eae8ee] rounded-2xl rounded-tr-xs shadow-[0_1px_4px_rgba(0,0,0,0.03)]'
                   }`}
                   style={{ fontFamily: NK }}
                 >
@@ -210,7 +210,7 @@ export const AppGuideChatModal = ({ onClose }) => {
 
         {sending && (
           <div className="flex flex-col items-end">
-            <div className="bg-white border border-[#e8eeec] rounded-2xl rounded-tr-xs px-4 py-3 shadow-2xs flex items-center gap-1.5">
+            <div className="bg-white border border-[#eae8ee] rounded-2xl rounded-tr-xs px-4 py-3 shadow-2xs flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#9faea9] animate-bounce" style={{ animationDelay: '0ms' }} />
               <span className="w-1.5 h-1.5 rounded-full bg-[#9faea9] animate-bounce" style={{ animationDelay: '120ms' }} />
               <span className="w-1.5 h-1.5 rounded-full bg-[#9faea9] animate-bounce" style={{ animationDelay: '240ms' }} />
@@ -226,7 +226,7 @@ export const AppGuideChatModal = ({ onClose }) => {
                 key={q}
                 onClick={() => handleSuggestion(q)}
                 disabled={sending}
-                className="px-3.5 py-2 rounded-2xl bg-white border border-[#c1ede3] text-[#0d5c50] text-xs font-bold shadow-2xs hover:bg-[#e8f7f4] active:scale-95 transition disabled:opacity-50"
+                className="px-3.5 py-2 rounded-2xl bg-white border border-[#d2c0ee] text-[#4b13a5] text-xs font-bold shadow-2xs hover:bg-[#eee8f7] active:scale-95 transition disabled:opacity-50"
               >
                 {q}
               </button>
@@ -239,13 +239,13 @@ export const AppGuideChatModal = ({ onClose }) => {
 
       {/* ── Persistent suggestion strip (once the chat has started) ── */}
       {!loading && messages.length > 0 && (
-        <div className="shrink-0 bg-white border-t border-[#eef2f0] px-3.5 pt-2.5 flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="shrink-0 bg-white border-t border-[#f0eef2] px-3.5 pt-2.5 flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           {suggestions.map((q) => (
             <button
               key={q}
               onClick={() => handleSuggestion(q)}
               disabled={sending}
-              className="shrink-0 px-3.5 py-2 rounded-2xl bg-[#f4f7f6] border border-[#e8eeed] text-[#4a5854] text-[11px] font-bold hover:bg-[#e8f7f4] hover:border-[#c1ede3] hover:text-[#0d5c50] active:scale-95 transition disabled:opacity-50 whitespace-nowrap"
+              className="shrink-0 px-3.5 py-2 rounded-2xl bg-[#f5f4f7] border border-[#eae8ee] text-[#4a5854] text-[11px] font-bold hover:bg-[#eee8f7] hover:border-[#d2c0ee] hover:text-[#4b13a5] active:scale-95 transition disabled:opacity-50 whitespace-nowrap"
             >
               {q}
             </button>
@@ -255,14 +255,14 @@ export const AppGuideChatModal = ({ onClose }) => {
 
       {/* ── Input bar ── */}
       <div
-        className="shrink-0 bg-white border-t border-[#eef2f0] px-3.5 py-2.5 flex items-end gap-2.5 shadow-sm"
+        className="shrink-0 bg-white border-t border-[#f0eef2] px-3.5 py-2.5 flex items-end gap-2.5 shadow-sm"
         style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}
       >
         <button
           onClick={handleSend}
           disabled={!hasText || sending}
           className={`w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 transition-all active:scale-90 shadow-sm ${
-            hasText && !sending ? 'bg-[#1a6b62] hover:bg-[#12796b] shadow-[0_4px_12px_rgba(26,107,98,0.3)]' : 'bg-[#1a6b62] opacity-70'
+            hasText && !sending ? 'bg-[#642ac0] hover:bg-[#641bd9] shadow-[0_4px_12px_rgba(100,42,192,0.3)]' : 'bg-[#642ac0] opacity-70'
           }`}
           aria-label="ناردن"
         >
@@ -276,7 +276,7 @@ export const AppGuideChatModal = ({ onClose }) => {
           placeholder="پرسیارت بنووسە..."
           disabled={sending}
           rows={1}
-          className="flex-1 bg-white border border-[#e8eeed] rounded-3xl px-4 py-3 text-xs sm:text-sm text-[#111d1a] font-bold placeholder-[#9faea9] outline-none focus:border-[#12796b] focus:ring-2 focus:ring-[#12796b]/10 transition-all resize-none leading-relaxed"
+          className="flex-1 bg-white border border-[#eae8ee] rounded-3xl px-4 py-3 text-xs sm:text-sm text-[#16111d] font-bold placeholder-[#9faea9] outline-none focus:border-[#641bd9] focus:ring-2 focus:ring-[#641bd9]/10 transition-all resize-none leading-relaxed"
           style={{ fontFamily: NK, maxHeight: '120px' }}
         />
       </div>

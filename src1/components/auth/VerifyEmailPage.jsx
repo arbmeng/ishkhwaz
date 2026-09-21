@@ -12,8 +12,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
 
 export const VerifyEmailPage = ({ onDone }) => {
   const [status, setStatus] = useState('checking');
@@ -75,10 +75,10 @@ export const VerifyEmailPage = ({ onDone }) => {
   return (
     <div
       dir="rtl"
-      className="safe-top fixed inset-0 z-[9999] overflow-y-auto font-vazirmatn text-[#10201c]"
+      className="safe-top fixed inset-0 z-[9999] overflow-y-auto font-vazirmatn text-[#161020]"
       style={{
         background:
-          'radial-gradient(80% 55% at 50% 0%, rgba(18,121,107,.16), transparent 65%), linear-gradient(180deg,#f7fbfa 0%,#eef5f3 100%)',
+          'radial-gradient(80% 55% at 50% 0%, rgba(100,27,217,.16), transparent 65%), linear-gradient(180deg,#f9f7fb 0%,#f1eef5 100%)',
       }}
     >
       <div className="min-h-[100dvh] flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
@@ -92,7 +92,7 @@ export const VerifyEmailPage = ({ onDone }) => {
                 <ShieldCheck className="w-5 h-5 text-white" />
               </div>
               <div className="text-right">
-                <div className="text-xs font-black text-[#16352f]">ئیشخواز</div>
+                <div className="text-xs font-black text-[#221536]">ئیشخواز</div>
                 <div className="text-[10px] font-bold text-[#81928d]">دڵنیابوونەوەی هەژمار</div>
               </div>
             </div>
@@ -100,9 +100,9 @@ export const VerifyEmailPage = ({ onDone }) => {
             <div
               className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black"
               style={{
-                background: 'rgba(18,121,107,.08)',
+                background: 'rgba(100,27,217,.08)',
                 color: TEAL,
-                border: '1px solid rgba(18,121,107,.12)',
+                border: '1px solid rgba(100,27,217,.12)',
               }}
             >
               <Sparkles className="w-3 h-3" />
@@ -111,15 +111,15 @@ export const VerifyEmailPage = ({ onDone }) => {
           </div>
 
           <main
-            className="relative overflow-hidden rounded-[30px] border bg-white/90 shadow-[0_24px_80px_rgba(13,92,80,.12)] backdrop-blur-xl"
-            style={{ borderColor: 'rgba(18,121,107,.10)' }}
+            className="relative overflow-hidden rounded-[30px] border bg-white/90 shadow-[0_24px_80px_rgba(75,19,165,.12)] backdrop-blur-xl"
+            style={{ borderColor: 'rgba(100,27,217,.10)' }}
           >
             <div
               className="absolute inset-x-0 top-0 h-1"
               style={{
                 background: isError
                   ? 'linear-gradient(90deg,#ef4444,#fb7185)'
-                  : `linear-gradient(90deg,${TEAL},#36b9a4,${TEAL_DEEP})`,
+                  : `linear-gradient(90deg,${TEAL},#ac8ce0,${TEAL_DEEP})`,
               }}
             />
 
@@ -129,14 +129,14 @@ export const VerifyEmailPage = ({ onDone }) => {
                   <>
                     <div
                       className="absolute inset-0 rounded-[28px] animate-pulse"
-                      style={{ background: 'rgba(18,121,107,.10)' }}
+                      style={{ background: 'rgba(100,27,217,.10)' }}
                     />
                     <div
                       className="relative w-full h-full rounded-[28px] flex items-center justify-center"
                       style={{
-                        background: 'linear-gradient(145deg,#e9f7f4,#ffffff)',
-                        border: '1px solid rgba(18,121,107,.14)',
-                        boxShadow: '0 14px 35px rgba(18,121,107,.10)',
+                        background: 'linear-gradient(145deg,#eee9f7,#ffffff)',
+                        border: '1px solid rgba(100,27,217,.14)',
+                        boxShadow: '0 14px 35px rgba(100,27,217,.10)',
                       }}
                     >
                       <Loader2 className="w-9 h-9 animate-spin" style={{ color: TEAL }} />
@@ -180,7 +180,7 @@ export const VerifyEmailPage = ({ onDone }) => {
                 <span
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black"
                   style={{
-                    background: isError ? 'rgba(239,68,68,.08)' : 'rgba(18,121,107,.08)',
+                    background: isError ? 'rgba(239,68,68,.08)' : 'rgba(100,27,217,.08)',
                     color: isError ? '#dc2626' : TEAL,
                   }}
                 >
@@ -188,7 +188,7 @@ export const VerifyEmailPage = ({ onDone }) => {
                 </span>
               </div>
 
-              <h1 className="text-[24px] sm:text-[28px] font-black tracking-tight text-[#10201c]">
+              <h1 className="text-[24px] sm:text-[28px] font-black tracking-tight text-[#161020]">
                 {status === 'checking' && 'خەریکی دڵنیابوونەوەین...'}
                 {isSuccess && 'دڵنیابوونەوە سەرکەوتوو بوو!'}
                 {isError && 'دڵنیابوونەوە سەرنەکەوت'}
@@ -200,10 +200,10 @@ export const VerifyEmailPage = ({ onDone }) => {
 
               {status === 'checking' && (
                 <div className="mt-7 space-y-2.5">
-                  <div className="h-2 rounded-full overflow-hidden bg-[#edf3f1]">
+                  <div className="h-2 rounded-full overflow-hidden bg-[#efedf3]">
                     <div
                       className="h-full w-2/3 rounded-full animate-pulse"
-                      style={{ background: `linear-gradient(90deg,${TEAL},#55c9b7)` }}
+                      style={{ background: `linear-gradient(90deg,${TEAL},#9b75d6)` }}
                     />
                   </div>
                   <p className="text-[10px] font-bold text-[#9aa9a5]">تکایە پەڕەکە مەداخە</p>
@@ -216,7 +216,7 @@ export const VerifyEmailPage = ({ onDone }) => {
                   className="mt-8 w-full min-h-14 rounded-2xl text-white font-black text-sm flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[.98] focus:outline-none focus:ring-4"
                   style={{
                     background: `linear-gradient(135deg,${TEAL},${TEAL_DEEP})`,
-                    boxShadow: '0 12px 28px rgba(18,121,107,.22)',
+                    boxShadow: '0 12px 28px rgba(100,27,217,.22)',
                   }}
                 >
                   <MailCheck className="w-5 h-5" />
@@ -232,8 +232,8 @@ export const VerifyEmailPage = ({ onDone }) => {
                     className="min-h-13 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[.98]"
                     style={{
                       color: TEAL,
-                      background: 'rgba(18,121,107,.07)',
-                      border: '1px solid rgba(18,121,107,.14)',
+                      background: 'rgba(100,27,217,.07)',
+                      border: '1px solid rgba(100,27,217,.14)',
                     }}
                   >
                     <RefreshCw className="w-4 h-4" />
@@ -245,7 +245,7 @@ export const VerifyEmailPage = ({ onDone }) => {
                     className="min-h-13 rounded-2xl text-white font-black text-sm flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[.98]"
                     style={{
                       background: `linear-gradient(135deg,${TEAL},${TEAL_DEEP})`,
-                      boxShadow: '0 10px 24px rgba(18,121,107,.18)',
+                      boxShadow: '0 10px 24px rgba(100,27,217,.18)',
                     }}
                   >
                     <ArrowLeft className="w-4 h-4" />
@@ -255,7 +255,7 @@ export const VerifyEmailPage = ({ onDone }) => {
               )}
             </div>
 
-            <div className="border-t bg-[#fbfdfc] px-5 py-4 sm:px-8">
+            <div className="border-t bg-[#fcfbfd] px-5 py-4 sm:px-8">
               <p className="text-center text-[10px] sm:text-[11px] font-bold leading-5 text-[#9aa9a5]">
                 ئەگەر بەستەرەکە بەسەرچووە، داواکارییەکی نوێی دڵنیابوونەوە دروست بکە.
               </p>

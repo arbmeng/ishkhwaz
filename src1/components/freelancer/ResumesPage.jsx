@@ -8,9 +8,9 @@ import { exportNodeToPdf, safeFilename } from '../../services/karnamaPdf';
 import { getTemplate } from '../../cvTemplates/registry';
 import { ArrowLeft, Plus, Download, Trash2, FileText, Loader2, Send, Palette, Globe } from 'lucide-react';
 
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
-const TEAL_SOFT = '#e7f4f1';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
+const TEAL_SOFT = '#ece7f4';
 const A4_W = 794;
 
 // Offscreen full-size render of one saved resume, used purely to screenshot
@@ -107,7 +107,7 @@ export const ResumesPage = ({ onBack, onCreateNew, onEditStyle }) => {
   const downloadingResume = resumes.find(r => r.id === downloadingId);
 
   return (
-    <div dir="rtl" className="min-h-screen font-vazirmatn" style={{ background: '#f4f7f6', paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
+    <div dir="rtl" className="min-h-screen font-vazirmatn" style={{ background: '#f5f4f7', paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
       <PageHeader title={`سیڤیەکانم · ${resumes.length} / ${maxCvs > 0 ? maxCvs : '∞'}`} onBack={() => { soundService.playTick?.(); onBack?.(); }} />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 space-y-4">
@@ -142,7 +142,7 @@ export const ResumesPage = ({ onBack, onCreateNew, onEditStyle }) => {
               const template = getTemplate(r.template_id);
               const isPublic = publicResumeId === r.id;
               return (
-                <div key={r.id} className={`bg-white rounded-3xl border p-4 space-y-3 ${isPublic ? 'border-[#12796b]' : 'border-stone-200'}`}>
+                <div key={r.id} className={`bg-white rounded-3xl border p-4 space-y-3 ${isPublic ? 'border-[#641bd9]' : 'border-stone-200'}`}>
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: TEAL_SOFT }}>
                     <FileText className="w-5 h-5" style={{ color: TEAL_DEEP }} />

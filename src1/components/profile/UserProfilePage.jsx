@@ -27,17 +27,17 @@ const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
 // heavy corner-rounding and animated shimmer/pulse effects read as too
 // playful for a page employers also use professionally. Kept teal as the
 // single accent color, dropped the candy-mint backgrounds for neutral gray.
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
-const TEAL_SOFT = '#e7f4f1';
-const TEAL2 = '#245e56';
-const MINT = '#eef1f0';
-const MINT2 = '#f4f5f4';
-const BORDER = '#dde3e0';
-const TXT = '#161f1c';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
+const TEAL_SOFT = '#ece7f4';
+const TEAL2 = '#663da8';
+const MINT = '#efeef1';
+const MINT2 = '#f4f4f5';
+const BORDER = '#dfdde3';
+const TXT = '#19161f';
 const SUB = '#425049';
 const MUTED = '#6b7975';
-const CARD = '#f6f7f6';
+const CARD = '#f6f6f7';
 
 // Components defined *inside* UserProfilePage used to be a brand-new component type on every
 // render, so React unmounted and remounted the whole profile (avatar flicker, reset scroll,
@@ -57,11 +57,11 @@ const Field = ({ label, children }) => (
 );
 
 const SectionCard = ({ title, icon: SIcon, children, className = '' }) => (
-  <div className={`rounded-2xl border p-5 space-y-4 ${className}`} style={{ background: '#fafbfb', borderColor: '#f0f2f3' }}>
+  <div className={`rounded-2xl border p-5 space-y-4 ${className}`} style={{ background: '#fafafb', borderColor: '#f0f2f3' }}>
     {title && (
-      <div className="flex items-center gap-2 pb-3 border-b" style={{ borderColor: '#f4f7f6' }}>
+      <div className="flex items-center gap-2 pb-3 border-b" style={{ borderColor: '#f5f4f7' }}>
         {SIcon && (
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#eef7f5', color: TEAL }}>
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: '#f1eef7', color: TEAL }}>
             <SIcon className="w-3.5 h-3.5" />
           </div>
         )}
@@ -107,7 +107,7 @@ const CompletionRing = ({ pct, size = 108, strokeW = 4 }) => {
   useEffect(() => { const t = setTimeout(() => setOffset(c - (pct / 100) * c), 150); return () => clearTimeout(t); }, [pct, c]);
   return (
     <svg width={size} height={size} className="absolute inset-0" style={{ transform: 'rotate(-90deg)' }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e4eae7" strokeWidth={strokeW} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e6e4ea" strokeWidth={strokeW} />
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={TEAL} strokeWidth={strokeW} strokeLinecap="round"
         strokeDasharray={c} strokeDashoffset={offset} style={{ transition: 'stroke-dashoffset 1s cubic-bezier(.22,1,.36,1)' }} />
     </svg>
@@ -481,15 +481,15 @@ export const UserProfilePage = ({ onNavigate }) => {
     const completionLabel = completion >= 90 ? 'پڕۆفایلی تەواو' : completion >= 70 ? 'نزیکەی تەواو' : 'پێویستی بە نوێکردنەوە هەیە';
     return (
       <section className="profile-commandbar mb-5" dir="rtl" style={{ fontFamily: NK }}>
-        <div className="relative overflow-hidden rounded-[26px] border border-[#dce8e4] bg-white shadow-[0_14px_45px_rgba(17,61,54,.08)]">
+        <div className="relative overflow-hidden rounded-[26px] border border-[#e1dce8] bg-white shadow-[0_14px_45px_rgba(34,16,62,.08)]">
           <div className="absolute inset-0 pointer-events-none opacity-60"
-            style={{ background: 'radial-gradient(circle at 8% 15%, rgba(15,107,95,.13), transparent 30%), radial-gradient(circle at 90% 90%, rgba(36,94,86,.09), transparent 34%)' }} />
+            style={{ background: 'radial-gradient(circle at 8% 15%, rgba(88,22,192,.13), transparent 30%), radial-gradient(circle at 90% 90%, rgba(102,61,168,.09), transparent 34%)' }} />
           <div className="relative p-4 sm:p-5 lg:p-6">
             <div className="flex flex-col lg:flex-row lg:items-center gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black"
-                    style={{ background: '#eaf5f2', color: TEAL_DEEP }}>
+                    style={{ background: '#eeeaf5', color: TEAL_DEEP }}>
                     <Activity className="w-3 h-3" /> پڕۆفایلی پیشەیی
                   </span>
                   {isVIP && (
@@ -510,7 +510,7 @@ export const UserProfilePage = ({ onNavigate }) => {
               </div>
 
               <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full lg:w-auto lg:min-w-[390px]">
-                <div className="rounded-2xl border p-3 bg-[#fbfdfc]" style={{ borderColor: '#e5eeeb' }}>
+                <div className="rounded-2xl border p-3 bg-[#fcfbfd]" style={{ borderColor: '#e8e5ee' }}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] font-black" style={{ color: MUTED }}>تەواوی</span>
                     <Target className="w-3.5 h-3.5" style={{ color: TEAL }} />
@@ -518,7 +518,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                   <div className="text-lg sm:text-xl font-black font-mono mt-1" style={{ color: TXT }}>{completion}%</div>
                   <div className="text-[9px] font-bold mt-0.5 truncate" style={{ color: TEAL }}>{completionLabel}</div>
                 </div>
-                <div className="rounded-2xl border p-3 bg-[#fbfdfc]" style={{ borderColor: '#e5eeeb' }}>
+                <div className="rounded-2xl border p-3 bg-[#fcfbfd]" style={{ borderColor: '#e8e5ee' }}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] font-black" style={{ color: MUTED }}>بینین</span>
                     <Eye className="w-3.5 h-3.5" style={{ color: TEAL }} />
@@ -526,7 +526,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                   <div className="text-lg sm:text-xl font-black font-mono mt-1" style={{ color: TXT }}>{profileViews}</div>
                   <div className="text-[9px] font-bold mt-0.5 truncate" style={{ color: MUTED }}>بینینی پڕۆفایل</div>
                 </div>
-                <div className="rounded-2xl border p-3 bg-[#fbfdfc]" style={{ borderColor: '#e5eeeb' }}>
+                <div className="rounded-2xl border p-3 bg-[#fcfbfd]" style={{ borderColor: '#e8e5ee' }}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[10px] font-black" style={{ color: MUTED }}>{isEmployer ? 'هەلی کار' : 'داواکاری'}</span>
                     <Briefcase className="w-3.5 h-3.5" style={{ color: TEAL }} />
@@ -539,15 +539,15 @@ export const UserProfilePage = ({ onNavigate }) => {
 
             <div className="mt-4 flex flex-col sm:flex-row gap-2.5">
               <button onClick={() => { soundService.playTick?.(); setShowEdit(true); }}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-white text-xs font-black shadow-[0_8px_20px_rgba(15,107,95,.18)] hover:-translate-y-0.5 transition"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-white text-xs font-black shadow-[0_8px_20px_rgba(88,22,192,.18)] hover:-translate-y-0.5 transition"
                 style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}>
                 <UserRoundCheck className="w-4 h-4" />
                 {isEmployer ? 'نوێکردنەوەی پڕۆفایل' : 'بەهێزکردنی پڕۆفایل'}
               </button>
               {!isEmployer && (
                 <button onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }}
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border text-xs font-black hover:bg-[#f4faf8] transition"
-                  style={{ borderColor: '#dbe7e3', color: TEAL_DEEP, background: '#fff' }}>
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl border text-xs font-black hover:bg-[#f6f4fa] transition"
+                  style={{ borderColor: '#e0dbe7', color: TEAL_DEEP, background: '#fff' }}>
                   <FileText className="w-4 h-4" /> بەڕێوەبردنی CV
                 </button>
               )}
@@ -767,7 +767,7 @@ export const UserProfilePage = ({ onNavigate }) => {
     // Shared field styling — one place so every tab's inputs stay consistent.
     const fieldCls = 'w-full bg-[#f6f7f8] border border-transparent rounded-2xl px-4 py-3.5 text-[13px] font-medium outline-none transition';
     const fieldStyle = { color: TXT };
-    const fieldFocus = 'focus:bg-white focus:border-[#12796b]/40 focus:shadow-[0_0_0_4px_rgba(18,121,107,.08)]';
+    const fieldFocus = 'focus:bg-white focus:border-[#641bd9]/40 focus:shadow-[0_0_0_4px_rgba(100,27,217,.08)]';
     const sectionContent = (
       <>
 
@@ -870,7 +870,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                     </Field>
                   </div>
 
-                  <div className="p-4 rounded-xl flex items-center gap-2.5 text-xs font-bold" style={{ background: '#eef1f0', border: '1px solid #dde3e0', color: TEAL_DEEP }}>
+                  <div className="p-4 rounded-xl flex items-center gap-2.5 text-xs font-bold" style={{ background: '#efeef1', border: '1px solid #dfdde3', color: TEAL_DEEP }}>
                     <MapPin className="w-4 h-4 shrink-0" />
                     شوێنی دیاریکراو: {location}
                   </div>
@@ -898,7 +898,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                   <SectionCard title={`شارەزاییە هەڵبژێردراوەکان (${skills.length})`} icon={Layers}>
                     <div className="flex flex-wrap gap-2 min-h-[46px]">
                       {skills.map(s => (
-                        <span key={s} className="px-3 py-1.5 rounded-xl bg-white border text-xs font-bold flex items-center gap-1.5 shadow-2xs" style={{ borderColor: '#dce5e1', color: TXT }}>
+                        <span key={s} className="px-3 py-1.5 rounded-xl bg-white border text-xs font-bold flex items-center gap-1.5 shadow-2xs" style={{ borderColor: '#dfdce5', color: TXT }}>
                           {s}
                           <button type="button" onClick={() => removeSkill(s)} className="text-stone-400 hover:text-rose-500"><X className="w-3.5 h-3.5" /></button>
                         </span>
@@ -911,8 +911,8 @@ export const UserProfilePage = ({ onNavigate }) => {
                     <div className="flex flex-wrap gap-1.5">
                       {SUGGESTED_SKILLS.filter(s => !skills.includes(s)).map(s => (
                         <button key={s} type="button" onClick={() => addSkill(s)}
-                          className="px-3 py-1 rounded-xl bg-white border text-[11px] font-bold hover:border-[#12796b] hover:text-[#12796b] transition"
-                          style={{ borderColor: '#e4eae7', color: SUB }}>
+                          className="px-3 py-1 rounded-xl bg-white border text-[11px] font-bold hover:border-[#641bd9] hover:text-[#641bd9] transition"
+                          style={{ borderColor: '#e6e4ea', color: SUB }}>
                           + {s}
                         </button>
                       ))}
@@ -940,7 +940,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                     {experiences.length === 0 ? (
                       <p className="text-xs font-bold" style={{ color: MUTED }}>هیچ ئەزموونێک زیاد نەکراوە.</p>
                     ) : experiences.map((exp, idx) => (
-                      <div key={exp.id || idx} className="p-3.5 rounded-xl bg-white border flex items-start justify-between gap-3 shadow-2xs" style={{ borderColor: '#e4eae7' }}>
+                      <div key={exp.id || idx} className="p-3.5 rounded-xl bg-white border flex items-start justify-between gap-3 shadow-2xs" style={{ borderColor: '#e6e4ea' }}>
                         <button type="button" onClick={() => removeExperience(idx)} className="text-stone-400 hover:text-rose-500 transition p-1"><Trash2 className="w-4 h-4" /></button>
                         <div className="text-right flex-1 min-w-0">
                           <div className="text-xs font-black" style={{ color: TXT }}>{exp.title}</div>
@@ -958,17 +958,17 @@ export const UserProfilePage = ({ onNavigate }) => {
                 <div className="space-y-4 animate-fadeIn">
                   <SectionCard title="لۆگۆی کۆمپانیا" icon={Camera}>
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-2xl bg-white border flex items-center justify-center overflow-hidden shrink-0 shadow-xs" style={{ borderColor: '#e4eae7' }}>
+                      <div className="w-16 h-16 rounded-2xl bg-white border flex items-center justify-center overflow-hidden shrink-0 shadow-xs" style={{ borderColor: '#e6e4ea' }}>
                         {displayAvatar ? <img src={displayAvatar} alt="" className="w-full h-full object-cover" /> : <span className="text-xl font-black" style={{ color: TEAL }}>{initial}</span>}
                       </div>
-                      <button type="button" onClick={() => avatarRef.current?.click()} className="px-4 py-2.5 rounded-xl bg-white border text-xs font-bold hover:bg-stone-50 transition" style={{ borderColor: '#dce5e1', color: SUB }}>
+                      <button type="button" onClick={() => avatarRef.current?.click()} className="px-4 py-2.5 rounded-xl bg-white border text-xs font-bold hover:bg-stone-50 transition" style={{ borderColor: '#dfdce5', color: SUB }}>
                         گۆڕینی لۆگۆ
                       </button>
                     </div>
                   </SectionCard>
 
                   <SectionCard title="وێنەی کەڤەری کۆمپانیا" icon={Camera}>
-                    <div className="h-28 w-full rounded-xl overflow-hidden relative" style={{ background: cover ? `url(${cover}) center/cover` : `linear-gradient(135deg, ${TEAL}, #2db89f)` }}>
+                    <div className="h-28 w-full rounded-xl overflow-hidden relative" style={{ background: cover ? `url(${cover}) center/cover` : `linear-gradient(135deg, ${TEAL}, #ab88e5)` }}>
                       <button type="button" onClick={() => coverRef.current?.click()} className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-white/90 text-xs font-bold shadow-md hover:bg-white transition flex items-center gap-1.5" style={{ color: TXT }}>
                         <Camera className="w-3.5 h-3.5" /> گۆڕینی کەڤەر
                       </button>
@@ -982,17 +982,17 @@ export const UserProfilePage = ({ onNavigate }) => {
                 <div className="space-y-4 animate-fadeIn">
                   <SectionCard title="وێنەی پرۆفایل" icon={Camera}>
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-full bg-white border flex items-center justify-center overflow-hidden shrink-0 shadow-xs" style={{ borderColor: '#e4eae7' }}>
+                      <div className="w-16 h-16 rounded-full bg-white border flex items-center justify-center overflow-hidden shrink-0 shadow-xs" style={{ borderColor: '#e6e4ea' }}>
                         {displayAvatar ? <img src={displayAvatar} alt="" className="w-full h-full object-cover" /> : <span className="text-xl font-black" style={{ color: TEAL }}>{initial}</span>}
                       </div>
-                      <button type="button" onClick={() => avatarRef.current?.click()} className="px-4 py-2.5 rounded-xl bg-white border text-xs font-bold hover:bg-stone-50 transition" style={{ borderColor: '#dce5e1', color: SUB }}>
+                      <button type="button" onClick={() => avatarRef.current?.click()} className="px-4 py-2.5 rounded-xl bg-white border text-xs font-bold hover:bg-stone-50 transition" style={{ borderColor: '#dfdce5', color: SUB }}>
                         گۆڕینی وێنە
                       </button>
                     </div>
                   </SectionCard>
 
                   <SectionCard title="وێنەی کەڤەر" icon={Camera}>
-                    <div className="h-28 w-full rounded-xl overflow-hidden relative" style={{ background: cover ? `url(${cover}) center/cover` : `linear-gradient(135deg, ${TEAL}, #2db89f)` }}>
+                    <div className="h-28 w-full rounded-xl overflow-hidden relative" style={{ background: cover ? `url(${cover}) center/cover` : `linear-gradient(135deg, ${TEAL}, #ab88e5)` }}>
                       <button type="button" onClick={() => coverRef.current?.click()} className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-white/90 text-xs font-bold shadow-md hover:bg-white transition flex items-center gap-1.5" style={{ color: TXT }}>
                         <Camera className="w-3.5 h-3.5" /> گۆڕینی کەڤەر
                       </button>
@@ -1004,12 +1004,12 @@ export const UserProfilePage = ({ onNavigate }) => {
               {/* ── TAB: CV (FREELANCER) ── */}
               {activeSection === 'cv' && (
                 <div className="animate-fadeIn">
-                  <SectionCard className="!bg-[#eef1f0]" title={null}>
+                  <SectionCard className="!bg-[#efeef1]" title={null}>
                     <div className="flex items-center gap-2 font-black text-sm" style={{ color: TEAL_DEEP }}>
                       <FileCheck className="w-5 h-5" />
                       <span>کارنامەی کەسی و فەرمی (CV)</span>
                     </div>
-                    <p className="text-xs leading-relaxed" style={{ color: '#3a7c73' }}>
+                    <p className="text-xs leading-relaxed" style={{ color: '#987cc4' }}>
                       دەتوانیت کارنامەی خۆت بە شێوازی ئەدیتۆریال و پرۆفیشناڵ لە بەشی تایبەتی کارنامەکان دروست بکەیت یان فایلی تایبەت باربکەیت.
                     </p>
                     <button type="button" onClick={() => { setShowEdit(false); onNavigate?.('resumes'); }} className="px-5 py-2.5 rounded-xl text-white text-xs font-black transition" style={{ background: TEAL }}>
@@ -1048,7 +1048,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {languages.map(l => (
-                        <span key={l} className="flex items-center gap-1.5 rounded-full border bg-white px-3 py-1.5 text-xs font-bold" style={{ borderColor: '#dce5e1' }}>{l}
+                        <span key={l} className="flex items-center gap-1.5 rounded-full border bg-white px-3 py-1.5 text-xs font-bold" style={{ borderColor: '#dfdce5' }}>{l}
                           <button type="button" onClick={() => setLanguages(p => p.filter(x => x !== l))} className="text-stone-400 hover:text-rose-500"><X className="h-3.5 w-3.5" /></button></span>
                       ))}
                       {languages.length === 0 && <span className="text-xs font-bold" style={{ color: MUTED }}>هیچ زمانێک زیاد نەکراوە.</span>}
@@ -1064,7 +1064,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                     <button type="button" onClick={() => { if (!eduTitle.trim()) return; setEducation(p => [...p, { title: eduTitle.trim(), place: eduPlace.trim(), period: eduPeriod.trim() }]); setEduTitle(''); setEduPlace(''); setEduPeriod(''); }}
                       className="flex w-full items-center justify-center gap-1.5 rounded-full py-3 text-xs font-bold text-white" style={{ background: TEAL }}><Plus className="h-4 w-4" />زیادکردنی بڕوانامە</button>
                     {education.map((e, i) => (
-                      <div key={i} className="flex items-start justify-between gap-3 rounded-2xl border bg-white p-3.5" style={{ borderColor: '#e4eae7' }}>
+                      <div key={i} className="flex items-start justify-between gap-3 rounded-2xl border bg-white p-3.5" style={{ borderColor: '#e6e4ea' }}>
                         <button type="button" onClick={() => setEducation(p => p.filter((_, x) => x !== i))} className="p-1 text-stone-400 hover:text-rose-500"><Trash2 className="h-4 w-4" /></button>
                         <div className="min-w-0 flex-1 text-right"><div className="text-xs font-bold" style={{ color: TXT }}>{e.title}</div><div className="mt-0.5 text-[11px]" style={{ color: MUTED }}>{[e.place, e.period].filter(Boolean).join(' · ')}</div></div>
                       </div>
@@ -1130,7 +1130,7 @@ export const UserProfilePage = ({ onNavigate }) => {
 
           {!cur ? (
             <div className="space-y-4 px-1">
-              <div className="flex items-center gap-4 rounded-[24px] border bg-white p-4" style={{ borderColor: '#e5ece9' }}>
+              <div className="flex items-center gap-4 rounded-[24px] border bg-white p-4" style={{ borderColor: '#e8e5ec' }}>
                 <div className="relative h-[72px] w-[72px] shrink-0">
                   <CompletionRing pct={completion} size={72} strokeW={3} />
                   <button type="button" onClick={() => avatarRef.current?.click()} className={`absolute inset-2 flex items-center justify-center overflow-hidden ${isEmployer ? 'rounded-xl' : 'rounded-full'} border-2 border-white text-lg font-black text-white`} style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }} aria-label="گۆڕینی وێنە">
@@ -1140,7 +1140,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-base font-bold" style={{ color: TXT }}>{displayName}</div>
                   <div className="mt-0.5 truncate text-xs font-medium" style={{ color: MUTED }}>{displayTitle}</div>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#e8eeec]"><div className="h-full rounded-full" style={{ width: `${completion}%`, background: `linear-gradient(90deg, ${TEAL}, #43bea4)` }} /></div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#eae8ee]"><div className="h-full rounded-full" style={{ width: `${completion}%`, background: `linear-gradient(90deg, ${TEAL}, #aa8dda)` }} /></div>
                 </div>
               </div>
 
@@ -1149,7 +1149,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                   const TIcon = t.icon;
                   return (
                     <button key={t.id} type="button" onClick={() => { soundService.playTick?.(); setActiveSection(t.id); }}
-                      className="flex w-full items-center gap-3 rounded-[20px] border bg-white px-4 py-3.5 text-right transition active:scale-[.99]" style={{ borderColor: '#e5ece9' }}>
+                      className="flex w-full items-center gap-3 rounded-[20px] border bg-white px-4 py-3.5 text-right transition active:scale-[.99]" style={{ borderColor: '#e8e5ec' }}>
                       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl" style={{ background: TEAL_SOFT, color: TEAL }}><TIcon className="h-5 w-5" /></span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-[14px] font-bold" style={{ color: TXT }}>{t.label}</span>
@@ -1172,7 +1172,7 @@ export const UserProfilePage = ({ onNavigate }) => {
 
     return (
       <div className="ap-page" dir="rtl" style={{ fontFamily: NK }}>
-        <div className="ap-edit w-full bg-white rounded-[28px] border border-[#e5ece9] [overflow:clip]">
+        <div className="ap-edit w-full bg-white rounded-[28px] border border-[#e8e5ec] [overflow:clip]">
           {/* Header — soft wash, round back button, big title (same look as the profile page) */}
           <div className="ap-modal-head shrink-0">
             <button onClick={() => setShowEdit(false)} className="ap-circle" aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
@@ -1184,8 +1184,8 @@ export const UserProfilePage = ({ onNavigate }) => {
           >
 
             {/* ──── RIGHT COLUMN: identity card + tab nav ──── */}
-            <div className="lg:col-span-4 p-5 lg:border-l border-[#eef3f1] space-y-4 bg-[#fbfdfc] order-1 lg:order-2">
-              <div className="bg-white rounded-xl p-5 border shadow-sm text-center" style={{ borderColor: '#e4eae7' }}>
+            <div className="lg:col-span-4 p-5 lg:border-l border-[#f0eef3] space-y-4 bg-[#fcfbfd] order-1 lg:order-2">
+              <div className="bg-white rounded-xl p-5 border shadow-sm text-center" style={{ borderColor: '#e6e4ea' }}>
                 <div className="relative w-20 h-20 mx-auto mb-3">
                   <CompletionRing pct={completion} size={80} strokeW={3} />
                   <div
@@ -1207,12 +1207,12 @@ export const UserProfilePage = ({ onNavigate }) => {
                 <h4 className="text-base font-black truncate" style={{ color: TXT }}>{displayName}</h4>
                 <p className="text-xs font-bold mt-0.5 truncate" style={{ color: SUB }}>{displayTitle}</p>
 
-                <div className="mt-3 pt-3 border-t" style={{ borderColor: '#f0f4f2' }}>
+                <div className="mt-3 pt-3 border-t" style={{ borderColor: '#f2f0f4' }}>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[11px] font-bold" style={{ color: MUTED }}>تەواوی پڕۆفایل</span>
                     <span className="text-xs font-black font-mono" style={{ color: TEAL }}>{completion}%</span>
                   </div>
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#eef3f1' }}>
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#f0eef3' }}>
                     <div className="h-full rounded-full transition-all" style={{ width: `${completion}%`, background: `linear-gradient(90deg, ${TEAL}, ${TEAL_DEEP})` }} />
                   </div>
                 </div>
@@ -1231,13 +1231,13 @@ export const UserProfilePage = ({ onNavigate }) => {
                       onClick={() => setActiveSection(tab.id)}
                       className="w-full flex items-center gap-3 py-2.5 px-3 rounded-xl transition-all relative overflow-hidden"
                       style={isActive
-                        ? { background: '#eef7f5', color: TEAL_DEEP, fontWeight: 900 }
+                        ? { background: '#f1eef7', color: TEAL_DEEP, fontWeight: 900 }
                         : { color: SUB }}
                     >
                       {isActive && <span className="absolute right-0 top-1.5 bottom-1.5 w-[3px] rounded-full" style={{ background: TEAL }} />}
                       <div
                         className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
-                        style={isActive ? { background: TEAL, color: '#fff' } : { background: '#f0f4f2', color: SUB }}
+                        style={isActive ? { background: TEAL, color: '#fff' } : { background: '#f2f0f4', color: SUB }}
                       >
                         <Icon className="w-3.5 h-3.5" />
                       </div>
@@ -1265,7 +1265,7 @@ export const UserProfilePage = ({ onNavigate }) => {
   /* ── Saved jobs modal ── */
   const SavedModalImpl = () => (
     <div className="ap-page" dir="rtl" style={{ fontFamily: NK }}>
-      <div className="ap-sub w-full max-w-2xl mx-auto bg-white rounded-[28px] border border-[#e5ece9] flex flex-col [overflow:clip]">
+      <div className="ap-sub w-full max-w-2xl mx-auto bg-white rounded-[28px] border border-[#e8e5ec] flex flex-col [overflow:clip]">
         <div className="ap-modal-head">
           <button onClick={() => setShowSaved(false)} className="ap-circle" aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
           <h3>
@@ -1275,7 +1275,7 @@ export const UserProfilePage = ({ onNavigate }) => {
         <div className="p-5 overflow-y-auto space-y-2.5 flex-1 text-right">
           {savedList.length === 0 ? (
             <div className="text-center py-12 space-y-3">
-              <div className="w-14 h-14 rounded-full bg-[#f0f4f2] mx-auto flex items-center justify-center"><Heart className="w-6 h-6 text-[#8a9b95]" /></div>
+              <div className="w-14 h-14 rounded-full bg-[#f2f0f4] mx-auto flex items-center justify-center"><Heart className="w-6 h-6 text-[#8a9b95]" /></div>
               <p className="text-xs font-bold" style={{ color: '#6b7975' }}>هیچ کارێکت پاشەکەوت نەکردووە.</p>
               <button onClick={() => { setShowSaved(false); onNavigate?.('search'); }}
                 className="px-4 py-2 rounded-xl text-white text-xs font-bold transition" style={{ background: TEAL }}>
@@ -1284,17 +1284,17 @@ export const UserProfilePage = ({ onNavigate }) => {
             </div>
           ) : savedList.map(job => (
             <div key={job.id} className="p-3.5 rounded-2xl border flex items-center justify-between gap-3 hover:bg-white hover:shadow-sm transition"
-              style={{ background: CARD, borderColor: '#e4eae7' }}>
+              style={{ background: CARD, borderColor: '#e6e4ea' }}>
               <button onClick={() => { soundService.playTick?.(); toggleSaveJob(job.id); }} className="p-2 rounded-xl text-rose-500 hover:bg-rose-50 transition shrink-0"><Trash2 className="w-4 h-4" /></button>
               <div className="flex-1 min-w-0 text-right cursor-pointer" onClick={() => { setShowSaved(false); onNavigate?.('home'); }}>
-                <div className="text-xs font-black truncate" style={{ color: '#1a2321' }}>{job.title_ku || job.title}</div>
+                <div className="text-xs font-black truncate" style={{ color: '#1d1a23' }}>{job.title_ku || job.title}</div>
                 <div className="text-[11px] truncate mt-0.5" style={{ color: '#6b7975' }}>{job.company_name} · {job.governorate || 'سلێمانی'}</div>
               </div>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#eef1f0' }}><Briefcase className="w-4 h-4" style={{ color: TEAL }} /></div>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#efeef1' }}><Briefcase className="w-4 h-4" style={{ color: TEAL }} /></div>
             </div>
           ))}
         </div>
-        <div className="p-4 border-t border-[#f0f4f2] bg-[#fbfdfc]">
+        <div className="p-4 border-t border-[#f2f0f4] bg-[#fcfbfd]">
           <button onClick={() => setShowSaved(false)} className="ap-save w-full">داخستن</button>
         </div>
       </div>
@@ -1304,25 +1304,25 @@ export const UserProfilePage = ({ onNavigate }) => {
   /* ── Viewers modal ── */
   const ViewersModalImpl = () => (
     <div className="ap-page" dir="rtl" style={{ fontFamily: NK }}>
-      <div className="ap-sub w-full max-w-2xl mx-auto bg-white rounded-[28px] border border-[#e5ece9] flex flex-col [overflow:clip]">
+      <div className="ap-sub w-full max-w-2xl mx-auto bg-white rounded-[28px] border border-[#e8e5ec] flex flex-col [overflow:clip]">
         <div className="ap-modal-head">
           <button onClick={() => setShowViewers(false)} className="ap-circle" aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
           <h3>بینەرانی پڕۆفایل</h3>
         </div>
         <div className="p-5 overflow-y-auto space-y-3 flex-1 text-right">
-          <div className="p-3.5 rounded-2xl text-xs font-bold text-center" style={{ background: '#eef1f0', border: '1px solid #dde3e0', color: '#1e584f' }}>
+          <div className="p-3.5 rounded-2xl text-xs font-bold text-center" style={{ background: '#efeef1', border: '1px solid #dfdde3', color: '#5b329d' }}>
             پڕۆفایلەکەت بە گشتی <strong>{profileViews}</strong> جار بینراوە.
           </div>
           {viewersState.viewers?.length > 0
             ? viewersState.viewers.map((v, i) => (
-              <div key={i} className="p-3 rounded-xl border flex items-center justify-between text-xs" style={{ background: CARD, borderColor: '#e4eae7' }}>
-                <span className="font-bold" style={{ color: '#1a2321' }}>{v.viewer_company_name || v.viewer_name || 'کۆمپانیایەک'}</span>
+              <div key={i} className="p-3 rounded-xl border flex items-center justify-between text-xs" style={{ background: CARD, borderColor: '#e6e4ea' }}>
+                <span className="font-bold" style={{ color: '#1d1a23' }}>{v.viewer_company_name || v.viewer_name || 'کۆمپانیایەک'}</span>
                 <span dir="ltr" className="font-mono" style={{ fontSize: '10px', color: '#6b7975' }}>{new Date(v.viewed_at).toLocaleDateString('en-GB')}</span>
               </div>
             ))
             : <div className="text-center py-8 text-xs font-bold" style={{ color: '#6b7975' }}>بینەرە نوێیەکان لێرەدا دەردەکەون.</div>}
         </div>
-        <div className="p-4 border-t border-[#f0f4f2] bg-[#fbfdfc]">
+        <div className="p-4 border-t border-[#f2f0f4] bg-[#fcfbfd]">
           <button onClick={() => setShowViewers(false)} className="ap-save w-full">داخستن</button>
         </div>
       </div>
@@ -1331,18 +1331,18 @@ export const UserProfilePage = ({ onNavigate }) => {
 
   /* ── Logout modal ── */
   const LogoutModalImpl = () => createPortal(
-    <div className="fixed inset-0 z-[9000] bg-[#07110f]/60 backdrop-blur-md flex items-center justify-center p-4"
+    <div className="fixed inset-0 z-[9000] bg-[#0b0711]/60 backdrop-blur-md flex items-center justify-center p-4"
       style={{ animation: 'profileFadeUp 0.2s ease both' }}>
-      <div className="w-full max-w-sm bg-white rounded-3xl p-6 text-center shadow-2xl border border-[#e4eae7] space-y-4"
+      <div className="w-full max-w-sm bg-white rounded-3xl p-6 text-center shadow-2xl border border-[#e6e4ea] space-y-4"
         onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
         <div className="w-14 h-14 rounded-full bg-rose-100 text-rose-500 mx-auto flex items-center justify-center"><LogOut className="w-6 h-6" /></div>
         <div>
-          <h3 className="text-lg font-black" style={{ color: '#1a2321' }}>چوونەدەرەوە لە ئەژمێر؟</h3>
+          <h3 className="text-lg font-black" style={{ color: '#1d1a23' }}>چوونەدەرەوە لە ئەژمێر؟</h3>
           <p className="text-xs font-medium mt-1" style={{ color: '#6b7975' }}>ئایا دڵنیایت لە چوونەدەرەوە لە ئەژمێری ئیش خوازەکەت؟</p>
         </div>
         <div className="flex items-center gap-2 pt-2">
           <button onClick={() => setShowLogout(false)}
-            className="flex-1 py-3 px-4 rounded-xl text-xs font-bold transition" style={{ background: '#f0f4f2', color: '#4a5854' }}>
+            className="flex-1 py-3 px-4 rounded-xl text-xs font-bold transition" style={{ background: '#f2f0f4', color: '#4a5854' }}>
             پاشگەزبوونەوە
           </button>
           <button onClick={() => { soundService.playTick?.(); setShowLogout(false); logout?.(); }}
@@ -1366,18 +1366,18 @@ export const UserProfilePage = ({ onNavigate }) => {
      ROOT RENDER
   ══════════════════════════════════════════════════════════════════ */
   return (
-    <div className="profile-page-shell w-full min-h-screen pb-24 pt-3 sm:pt-5 px-3 sm:px-5 lg:px-8" style={{ background: 'linear-gradient(180deg,#f8fbfa 0%,#eef4f1 42%,#f2f6f4 100%)' }}>
+    <div className="profile-page-shell w-full min-h-screen pb-24 pt-3 sm:pt-5 px-3 sm:px-5 lg:px-8" style={{ background: 'linear-gradient(180deg,#f9f8fb 0%,#f0eef4 42%,#f4f2f6 100%)' }}>
       <div className="profile-ambient profile-ambient-a" aria-hidden="true" />
       <div className="profile-ambient profile-ambient-b" aria-hidden="true" />
       <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
       <input ref={coverRef} type="file" accept="image/*" onChange={handleCoverChange} className="hidden" />
 
       <style>{`
-        .profile-page-shell{position:relative;isolation:isolate;overflow:hidden;background:#f4f7f6!important}
+        .profile-page-shell{position:relative;isolation:isolate;overflow:hidden;background:#f5f4f7!important}
         .profile-page-shell:before{content:"";position:absolute;inset:0 0 auto 0;height:420px;z-index:0;pointer-events:none;
-          background:radial-gradient(60% 90% at 92% 0%,rgba(18,121,107,.13),transparent 66%),radial-gradient(50% 70% at 4% 10%,rgba(18,121,107,.06),transparent 68%)}
+          background:radial-gradient(60% 90% at 92% 0%,rgba(100,27,217,.13),transparent 66%),radial-gradient(50% 70% at 4% 10%,rgba(100,27,217,.06),transparent 68%)}
         .profile-page-shell .profile-ambient{display:none}
-        :root{--ink:#111d1a;--sub:#4a5b55;--muted:#7b8e88;--soft:#fff;--line:#e5ece9;--teal:#12796b;--teal-deep:#0d5c50;--mint:#e7f4f1;--danger:#dc2626}
+        :root{--ink:#16111d;--sub:#4a5b55;--muted:#7b8e88;--soft:#fff;--line:#e8e5ec;--teal:#641bd9;--teal-deep:#4b13a5;--mint:#ece7f4;--danger:#dc2626}
         .ap{position:relative;z-index:1;max-width:640px;margin:0 auto;color:var(--ink);padding-bottom:36px}
         .ap button:focus-visible,.ap-sheet button:focus-visible,.ap-edit button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
         .ap-top{display:flex;align-items:center;justify-content:space-between;height:64px}
@@ -1390,13 +1390,13 @@ export const UserProfilePage = ({ onNavigate }) => {
         .ap-alert button{border:0;background:var(--teal);color:#fff;border-radius:999px;padding:8px 14px;font-size:11px;font-weight:700}
         .ap-id{display:flex;align-items:center;gap:16px;margin:10px 0 18px}
         .ap-avatar-wrap{position:relative;width:88px;height:88px;flex:0 0 auto}
-        .ap-avatar{width:88px;height:88px;border-radius:50%;overflow:hidden;border:0;padding:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;font-size:32px;font-weight:800;box-shadow:0 8px 24px rgba(18,121,107,.22)}
+        .ap-avatar{width:88px;height:88px;border-radius:50%;overflow:hidden;border:0;padding:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;font-size:32px;font-weight:800;box-shadow:0 8px 24px rgba(100,27,217,.22)}
         .ap-avatar img{width:100%;height:100%;object-fit:cover}
         .ap-pencil{position:absolute;bottom:2px;left:2px;width:26px;height:26px;border-radius:50%;background:var(--teal);color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center}
         .ap-id-text{min-width:0}
         .ap-id-text h2{margin:0;font-size:24px;line-height:1.3;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
         .ap-id-text p{margin:2px 0 8px;font-size:12px;color:var(--muted);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .ap-chip{display:inline-block;padding:5px 12px;border-radius:999px;background:#e7f4f1;border:1px solid var(--line);font-size:11px;font-weight:600;color:var(--sub)}
+        .ap-chip{display:inline-block;padding:5px 12px;border-radius:999px;background:#ece7f4;border:1px solid var(--line);font-size:11px;font-weight:600;color:var(--sub)}
         .ap-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
         .ap-stat{border:1px solid var(--line);background:var(--soft);border-radius:20px;padding:14px 8px;text-align:center;transition:.18s}
         .ap-stat:hover{background:var(--mint)}
@@ -1406,19 +1406,19 @@ export const UserProfilePage = ({ onNavigate }) => {
         .ap-progress-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:var(--sub)}
         .ap-progress-top strong{font-size:14px;color:var(--teal-deep)}
         .ap-bar{height:6px;border-radius:99px;background:#e3e6e9;margin-top:10px;overflow:hidden}
-        .ap-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--teal),#43bea4);transition:width .5s ease}
+        .ap-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--teal),#aa8dda);transition:width .5s ease}
         .ap-progress-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
         .ap-progress-foot small{font-size:11px;color:var(--muted)}
-        .ap-progress-foot button{border:0;background:#e7f4f1;border-radius:999px;padding:7px 14px;font-size:11px;font-weight:700;color:var(--teal-deep);}
+        .ap-progress-foot button{border:0;background:#ece7f4;border-radius:999px;padding:7px 14px;font-size:11px;font-weight:700;color:var(--teal-deep);}
         .ap-label{margin:24px 4px 8px;font-size:12px;color:var(--muted);font-weight:600}
         .ap-group{display:flex;flex-direction:column;gap:8px}
         .ap-row{border:1px solid var(--line);width:100%;min-height:58px;display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--soft);border-radius:20px;text-align:right;color:var(--ink);font-size:14px;font-weight:600;transition:background .16s,transform .16s}
-        button.ap-row:hover{background:#f7fbfa;border-color:#cfe6df}button.ap-row:active{transform:scale(.99)}
+        button.ap-row:hover{background:#f9f7fb;border-color:#d8cee7}button.ap-row:active{transform:scale(.99)}
         .ap-static{cursor:default}
         .ap-row-ic{display:flex;color:#2a2f33;flex:0 0 auto}
         .ap-row-t{flex:1;min-width:0}
         .ap-row-t small{display:block;margin-top:2px;font-size:11px;font-weight:500;color:var(--muted)}
-        .ap-row-hint{min-width:26px;padding:3px 9px;border-radius:999px;background:#e7f4f1;color:var(--teal-deep);font-size:12px;font-weight:700;color:var(--sub);text-align:center}
+        .ap-row-hint{min-width:26px;padding:3px 9px;border-radius:999px;background:#ece7f4;color:var(--teal-deep);font-size:12px;font-weight:700;color:var(--sub);text-align:center}
         .ap-chev{color:#b4b9bf;flex:0 0 auto}
         .ap-danger{background:#fff4f4;color:var(--danger)}.ap-danger .ap-row-ic{color:var(--danger)}
         button.ap-danger:hover{background:#ffeaea}
@@ -1428,11 +1428,11 @@ export const UserProfilePage = ({ onNavigate }) => {
         .ap-card{border:1px solid var(--line);background:var(--soft);border-radius:20px;padding:16px;margin-bottom:8px}
         .ap-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
         .ap-card-head span{font-size:13px;font-weight:700}
-        .ap-card-head button{border:0;background:#e7f4f1;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--teal-deep)}
+        .ap-card-head button{border:0;background:#ece7f4;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--teal-deep)}
         .ap-card>p{margin:0;font-size:13px;line-height:2;color:var(--sub);font-weight:500}
         .ap-place{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:var(--muted);font-weight:600}
         .ap-chips{display:flex;flex-wrap:wrap;gap:7px}
-        .ap-chips span{padding:7px 12px;border-radius:999px;background:#e7f4f1;border:1px solid #cfe6df;font-size:12px;font-weight:600;color:var(--teal-deep)}
+        .ap-chips span{padding:7px 12px;border-radius:999px;background:#ece7f4;border:1px solid #d8cee7;font-size:12px;font-weight:600;color:var(--teal-deep)}
         .ap-chips small,.ap-empty{font-size:12px;color:var(--muted)}
         .ap-timeline{display:flex;flex-direction:column;gap:14px}
         .ap-exp{display:grid;grid-template-columns:10px 1fr;gap:12px}
@@ -1446,7 +1446,7 @@ export const UserProfilePage = ({ onNavigate }) => {
         .ap-overlay{position:fixed;inset:0;z-index:9000;background:rgba(15,20,25,.45);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;animation:apFade .2s ease both;font-family:${NK};color:var(--ink)}
         .ap-sheet{position:relative;width:100%;max-width:540px;max-height:94vh;background:#fff;border-radius:32px 32px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -24px 80px rgba(0,0,0,.25);animation:apUp .3s cubic-bezier(.22,1,.36,1) both}
         .ap-modal-head{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:18px 20px 12px;
-          background:radial-gradient(70% 130% at 96% 0%,rgba(18,121,107,.14),transparent 66%),#fff}
+          background:radial-gradient(70% 130% at 96% 0%,rgba(100,27,217,.14),transparent 66%),#fff}
         .ap-modal-head h2,.ap-modal-head h3{margin:0;font-size:24px;font-weight:800;color:var(--ink)}
         .ap-sheet-body{padding:6px 18px calc(22px + env(safe-area-inset-bottom));overflow-y:auto}
         .ap-account{border:1px solid var(--line);display:flex;align-items:center;gap:12px;background:var(--soft);border-radius:22px;padding:12px 14px}
@@ -1456,7 +1456,7 @@ export const UserProfilePage = ({ onNavigate }) => {
         .ap-account span{display:block;font-size:11px;color:var(--muted);margin-top:2px;text-align:right}
         .ap-account>button{border:0;background:#fff;border-radius:999px;padding:8px 14px;font-size:11px;font-weight:700;color:var(--teal-deep);}
         .ap-modal-foot{display:flex;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--line);background:#fff}
-        .ap-save{flex:1;height:50px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;font-size:13px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 10px 24px rgba(18,121,107,.22);transition:.18s}
+        .ap-save{flex:1;height:50px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;font-size:13px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 10px 24px rgba(100,27,217,.22);transition:.18s}
         .ap-save:active{transform:scale(.98)}.ap-save:disabled{opacity:.7}
         .ap-ghost{height:50px;padding:0 22px;border-radius:999px;background:var(--soft);border:0;font-size:13px;font-weight:700;color:var(--sub)}
         @media(min-width:640px){.ap-overlay{align-items:center;padding:22px}.ap-sheet{border-radius:32px;max-height:90vh}}
@@ -1464,7 +1464,7 @@ export const UserProfilePage = ({ onNavigate }) => {
         @media(max-width:1023px){.ap-page input,.ap-page textarea,.ap-page select{font-size:16px!important}}
         .ap-hdr{margin:-12px -14px 16px}@media(min-width:640px){.ap-hdr{margin:-20px -20px 20px}}@media(min-width:1024px){.ap-hdr{margin:-20px -32px 28px}}
         .ap-page{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding-bottom:36px}
-        .ap-page .ap-modal-foot{position:sticky;bottom:calc(74px + env(safe-area-inset-bottom));z-index:5;border:1px solid var(--line);border-radius:26px;margin:0 12px 12px;box-shadow:0 12px 34px rgba(13,60,52,.12)}
+        .ap-page .ap-modal-foot{position:sticky;bottom:calc(74px + env(safe-area-inset-bottom));z-index:5;border:1px solid var(--line);border-radius:26px;margin:0 12px 12px;box-shadow:0 12px 34px rgba(31,12,61,.12)}
         .ap-page .ap-modal-head{padding-top:18px}
         @media(min-width:1024px){
           .ap{max-width:1140px}

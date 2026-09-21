@@ -15,8 +15,8 @@ import {
   LockKeyhole,
 } from 'lucide-react';
 
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
 const OTP_LENGTH = 6;
 const RESEND_SECONDS = 60;
 
@@ -314,9 +314,9 @@ export const ForgotPasswordPage = ({ onBack }) => {
       dir="rtl"
       className="fixed inset-0 z-40 min-h-[100dvh] overflow-y-auto bg-white font-vazirmatn select-none"
       style={{
-        backgroundColor: '#f4f7f6',
+        backgroundColor: '#f5f4f7',
         backgroundImage:
-          'radial-gradient(120% 45% at 50% 0%, #dcefeb 0%, #f4f7f6 62%)',
+          'radial-gradient(120% 45% at 50% 0%, #e3dcef 0%, #f5f4f7 62%)',
         paddingTop: 'max(1.25rem, env(safe-area-inset-top))',
         paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))',
       }}
@@ -328,7 +328,7 @@ export const ForgotPasswordPage = ({ onBack }) => {
               type="button"
               onClick={goBack}
               className="flex h-11 w-11 items-center justify-center rounded-2xl border bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md active:scale-90"
-              style={{ borderColor: '#d7e0dd' }}
+              style={{ borderColor: '#dad7e0' }}
               aria-label="گەڕانەوە"
             >
               <ArrowRight className="h-5 w-5" style={{ color: '#111' }} />
@@ -342,7 +342,7 @@ export const ForgotPasswordPage = ({ onBack }) => {
                     className="h-1.5 rounded-full transition-all duration-500"
                     style={{
                       width: item <= stepIndex ? 34 : 12,
-                      background: item <= stepIndex ? TEAL : '#d9e2df',
+                      background: item <= stepIndex ? TEAL : '#dcd9e2',
                     }}
                   />
                 ))}
@@ -350,7 +350,7 @@ export const ForgotPasswordPage = ({ onBack }) => {
             )}
           </div>
 
-          <div className="overflow-hidden rounded-[30px] border border-white/80 bg-white/90 p-5 shadow-[0_24px_80px_rgba(13,92,80,0.10)] backdrop-blur-xl sm:p-8">
+          <div className="overflow-hidden rounded-[30px] border border-white/80 bg-white/90 p-5 shadow-[0_24px_80px_rgba(75,19,165,0.10)] backdrop-blur-xl sm:p-8">
             <div className="mb-7 text-center">
               <div
                 className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-[22px] text-white shadow-lg"
@@ -385,8 +385,8 @@ export const ForgotPasswordPage = ({ onBack }) => {
               <div
                 className="mb-5 flex items-start gap-2.5 rounded-2xl border px-4 py-3 text-sm font-bold leading-6"
                 style={{
-                  borderColor: errorMsg ? '#fecaca' : '#cde6df',
-                  background: errorMsg ? '#fff7f7' : '#f0faf7',
+                  borderColor: errorMsg ? '#fecaca' : '#d6cce7',
+                  background: errorMsg ? '#fff7f7' : '#f4f0fa',
                   color: errorMsg ? '#c43c3c' : TEAL_DEEP,
                 }}
               >
@@ -423,7 +423,7 @@ export const ForgotPasswordPage = ({ onBack }) => {
                       onChange={(e) => setPhone(e.target.value)}
                       className="w-full rounded-[20px] border bg-white py-4 pl-4 pr-[5.4rem] text-sm font-mono font-bold text-[#111] outline-none transition focus:ring-4"
                       style={{
-                        borderColor: errorMsg ? '#fca5a5' : '#d7e0dd',
+                        borderColor: errorMsg ? '#fca5a5' : '#dad7e0',
                         '--tw-ring-color': `${TEAL}18`,
                       }}
                     />
@@ -476,7 +476,7 @@ export const ForgotPasswordPage = ({ onBack }) => {
                       aria-label={`OTP ${index + 1}`}
                       className="h-12 w-11 rounded-2xl border bg-white text-center text-lg font-black text-[#111] outline-none transition focus:-translate-y-0.5 focus:ring-4 sm:h-14 sm:w-14"
                       style={{
-                        borderColor: digit ? TEAL : '#d7e0dd',
+                        borderColor: digit ? TEAL : '#dad7e0',
                         '--tw-ring-color': `${TEAL}18`,
                       }}
                     />
@@ -542,12 +542,12 @@ export const ForgotPasswordPage = ({ onBack }) => {
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="لانیکەم ٨ پیت"
                       className="w-full rounded-[20px] border bg-white py-4 pl-12 pr-11 text-sm font-bold text-[#111] outline-none transition focus:ring-4"
-                      style={{ borderColor: '#d7e0dd', '--tw-ring-color': `${TEAL}18` }}
+                      style={{ borderColor: '#dad7e0', '--tw-ring-color': `${TEAL}18` }}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-[#87918d] transition hover:bg-[#f1f5f4]"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-[#87918d] transition hover:bg-[#f3f1f5]"
                       aria-label="پیشاندانی وشەی نهێنی"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -556,7 +556,7 @@ export const ForgotPasswordPage = ({ onBack }) => {
                   <div className="mt-2 flex items-center gap-2 text-[11px] font-bold">
                     <span
                       className="h-1.5 flex-1 rounded-full"
-                      style={{ background: passwordValid ? TEAL : '#e3e9e7' }}
+                      style={{ background: passwordValid ? TEAL : '#e5e3e9' }}
                     />
                     <span style={{ color: passwordValid ? TEAL_DEEP : '#8b9490' }}>
                       {passwordValid ? 'باشە' : 'لانیکەم ٨ پیت'}
@@ -583,14 +583,14 @@ export const ForgotPasswordPage = ({ onBack }) => {
                       className="w-full rounded-[20px] border bg-white py-4 pl-12 pr-11 text-sm font-bold text-[#111] outline-none transition focus:ring-4"
                       style={{
                         borderColor:
-                          confirmPassword && !passwordsMatch ? '#fca5a5' : '#d7e0dd',
+                          confirmPassword && !passwordsMatch ? '#fca5a5' : '#dad7e0',
                         '--tw-ring-color': `${TEAL}18`,
                       }}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((value) => !value)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-[#87918d] transition hover:bg-[#f1f5f4]"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-xl p-2 text-[#87918d] transition hover:bg-[#f3f1f5]"
                       aria-label="پیشاندانی وشەی نهێنی"
                     >
                       {showConfirmPassword ? (
@@ -628,7 +628,7 @@ export const ForgotPasswordPage = ({ onBack }) => {
 
             {step === 'success' && (
               <div className="text-center">
-                <div className="mb-6 rounded-2xl border border-[#cde6df] bg-[#f0faf7] p-4 text-sm font-bold leading-7 text-[#0d5c50]">
+                <div className="mb-6 rounded-2xl border border-[#d6cce7] bg-[#f4f0fa] p-4 text-sm font-bold leading-7 text-[#4b13a5]">
                   {successMsg || 'وشەی نهێنیت بە سەرکەوتوویی گۆڕدرا.'}
                 </div>
 

@@ -22,7 +22,7 @@ export default function JobLocationPicker({ lat, lng, locationName, governorateI
       className: '',
       html: `<div style="
         width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
-        background:linear-gradient(135deg,#22c1a6,#12796b);
+        background:linear-gradient(135deg,#aa80ec,#641bd9);
         border:3px solid white;box-shadow:0 6px 16px rgba(0,0,0,0.35);
       "></div>`,
       iconSize: [34, 34], iconAnchor: [17, 34],
@@ -146,38 +146,38 @@ export default function JobLocationPicker({ lat, lng, locationName, governorateI
           onChange={(e) => setSearchQ(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); geocodeSearch(); } }}
           placeholder="گەڕان بۆ ناونیشان..."
-          className="flex-1 bg-[#f4f7f6] border border-[#e8eeed] rounded-xl px-3 py-2.5 text-xs font-bold text-[#111d1a] outline-none focus:border-[#12796b]"
+          className="flex-1 bg-[#f5f4f7] border border-[#eae8ee] rounded-xl px-3 py-2.5 text-xs font-bold text-[#16111d] outline-none focus:border-[#641bd9]"
         />
         <button
           type="button"
           onClick={geocodeSearch}
           disabled={isSearching}
-          className="px-3.5 py-2.5 rounded-xl bg-[#12796b] text-white text-xs font-black shrink-0 hover:bg-[#0d5c50] transition disabled:opacity-50"
+          className="px-3.5 py-2.5 rounded-xl bg-[#641bd9] text-white text-xs font-black shrink-0 hover:bg-[#4b13a5] transition disabled:opacity-50"
         >
           {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
         </button>
       </div>
 
       {results.length > 0 && (
-        <div className="rounded-xl border border-[#e8eeed] overflow-hidden shadow-sm">
+        <div className="rounded-xl border border-[#eae8ee] overflow-hidden shadow-sm">
           {results.map((r, i) => (
             <button
               key={i}
               type="button"
               onClick={() => selectResult(r)}
-              className="w-full text-right px-3 py-2.5 text-xs font-bold text-[#4a5854] hover:bg-[#eaf5f2] hover:text-[#12796b] border-b border-[#f4f7f6] last:border-0 transition-colors flex items-start gap-2 bg-white"
+              className="w-full text-right px-3 py-2.5 text-xs font-bold text-[#4a5854] hover:bg-[#eeeaf5] hover:text-[#641bd9] border-b border-[#f5f4f7] last:border-0 transition-colors flex items-start gap-2 bg-white"
             >
-              <MapPin className="w-3.5 h-3.5 text-[#12796b] shrink-0 mt-0.5" />
+              <MapPin className="w-3.5 h-3.5 text-[#641bd9] shrink-0 mt-0.5" />
               <span className="line-clamp-2">{r.display_name}</span>
             </button>
           ))}
         </div>
       )}
 
-      <div className="relative rounded-2xl overflow-hidden border border-[#e8eeed]" style={{ height }}>
+      <div className="relative rounded-2xl overflow-hidden border border-[#eae8ee]" style={{ height }}>
         <div ref={mapRef} className="w-full h-full" />
         {!ready && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#f4f7f6] text-[#7b8e88] text-[11px] font-bold">
+          <div className="absolute inset-0 flex items-center justify-center bg-[#f5f4f7] text-[#7b8e88] text-[11px] font-bold">
             نەخشە بارئەکرێت...
           </div>
         )}
@@ -187,14 +187,14 @@ export default function JobLocationPicker({ lat, lng, locationName, governorateI
         type="button"
         onClick={locateMe}
         disabled={isLocating}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#eaf5f2] border border-[#beece2] text-[#12796b] text-xs font-bold hover:bg-[#d9efe8] transition disabled:opacity-50"
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#eeeaf5] border border-[#cfbded] text-[#641bd9] text-xs font-bold hover:bg-[#e1d8f0] transition disabled:opacity-50"
       >
         {isLocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Crosshair className="w-4 h-4" />}
         {isLocating ? 'ئەدۆزرێتەوە...' : 'بەکارهێنانی شوێنی ئێستام (GPS)'}
       </button>
 
       {lat && lng && (
-        <div className="flex items-center gap-1.5 text-[10px] text-[#12796b] font-bold justify-end">
+        <div className="flex items-center gap-1.5 text-[10px] text-[#641bd9] font-bold justify-end">
           <CheckCircle2 className="w-3 h-3" />
           <span>شوێن دیاریکرا{locationName ? `: ${locationName}` : ''}</span>
         </div>

@@ -4,8 +4,8 @@ import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 
 // Shared light theme — matches DesktopHeaderNav, UserProfilePage, DirectoryPage.
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
 
 export const SendInvitationModal = ({ freelancer, isOpen, onClose, onSendSuccess }) => {
   const { sendInvitation } = useStore();
@@ -59,22 +59,22 @@ export const SendInvitationModal = ({ freelancer, isOpen, onClose, onSendSuccess
 
   return (
     <div dir="rtl" className="safe-top fixed inset-0 z-[9999] bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 font-vazirmatn select-none animate-fadeIn">
-      <div className="relative w-full max-w-lg bg-white border border-[#e8eeec] rounded-3xl p-6 sm:p-8 shadow-2xl text-right space-y-6">
+      <div className="relative w-full max-w-lg bg-white border border-[#eae8ee] rounded-3xl p-6 sm:p-8 shadow-2xl text-right space-y-6">
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#f0f4f2] pb-4">
+        <div className="flex items-center justify-between border-b border-[#f2f0f4] pb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl text-white font-black text-sm flex items-center justify-center shadow-sm" style={{ background: TEAL }}>
               {freelancer.name?.charAt(0) || 'ک'}
             </div>
             <div>
-              <h3 className="font-black text-[#111d1a] text-base">ناردنی داواکاری کار</h3>
+              <h3 className="font-black text-[#16111d] text-base">ناردنی داواکاری کار</h3>
               <p className="text-xs text-[#7b8e88]">بۆ: <span className="font-bold" style={{ color: TEAL }}>{freelancer.name}</span> {freelancer.title ? `(${freelancer.title})` : ''}</p>
             </div>
           </div>
           <button
             onClick={() => { soundService.playTick(); resetAndClose(); }}
-            className="p-2 rounded-xl bg-[#f4f7f6] border border-[#e8eeed] text-[#7b8e88] hover:text-[#111d1a] transition-all"
+            className="p-2 rounded-xl bg-[#f5f4f7] border border-[#eae8ee] text-[#7b8e88] hover:text-[#16111d] transition-all"
           >
             <X className="w-5 h-5" />
           </button>
@@ -92,7 +92,7 @@ export const SendInvitationModal = ({ freelancer, isOpen, onClose, onSendSuccess
                 {step === 4 && '٤. پێداچوونەوە & ناردن'}
               </span>
             </div>
-            <div className="h-2 w-full bg-[#f4f7f6] rounded-full overflow-hidden flex">
+            <div className="h-2 w-full bg-[#f5f4f7] rounded-full overflow-hidden flex">
               <div className="h-full rounded-full transition-all duration-500" style={{ width: `${(step / 4) * 100}%`, background: TEAL }} />
             </div>
           </div>
@@ -103,7 +103,7 @@ export const SendInvitationModal = ({ freelancer, isOpen, onClose, onSendSuccess
             <div className="w-20 h-20 rounded-full text-white flex items-center justify-center mx-auto shadow-lg" style={{ background: TEAL }}>
               <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
             </div>
-            <h3 className="text-xl font-black text-[#111d1a]">داواکارییەکە بە سەرکەوتوویی نێردرا! 🎉</h3>
+            <h3 className="text-xl font-black text-[#16111d]">داواکارییەکە بە سەرکەوتوویی نێردرا! 🎉</h3>
             <p className="text-xs text-[#7b8e88]">داواکاری کارەکەت گەیشتە {freelancer.name}. وەڵامەکەی لە نۆتیفیکەیشن بەدەستت دەگات.</p>
           </div>
         ) : (
@@ -112,21 +112,21 @@ export const SendInvitationModal = ({ freelancer, isOpen, onClose, onSendSuccess
             {step === 1 && (
               <div className="space-y-4 animate-fadeIn">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[#111d1a] block">ناونیشانی پڕۆژە یان کارەکە *</label>
+                  <label className="text-xs font-bold text-[#16111d] block">ناونیشانی پڕۆژە یان کارەکە *</label>
                   <input
                     type="text"
                     placeholder="بۆ نموونە: دیزاینی ئەپڵیکەیشنی وێب یان گەشەپێدانی React"
                     value={projectTitle}
                     onChange={(e) => setProjectTitle(e.target.value)}
-                    className="w-full bg-white border border-[#e8eeec] focus:border-[#12796b] rounded-xl px-4 py-3 text-xs text-[#111d1a] placeholder:text-[#9faea9] outline-none"
+                    className="w-full bg-white border border-[#eae8ee] focus:border-[#641bd9] rounded-xl px-4 py-3 text-xs text-[#16111d] placeholder:text-[#9faea9] outline-none"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[#111d1a] block">پۆلێنی پڕۆژە</label>
+                  <label className="text-xs font-bold text-[#16111d] block">پۆلێنی پڕۆژە</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-white border border-[#e8eeec] focus:border-[#12796b] rounded-xl px-4 py-3 text-xs text-[#111d1a] outline-none"
+                    className="w-full bg-white border border-[#eae8ee] focus:border-[#641bd9] rounded-xl px-4 py-3 text-xs text-[#16111d] outline-none"
                   >
                     <option value="tech_dev">تەکنەلۆژیا & سۆفتوێر</option>
                     <option value="sales_mkt">فرۆشتن & مارکێتینگ</option>
@@ -140,21 +140,21 @@ export const SendInvitationModal = ({ freelancer, isOpen, onClose, onSendSuccess
             {step === 2 && (
               <div className="space-y-4 animate-fadeIn">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[#111d1a] block">بودجەی پێشنیارکراو (IQD) *</label>
+                  <label className="text-xs font-bold text-[#16111d] block">بودجەی پێشنیارکراو (IQD) *</label>
                   <input
                     type="number"
                     placeholder="500000"
                     value={budget}
                     onChange={(e) => setBudget(e.target.value)}
-                    className="w-full bg-white border border-[#e8eeec] focus:border-[#12796b] rounded-xl px-4 py-3 text-xs text-[#111d1a] outline-none font-mono"
+                    className="w-full bg-white border border-[#eae8ee] focus:border-[#641bd9] rounded-xl px-4 py-3 text-xs text-[#16111d] outline-none font-mono"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[#111d1a] block">ماوەی جێبەجێکردن (Timeline)</label>
+                  <label className="text-xs font-bold text-[#16111d] block">ماوەی جێبەجێکردن (Timeline)</label>
                   <select
                     value={timeline}
                     onChange={(e) => setTimeline(e.target.value)}
-                    className="w-full bg-white border border-[#e8eeec] focus:border-[#12796b] rounded-xl px-4 py-3 text-xs text-[#111d1a] outline-none"
+                    className="w-full bg-white border border-[#eae8ee] focus:border-[#641bd9] rounded-xl px-4 py-3 text-xs text-[#16111d] outline-none"
                   >
                     <option value="3 days">٣ ڕۆژ</option>
                     <option value="1 week">١ هەفتە</option>
@@ -168,34 +168,34 @@ export const SendInvitationModal = ({ freelancer, isOpen, onClose, onSendSuccess
             {step === 3 && (
               <div className="space-y-4 animate-fadeIn">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[#111d1a] block">تێبینی یان نامەی دەستپێک بۆ کاندید</label>
+                  <label className="text-xs font-bold text-[#16111d] block">تێبینی یان نامەی دەستپێک بۆ کاندید</label>
                   <textarea
                     rows={4}
                     placeholder="سڵاو، ئێمە سەرسام بووین بە لێهاتووییت. حەزدەکەین کار لەسەر ئەم پڕۆژەیە بکەین..."
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    className="w-full bg-white border border-[#e8eeec] focus:border-[#12796b] rounded-xl p-4 text-xs text-[#111d1a] placeholder:text-[#9faea9] outline-none leading-relaxed"
+                    className="w-full bg-white border border-[#eae8ee] focus:border-[#641bd9] rounded-xl p-4 text-xs text-[#16111d] placeholder:text-[#9faea9] outline-none leading-relaxed"
                   />
                 </div>
               </div>
             )}
 
             {step === 4 && (
-              <div className="space-y-3 bg-[#f4f7f6] border border-[#e8eeec] p-4 rounded-2xl text-xs text-[#4a5854] animate-fadeIn">
-                <h4 className="font-black text-[#111d1a] text-sm border-b border-[#e8eeed] pb-2">پێداچوونەوەی داواکارییەکە:</h4>
-                <p>پڕۆژە: <span className="font-bold text-[#111d1a]">{projectTitle || 'دیزاینی پڕۆژە'}</span></p>
+              <div className="space-y-3 bg-[#f5f4f7] border border-[#eae8ee] p-4 rounded-2xl text-xs text-[#4a5854] animate-fadeIn">
+                <h4 className="font-black text-[#16111d] text-sm border-b border-[#eae8ee] pb-2">پێداچوونەوەی داواکارییەکە:</h4>
+                <p>پڕۆژە: <span className="font-bold text-[#16111d]">{projectTitle || 'دیزاینی پڕۆژە'}</span></p>
                 <p>بودجە: <span className="font-bold font-mono" style={{ color: TEAL_DEEP }}>{Number(budget).toLocaleString()} IQD</span></p>
-                <p>ماوە: <span className="font-bold text-[#111d1a]">{timeline}</span></p>
+                <p>ماوە: <span className="font-bold text-[#16111d]">{timeline}</span></p>
                 {note && <p className="italic text-[#7b8e88]">« {note} »</p>}
                 {error && <p className="text-rose-600 font-bold pt-1">{error}</p>}
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-4 border-t border-[#f0f4f2]">
+            <div className="flex items-center justify-between pt-4 border-t border-[#f2f0f4]">
               {step > 1 ? (
                 <button
                   onClick={handleBack}
-                  className="px-4 py-2.5 rounded-xl bg-[#f4f7f6] text-[#111d1a] font-bold text-xs hover:bg-[#eaf5f2] transition-all flex items-center gap-1"
+                  className="px-4 py-2.5 rounded-xl bg-[#f5f4f7] text-[#16111d] font-bold text-xs hover:bg-[#eeeaf5] transition-all flex items-center gap-1"
                 >
                   <ArrowRight className="w-4 h-4" />
                   <span>گەڕانەوە</span>

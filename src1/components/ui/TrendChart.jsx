@@ -31,7 +31,7 @@ export const TrendChart = ({ title, icon: Icon, color, data = [], total = 0 }) =
   const lastLabel = data[n - 1]?.date ? new Date(data[n - 1].date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '';
 
   return (
-    <div className="p-4 rounded-2xl bg-white border border-[#e8eeec] shadow-2xs">
+    <div className="p-4 rounded-2xl bg-white border border-[#eae8ee] shadow-2xs">
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${color}18`, color }}>
@@ -39,7 +39,7 @@ export const TrendChart = ({ title, icon: Icon, color, data = [], total = 0 }) =
           </div>
           <span className="text-xs font-bold text-[#7b8e88]">{title}</span>
         </div>
-        <span className="text-xl font-black text-[#111d1a] font-mono">{total}</span>
+        <span className="text-xl font-black text-[#16111d] font-mono">{total}</span>
       </div>
 
       {hasActivity ? (
@@ -48,7 +48,7 @@ export const TrendChart = ({ title, icon: Icon, color, data = [], total = 0 }) =
             <path d={areaPath} fill={color} opacity="0.08" />
             <path d={linePath} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
             {points.map((p, i) => (
-              <circle key={i} cx={p.x} cy={p.y} r={p.value > 0 ? 2.5 : 1.5} fill={p.value > 0 ? color : '#d9e2df'}>
+              <circle key={i} cx={p.x} cy={p.y} r={p.value > 0 ? 2.5 : 1.5} fill={p.value > 0 ? color : '#dcd9e2'}>
                 <title>{`${new Date(p.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}: ${p.value}`}</title>
               </circle>
             ))}

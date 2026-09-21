@@ -164,12 +164,12 @@ export const MessageThreadModal = ({
     <div
       ref={containerRef}
       dir="rtl"
-      className="fixed inset-x-0 top-0 z-[9999] bg-[#f4f7f6] flex flex-col font-vazirmatn select-none animate-fadeIn"
+      className="fixed inset-x-0 top-0 z-[9999] bg-[#f5f4f7] flex flex-col font-vazirmatn select-none animate-fadeIn"
       style={{ fontFamily: NK, height: '100dvh' }}
     >
       {/* ── Chat Top Header ───────────────────────────────────── */}
       <div
-        className="shrink-0 bg-white border-b border-[#e8eeed] px-4 pb-3 flex items-center justify-between shadow-2xs"
+        className="shrink-0 bg-white border-b border-[#eae8ee] px-4 pb-3 flex items-center justify-between shadow-2xs"
         style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}
       >
         {/* Right side in RTL: Back button + Avatar + Name & Online Status */}
@@ -177,14 +177,14 @@ export const MessageThreadModal = ({
           {/* Back button */}
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-2xl bg-white border border-[#e8eeed] flex items-center justify-center text-[#111d1a] shrink-0 active:scale-90 transition-transform shadow-2xs"
+            className="w-10 h-10 rounded-2xl bg-white border border-[#eae8ee] flex items-center justify-center text-[#16111d] shrink-0 active:scale-90 transition-transform shadow-2xs"
             aria-label="گەڕانەوە"
           >
-            <ArrowRight className="w-5 h-5 text-[#111d1a]" />
+            <ArrowRight className="w-5 h-5 text-[#16111d]" />
           </button>
 
           {/* User/Company Avatar */}
-          <div className="w-10 h-10 rounded-full bg-white border border-[#e4eae7] flex items-center justify-center text-[#111d1a] font-black text-sm shrink-0 shadow-2xs overflow-hidden">
+          <div className="w-10 h-10 rounded-full bg-white border border-[#e6e4ea] flex items-center justify-center text-[#16111d] font-black text-sm shrink-0 shadow-2xs overflow-hidden">
             {avatar ? (
               <img src={avatar} alt={counterpart} className="w-full h-full object-cover" />
             ) : (
@@ -194,7 +194,7 @@ export const MessageThreadModal = ({
 
           {/* Name */}
           <div className="text-right min-w-0">
-            <h3 className="text-sm font-black text-[#111d1a] truncate leading-tight">
+            <h3 className="text-sm font-black text-[#16111d] truncate leading-tight">
               {counterpart}
             </h3>
           </div>
@@ -202,7 +202,7 @@ export const MessageThreadModal = ({
 
         {/* Left side in RTL: Three dots options menu */}
         <button
-          className="w-10 h-10 rounded-2xl bg-white border border-[#e8eeed] flex items-center justify-center text-[#62736e] shrink-0 active:scale-90 transition-transform shadow-2xs"
+          className="w-10 h-10 rounded-2xl bg-white border border-[#eae8ee] flex items-center justify-center text-[#62736e] shrink-0 active:scale-90 transition-transform shadow-2xs"
           aria-label="هەڵبژاردنەکان"
         >
           <MoreVertical className="w-4 h-4 text-[#62736e]" />
@@ -212,27 +212,27 @@ export const MessageThreadModal = ({
       {/* ── Chat Messages Body ─────────────────────────────────── */}
       <div
         className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5"
-        style={{ background: '#f4f7f6' }}
+        style={{ background: '#f5f4f7' }}
       >
         {/* Date capsule badge: TODAY */}
         <div className="flex justify-center my-1">
-          <span className="px-3.5 py-1 rounded-full bg-[#e6eeec] text-[#7a8e88] text-[10px] font-black tracking-widest uppercase shadow-2xs">
+          <span className="px-3.5 py-1 rounded-full bg-[#e9e6ee] text-[#7a8e88] text-[10px] font-black tracking-widest uppercase shadow-2xs">
             TODAY
           </span>
         </div>
 
         {/* Job Reference / Application Context Card */}
-        <div className="w-full bg-[#f0faf7] border border-[#cce8e0] rounded-2xl p-3.5 flex items-center justify-between shadow-2xs">
+        <div className="w-full bg-[#f4f0fa] border border-[#d7cbe9] rounded-2xl p-3.5 flex items-center justify-between shadow-2xs">
           <div className="text-right flex-1 min-w-0">
-            <h4 className="text-xs sm:text-sm font-black text-[#111d1a] truncate leading-tight">
+            <h4 className="text-xs sm:text-sm font-black text-[#16111d] truncate leading-tight">
               {title}
             </h4>
-            <p className="text-[11px] text-[#3a7c73] font-bold mt-0.5">
+            <p className="text-[11px] text-[#987cc4] font-bold mt-0.5">
               {jobStatus}
             </p>
           </div>
 
-          <div className="w-9 h-9 rounded-xl bg-[#d5ede6] flex items-center justify-center shrink-0 mr-3 text-[#12796b]">
+          <div className="w-9 h-9 rounded-xl bg-[#ded4ee] flex items-center justify-center shrink-0 mr-3 text-[#641bd9]">
             <Briefcase className="w-4 h-4" />
           </div>
         </div>
@@ -240,12 +240,12 @@ export const MessageThreadModal = ({
         {/* Messages List */}
         {loading ? (
           <div className="flex items-center justify-center py-10">
-            <div className="w-6 h-6 border-2 border-[#12796b] border-t-transparent rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-[#641bd9] border-t-transparent rounded-full animate-spin" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
-            <div className="w-14 h-14 rounded-full bg-[#e7f4f1] flex items-center justify-center">
-              <MessageCircle className="w-6 h-6 text-[#12796b]" />
+            <div className="w-14 h-14 rounded-full bg-[#ece7f4] flex items-center justify-center">
+              <MessageCircle className="w-6 h-6 text-[#641bd9]" />
             </div>
             <p className="text-xs text-[#8a9e98] font-bold">
               هێشتا هیچ پەیامێک نییە. یەکەم پەیام بنێرە.
@@ -264,8 +264,8 @@ export const MessageThreadModal = ({
                 <div
                   className={`max-w-[82%] px-4 py-3 text-xs sm:text-[13px] font-bold leading-relaxed ${
                     isMine
-                      ? 'bg-[#c2eae1] text-[#113d36] rounded-2xl rounded-tl-xs shadow-2xs'
-                      : 'bg-white text-[#111d1a] border border-[#e8eeec] rounded-2xl rounded-tr-xs shadow-[0_1px_4px_rgba(0,0,0,0.03)]'
+                      ? 'bg-[#d1c1eb] text-[#22103e] rounded-2xl rounded-tl-xs shadow-2xs'
+                      : 'bg-white text-[#16111d] border border-[#eae8ee] rounded-2xl rounded-tr-xs shadow-[0_1px_4px_rgba(0,0,0,0.03)]'
                   } ${m._pending ? 'opacity-60' : ''}`}
                   style={{ fontFamily: NK }}
                 >
@@ -287,7 +287,7 @@ export const MessageThreadModal = ({
                   ) : (
                     <>
                       {isMine && (
-                        <CheckCheck className={`w-3.5 h-3.5 ${m.read_at ? 'text-[#12796b]' : 'text-[#9faea9]'}`} />
+                        <CheckCheck className={`w-3.5 h-3.5 ${m.read_at ? 'text-[#641bd9]' : 'text-[#9faea9]'}`} />
                       )}
                       <span dir="ltr" className="text-[10px] text-[#9faea9] font-bold font-mono">
                         {formatClock(m.created_at)}
@@ -305,7 +305,7 @@ export const MessageThreadModal = ({
 
       {/* ── Chat Bottom Input Bar ──────────────────────────────── */}
       <div
-        className="shrink-0 bg-white border-t border-[#eef2f0] px-3.5 py-2.5 flex items-center gap-2.5 shadow-sm"
+        className="shrink-0 bg-white border-t border-[#f0eef2] px-3.5 py-2.5 flex items-center gap-2.5 shadow-sm"
         style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}
       >
         {/* Send Button: Solid Teal Circle on Left in RTL */}
@@ -314,8 +314,8 @@ export const MessageThreadModal = ({
           disabled={!hasText}
           className={`w-11 h-11 rounded-full flex items-center justify-center text-white shrink-0 transition-all active:scale-90 shadow-sm ${
             hasText
-              ? 'bg-[#1a6b62] hover:bg-[#12796b] shadow-[0_4px_12px_rgba(26,107,98,0.3)]'
-              : 'bg-[#1a6b62] opacity-70'
+              ? 'bg-[#642ac0] hover:bg-[#641bd9] shadow-[0_4px_12px_rgba(100,42,192,0.3)]'
+              : 'bg-[#642ac0] opacity-70'
           }`}
           aria-label="ناردن"
         >
@@ -334,7 +334,7 @@ export const MessageThreadModal = ({
             }
           }}
           placeholder="پەیامێک بنووسە..."
-          className="flex-1 bg-white border border-[#e8eeed] rounded-full px-4 py-3 text-xs sm:text-sm text-[#111d1a] font-bold placeholder-[#9faea9] outline-none focus:border-[#12796b] focus:ring-2 focus:ring-[#12796b]/10 transition-all"
+          className="flex-1 bg-white border border-[#eae8ee] rounded-full px-4 py-3 text-xs sm:text-sm text-[#16111d] font-bold placeholder-[#9faea9] outline-none focus:border-[#641bd9] focus:ring-2 focus:ring-[#641bd9]/10 transition-all"
           style={{ fontFamily: NK }}
         />
       </div>

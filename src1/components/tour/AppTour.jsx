@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, X, Sparkles, PartyPopper } from 'lucide-react';
 import { canSeePlans } from '../../config/features';
 
 const NK = "'IBM Plex Sans Arabic','Noto Kufi Arabic','Vazirmatn',system-ui,sans-serif";
-const TEAL = '#12796b';
+const TEAL = '#641bd9';
 export const TOUR_DONE_KEY = 'ishkhwaz_tour_done';
 
 // `target` lists alternatives (phone nav / desktop header / on-page element); the first one that is
@@ -131,34 +131,34 @@ export const AppTour = ({ open, user, activeTab, onNavigate, onClose }) => {
 
   return createPortal(
     <div className="fixed inset-0 z-[10050]" dir="rtl" style={{ fontFamily: NK }} role="dialog" aria-modal="true" aria-label="ڕێبەری ئەپ">
-      <style>{'@keyframes tourPulse{0%,100%{box-shadow:0 0 0 9999px rgba(6,20,17,.74),0 0 0 3px rgba(67,209,184,.95)}50%{box-shadow:0 0 0 9999px rgba(6,20,17,.74),0 0 0 9px rgba(67,209,184,.25)}}@keyframes tourCard{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){[data-tour-ui]{animation:none!important;transition:none!important}}'}</style>
+      <style>{'@keyframes tourPulse{0%,100%{box-shadow:0 0 0 9999px rgba(11,6,20,.74),0 0 0 3px rgba(157,116,224,.95)}50%{box-shadow:0 0 0 9999px rgba(11,6,20,.74),0 0 0 9px rgba(157,116,224,.25)}}@keyframes tourCard{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){[data-tour-ui]{animation:none!important;transition:none!important}}'}</style>
 
       {/* click shield (a click outside does nothing; use the buttons) */}
-      <div className="absolute inset-0" style={spot ? undefined : { background: 'rgba(6,20,17,.74)' }} />
+      <div className="absolute inset-0" style={spot ? undefined : { background: 'rgba(11,6,20,.74)' }} />
 
       {spot && (
         <div data-tour-ui className="pointer-events-none absolute rounded-[20px]" style={{ top: spot.top, left: spot.left, width: spot.width, height: spot.height, animation: 'tourPulse 1.8s ease-in-out infinite', transition: 'top .3s ease, left .3s ease, width .3s ease, height .3s ease' }} />
       )}
 
       <div data-tour-ui key={i} className="absolute rounded-[24px] bg-white p-5 shadow-[0_30px_80px_rgba(0,0,0,.45)]" style={{ ...cardStyle, animation: 'tourCard .28s ease both' }}>
-        <button type="button" onClick={() => finish(false)} aria-label="داخستن" className="absolute left-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-[#f3f6f5] text-[#60706c] active:scale-95"><X className="h-4 w-4" /></button>
+        <button type="button" onClick={() => finish(false)} aria-label="داخستن" className="absolute left-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-[#f4f3f6] text-[#60706c] active:scale-95"><X className="h-4 w-4" /></button>
         <div className="mb-3 flex items-center gap-2">
-          <span className="grid h-9 w-9 place-items-center rounded-xl text-white" style={{ background: `linear-gradient(135deg, ${TEAL}, #0d5c50)` }}>{step.done ? <PartyPopper className="h-[18px] w-[18px]" /> : <Sparkles className="h-[18px] w-[18px]" />}</span>
+          <span className="grid h-9 w-9 place-items-center rounded-xl text-white" style={{ background: `linear-gradient(135deg, ${TEAL}, #4b13a5)` }}>{step.done ? <PartyPopper className="h-[18px] w-[18px]" /> : <Sparkles className="h-[18px] w-[18px]" />}</span>
           <span className="text-[11px] font-bold text-[#7b8e88]">{i + 1} / {steps.length}</span>
         </div>
-        <h3 className="text-[17px] font-bold text-[#111d1a]">{step.title}</h3>
+        <h3 className="text-[17px] font-bold text-[#16111d]">{step.title}</h3>
         <p className="mt-1.5 text-[13px] font-medium leading-7 text-[#4a5b55]">{step.text}</p>
 
         <div className="mt-4 flex items-center gap-1">
-          {steps.map((_, k) => <span key={k} className="h-1.5 rounded-full transition-all" style={{ width: k === i ? 18 : 6, background: k <= i ? TEAL : '#dfe8e5' }} />)}
+          {steps.map((_, k) => <span key={k} className="h-1.5 rounded-full transition-all" style={{ width: k === i ? 18 : 6, background: k <= i ? TEAL : '#e2dfe8' }} />)}
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-2">
           <button type="button" onClick={() => finish(false)} className="px-2 py-2 text-xs font-bold text-[#7b8e88]">{last ? '' : 'پەڕاندن'}</button>
           <div className="flex items-center gap-2">
-            {i > 0 && <button type="button" onClick={() => setI(n => n - 1)} className="grid h-11 w-11 place-items-center rounded-full bg-[#f3f6f5] text-[#0d5c50] active:scale-95" aria-label="پێشوو"><ArrowRight className="h-4 w-4" /></button>}
+            {i > 0 && <button type="button" onClick={() => setI(n => n - 1)} className="grid h-11 w-11 place-items-center rounded-full bg-[#f4f3f6] text-[#4b13a5] active:scale-95" aria-label="پێشوو"><ArrowRight className="h-4 w-4" /></button>}
             <button type="button" onClick={() => (last ? finish(true) : setI(n => n + 1))}
-              className="flex h-11 items-center gap-2 rounded-full px-6 text-[13px] font-bold text-white shadow-[0_10px_24px_rgba(18,121,107,.3)] active:scale-95" style={{ background: `linear-gradient(135deg, ${TEAL}, #0d5c50)` }}>
+              className="flex h-11 items-center gap-2 rounded-full px-6 text-[13px] font-bold text-white shadow-[0_10px_24px_rgba(100,27,217,.3)] active:scale-95" style={{ background: `linear-gradient(135deg, ${TEAL}, #4b13a5)` }}>
               {last ? 'دەستپێبکە' : 'دواتر'}{!last && <ArrowLeft className="h-4 w-4" />}
             </button>
           </div>

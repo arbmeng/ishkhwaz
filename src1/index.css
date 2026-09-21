@@ -39,8 +39,8 @@
 
   .job-card-anim:hover {
     transform: translateY(-4px);
-    border-color: rgba(18, 121, 107, 0.45) !important;
-    box-shadow: 0 16px 36px -6px rgba(18, 121, 107, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+    border-color: rgba(100,27,217, 0.45) !important;
+    box-shadow: 0 16px 36px -6px rgba(100,27,217, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04) !important;
   }
 
   .job-card-anim:active {
@@ -53,7 +53,7 @@
 
   .btn-spring:hover {
     transform: translateY(-2px) scale(1.02);
-    box-shadow: 0 8px 20px -4px rgba(18, 121, 107, 0.2);
+    box-shadow: 0 8px 20px -4px rgba(100,27,217, 0.2);
   }
 
   .btn-spring:active {
@@ -67,7 +67,7 @@
 
   .chip-spring:hover {
     transform: translateY(-1px) scale(1.05);
-    box-shadow: 0 4px 12px -2px rgba(18, 121, 107, 0.15);
+    box-shadow: 0 4px 12px -2px rgba(100,27,217, 0.15);
   }
 
   .chip-spring:active {
@@ -84,7 +84,7 @@
 
   .interactive-sidebar-btn:hover {
     transform: translateX(-3px);
-    background-color: #f2faf7;
+    background-color: #f5f2fa;
   }
 
   .interactive-sidebar-btn:active {
@@ -96,19 +96,19 @@
   :root {
     --bg-primary: #F4FBF7;
     --bg-card: #FFFFFF;
-    --accent-emerald: #059669;
-    --accent-lime: #84CC16;
+    --accent-emerald: #6d14fd;
+    --accent-lime: #9d74e0;
     --accent-lime-hover: #65A30D;
-    --text-primary: #064E3B;
+    --text-primary: #3a078c;
     --text-secondary: #334155;
-    --border-light: #A7F3D0;
+    --border-light: #ddd3f3;
   }
 
   body {
     background-color: #F4FBF7;
     background-image:
       radial-gradient(at 0% 0%, rgba(132, 204, 22, 0.12) 0px, transparent 45%),
-      radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.1) 0px, transparent 45%);
+      radial-gradient(at 100% 100%, rgba(161,108,246, 0.1) 0px, transparent 45%);
     background-attachment: fixed;
     color: #0F172A;
     font-family: 'Vazirmatn', 'Inter', system-ui, -apple-system, sans-serif;
@@ -119,32 +119,32 @@
 /* ================= PRISTINE GREEN & WHITE THEME (MATCHING LOGO BRANDING) ================= */
 .bg-white {
   background-color: #FFFFFF !important;
-  border-color: #A7F3D0;
+  border-color: #ddd3f3;
 }
 
 .cinematic-glass {
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid #A7F3D0;
-  box-shadow: 0 10px 30px -10px rgba(5, 150, 105, 0.08);
+  border: 1px solid #ddd3f3;
+  box-shadow: 0 10px 30px -10px rgba(109,20,253, 0.08);
 }
 
 .cinematic-card {
   background: #FFFFFF;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid #A7F3D0;
+  border: 1px solid #ddd3f3;
   border-radius: 20px;
-  box-shadow: 0 4px 20px -5px rgba(5, 150, 105, 0.08);
+  box-shadow: 0 4px 20px -5px rgba(109,20,253, 0.08);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .cinematic-card:hover {
   background: #FFFFFF;
-  border-color: #84CC16;
+  border-color: #9d74e0;
   transform: translateY(-2px);
-  box-shadow: 0 14px 35px -8px rgba(132, 204, 22, 0.25);
+  box-shadow: 0 14px 35px -8px rgba(100,27,217,0.25);
 }
 
 .cinematic-lime-text {
@@ -207,7 +207,7 @@
   animation: mapZoomIn 0.28s ease-out both;
 }
 
-/* Scrollbar — thin, and tinted with the app's actual brand teal (#12796b)
+/* Scrollbar — thin, and tinted with the app's actual brand teal (#641bd9)
    instead of the unrelated bright lime/mint this used to be, which clashed
    on pages with their own real color identity (gold company/freelancer
    banners, etc.) since it never matched anything else in the app. Only
@@ -223,12 +223,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #a8d8cd;
+  background: #baa7d9;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #12796b;
+  background: #641bd9;
 }
 
 /* Full-screen overlays that would draw under the phone status bar / notch in the installed PWA

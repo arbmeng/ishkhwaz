@@ -24,9 +24,9 @@ const WORKPLACE_TYPES = [
 // all-caps monospace dev-dashboard styling with plain Kurdish.
 function SectionCard({ title, hint, children }) {
   return (
-    <div className="bg-white rounded-[28px] p-5 sm:p-7 border border-[#e8eeec] shadow-sm space-y-5 text-right">
+    <div className="bg-white rounded-[28px] p-5 sm:p-7 border border-[#eae8ee] shadow-sm space-y-5 text-right">
       <div>
-        <h3 className="text-sm sm:text-base font-black text-[#111d1a]">{title}</h3>
+        <h3 className="text-sm sm:text-base font-black text-[#16111d]">{title}</h3>
         {hint && <p className="text-[11px] text-[#7b8e88] font-bold mt-0.5">{hint}</p>}
       </div>
       {children}
@@ -37,7 +37,7 @@ function SectionCard({ title, hint, children }) {
 function Field({ label, help, children }) {
   return (
     <div className="space-y-1.5 text-right">
-      <label className="text-xs font-bold text-[#111d1a] block">{label}</label>
+      <label className="text-xs font-bold text-[#16111d] block">{label}</label>
       {children}
       {help && <p className="text-[10px] text-[#a0afa9] font-medium">{help}</p>}
     </div>
@@ -45,9 +45,9 @@ function Field({ label, help, children }) {
 }
 
 const selectClass =
-  'w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3.5 text-xs font-bold text-[#111d1a] outline-none appearance-none cursor-pointer';
+  'w-full bg-[#f5f4f7] border border-[#eae8ee] rounded-2xl px-4 py-3.5 text-xs font-bold text-[#16111d] outline-none appearance-none cursor-pointer';
 const inputClass =
-  'w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold text-[#111d1a] outline-none';
+  'w-full bg-[#f5f4f7] border border-[#eae8ee] rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold text-[#16111d] outline-none';
 
 // The job page shows a job as these dropdowns ("Title:" blocks in the description), so the form asks for each one
 // separately and joins them in that format. `list` sections take one item per line and become bullets.
@@ -199,20 +199,20 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
     <div
       dir="rtl"
       className="min-h-screen pb-32 select-none"
-      style={{ background: '#f4f7f6', fontFamily: NK }}
+      style={{ background: '#f5f4f7', fontFamily: NK }}
     >
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 pt-4 sm:pt-6 space-y-6">
 
         {/* ── Top Bar ───────────────────────── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs font-bold text-[#7b8e88]">
-            <span className="w-2 h-2 rounded-full bg-[#12796b]" />
+            <span className="w-2 h-2 rounded-full bg-[#641bd9]" />
             <span>ڕەشنووس پاشەکەوتکرا</span>
           </div>
 
           <button
             onClick={onBack}
-            className="w-10 h-10 rounded-2xl bg-white border border-[#e8eeed] flex items-center justify-center text-[#111d1a] shadow-2xs hover:bg-[#f8faf9] active:scale-95 transition"
+            className="w-10 h-10 rounded-2xl bg-white border border-[#eae8ee] flex items-center justify-center text-[#16111d] shadow-2xs hover:bg-[#f9f8fa] active:scale-95 transition"
             aria-label="گەڕانەوە"
           >
             <ArrowRight className="w-5 h-5" />
@@ -221,7 +221,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
 
         {/* ── Page Header ─────────────────────────────────────── */}
         <div className="text-right space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-black text-[#111d1a] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-[#16111d] tracking-tight">
             بڵاوکردنەوەی کار
           </h1>
           <p className="text-xs text-[#7b8e88] font-bold">
@@ -235,39 +235,39 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
           <div className="lg:col-span-4 space-y-5 order-2 lg:order-1 lg:sticky lg:top-6">
 
             <div className="space-y-2">
-              <span className="text-xs font-black text-[#111d1a] block text-right">
+              <span className="text-xs font-black text-[#16111d] block text-right">
                 ئەمە وایە کارەکەت دەردەکەوێت
               </span>
 
-              <div className="bg-white rounded-[24px] border border-[#e8eeec] p-5 shadow-sm space-y-3.5 text-right">
+              <div className="bg-white rounded-[24px] border border-[#eae8ee] p-5 shadow-sm space-y-3.5 text-right">
                 <div className="flex items-start justify-between gap-3">
                   <span className="px-2 py-0.5 rounded-full bg-[#dcfce7] text-[#166534] text-[9px] font-black shrink-0">
                     نوێ
                   </span>
                   <div className="text-right flex-1 min-w-0">
-                    <h4 className="text-xs sm:text-sm font-black text-[#111d1a] truncate">
+                    <h4 className="text-xs sm:text-sm font-black text-[#16111d] truncate">
                       {title || 'پەرەپێدەری وێب'}
                     </h4>
                     <p className="text-[11px] text-[#7b8e88] font-bold mt-0.5 truncate">
                       {companyName} · {[currentGovObj?.name_ku, currentDistObj?.name_ku].filter(Boolean).join('، ')}
                     </p>
                   </div>
-                  <div className="w-10 h-10 rounded-2xl bg-[#eaf5f2] border border-[#d2ede5] flex items-center justify-center text-[#12796b] font-black text-sm shrink-0">
+                  <div className="w-10 h-10 rounded-2xl bg-[#eeeaf5] border border-[#dcd1ee] flex items-center justify-center text-[#641bd9] font-black text-sm shrink-0">
                     {initialMonogram}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 justify-end flex-wrap">
-                  <span className="px-2.5 py-1 rounded-xl bg-[#f4f7f6] text-[#4a5854] text-[10px] font-bold">
+                  <span className="px-2.5 py-1 rounded-xl bg-[#f5f4f7] text-[#4a5854] text-[10px] font-bold">
                     {WORKPLACE_TYPES.find(w => w.id === workplaceType)?.label}
                   </span>
-                  <span className="px-2.5 py-1 rounded-xl bg-[#f4f7f6] text-[#4a5854] text-[10px] font-bold">
+                  <span className="px-2.5 py-1 rounded-xl bg-[#f5f4f7] text-[#4a5854] text-[10px] font-bold">
                     {liveWorkTypes.find(t => t.id === jobType)?.name_ku || '—'}
                   </span>
                 </div>
 
-                <div className="pt-3 border-t border-[#f4f7f6] flex items-center justify-between text-xs">
-                  <span className="font-mono font-black text-[#111d1a]">
+                <div className="pt-3 border-t border-[#f5f4f7] flex items-center justify-between text-xs">
+                  <span className="font-mono font-black text-[#16111d]">
                     {Number(salaryMin).toLocaleString()} — {Number(salaryMax).toLocaleString()} IQD
                   </span>
                 </div>
@@ -275,26 +275,26 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
             </div>
 
             {/* Real progress, tied to actual filled-in state */}
-            <div className="bg-white rounded-3xl p-5 border border-[#e8eeec] shadow-sm space-y-3 text-right">
-              <span className="text-xs font-black text-[#111d1a] block">پێشکەوتنی داواکارییەکە</span>
+            <div className="bg-white rounded-3xl p-5 border border-[#eae8ee] shadow-sm space-y-3 text-right">
+              <span className="text-xs font-black text-[#16111d] block">پێشکەوتنی داواکارییەکە</span>
               <div className="space-y-2 text-xs font-bold text-[#4a5854]">
-                <div className={`flex items-center justify-end gap-2 ${basicsDone ? 'text-[#12796b]' : 'text-[#8a9e98]'}`}>
+                <div className={`flex items-center justify-end gap-2 ${basicsDone ? 'text-[#641bd9]' : 'text-[#8a9e98]'}`}>
                   <span>ناونیشان و بوار</span>
                   {basicsDone
-                    ? <CheckCircle2 className="w-4 h-4 fill-[#12796b] text-white" />
-                    : <span className="w-4 h-4 rounded-full border border-[#cbd5d1]" />}
+                    ? <CheckCircle2 className="w-4 h-4 fill-[#641bd9] text-white" />
+                    : <span className="w-4 h-4 rounded-full border border-[#cfcbd5]" />}
                 </div>
-                <div className={`flex items-center justify-end gap-2 ${locationDone ? 'text-[#12796b]' : 'text-[#8a9e98]'}`}>
+                <div className={`flex items-center justify-end gap-2 ${locationDone ? 'text-[#641bd9]' : 'text-[#8a9e98]'}`}>
                   <span>شوێن و مووچە</span>
                   {locationDone
-                    ? <CheckCircle2 className="w-4 h-4 fill-[#12796b] text-white" />
-                    : <span className="w-4 h-4 rounded-full border border-[#cbd5d1]" />}
+                    ? <CheckCircle2 className="w-4 h-4 fill-[#641bd9] text-white" />
+                    : <span className="w-4 h-4 rounded-full border border-[#cfcbd5]" />}
                 </div>
-                <div className={`flex items-center justify-end gap-2 ${deadlineDone ? 'text-[#12796b]' : 'text-[#8a9e98]'}`}>
+                <div className={`flex items-center justify-end gap-2 ${deadlineDone ? 'text-[#641bd9]' : 'text-[#8a9e98]'}`}>
                   <span>کۆتا وادەی داواکاری (ئارەزوومەندانە)</span>
                   {deadlineDone
-                    ? <CheckCircle2 className="w-4 h-4 fill-[#12796b] text-white" />
-                    : <span className="w-4 h-4 rounded-full border border-[#cbd5d1]" />}
+                    ? <CheckCircle2 className="w-4 h-4 fill-[#641bd9] text-white" />
+                    : <span className="w-4 h-4 rounded-full border border-[#cfcbd5]" />}
                 </div>
               </div>
             </div>
@@ -310,7 +310,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                   placeholder="نموونە: پەرەپێدەری وێب"
-                  className={inputClass + ' border-2 !border-[#12796b]'}
+                  className={inputClass + ' border-2 !border-[#641bd9]'}
                 />
               </Field>
 
@@ -336,8 +336,8 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
                       aria-pressed={sector === sec.id}
                       className={`px-4 py-2.5 rounded-xl text-xs font-black border transition-all ${
                         sector === sec.id
-                          ? 'bg-[#12796b] border-[#12796b] text-white shadow-xs'
-                          : 'bg-white border-[#e4eae7] text-[#62736e] hover:border-[#12796b]/40 hover:text-[#111d1a]'
+                          ? 'bg-[#641bd9] border-[#641bd9] text-white shadow-xs'
+                          : 'bg-white border-[#e6e4ea] text-[#62736e] hover:border-[#641bd9]/40 hover:text-[#16111d]'
                       }`}
                     >
                       {sec.label}
@@ -348,7 +348,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
               </Field>
 
               <Field label="جۆری کات">
-                <div className="p-1.5 bg-[#f0f4f2] rounded-2xl border border-[#e8eeed] grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(liveWorkTypes.length, 1)}, minmax(0,1fr))` }}>
+                <div className="p-1.5 bg-[#f2f0f4] rounded-2xl border border-[#eae8ee] grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(liveWorkTypes.length, 1)}, minmax(0,1fr))` }}>
                   {liveWorkTypes.length === 0 && (
                     <span className="py-2.5 text-center text-[11px] text-[#8a9e98] font-bold">بارکردن...</span>
                   )}
@@ -358,7 +358,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
                       type="button"
                       onClick={() => setJobType(t.id)}
                       className={`py-2.5 rounded-xl text-xs font-black transition-all ${
-                        jobType === t.id ? 'bg-white text-[#111d1a] shadow-xs' : 'text-[#62736e] hover:text-[#111d1a]'
+                        jobType === t.id ? 'bg-white text-[#16111d] shadow-xs' : 'text-[#62736e] hover:text-[#16111d]'
                       }`}
                     >
                       {t.name_ku}
@@ -368,14 +368,14 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
               </Field>
 
               <Field label="شێوازی کارکردن">
-                <div className="p-1.5 bg-[#f0f4f2] rounded-2xl border border-[#e8eeed] grid grid-cols-3 gap-1">
+                <div className="p-1.5 bg-[#f2f0f4] rounded-2xl border border-[#eae8ee] grid grid-cols-3 gap-1">
                   {WORKPLACE_TYPES.map(w => (
                     <button
                       key={w.id}
                       type="button"
                       onClick={() => setWorkplaceType(w.id)}
                       className={`py-2.5 rounded-xl text-xs font-black transition-all ${
-                        workplaceType === w.id ? 'bg-white text-[#111d1a] shadow-xs' : 'text-[#62736e] hover:text-[#111d1a]'
+                        workplaceType === w.id ? 'bg-white text-[#16111d] shadow-xs' : 'text-[#62736e] hover:text-[#16111d]'
                       }`}
                     >
                       {w.label}
@@ -529,12 +529,12 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
                       onChange={e => setSkillInput(e.target.value)}
                       onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
                       placeholder="شارەزایی نوێ..."
-                      className="bg-[#f4f7f6] border border-[#e8eeed] rounded-xl px-3 py-1.5 text-xs font-bold outline-none text-[#111d1a]"
+                      className="bg-[#f5f4f7] border border-[#eae8ee] rounded-xl px-3 py-1.5 text-xs font-bold outline-none text-[#16111d]"
                     />
                     <button
                       type="button"
                       onClick={addSkill}
-                      className="px-3 py-1.5 rounded-xl bg-[#12796b] text-white text-xs font-bold hover:bg-[#0d5c50] transition"
+                      className="px-3 py-1.5 rounded-xl bg-[#641bd9] text-white text-xs font-bold hover:bg-[#4b13a5] transition"
                     >
                       + زیادکردن
                     </button>
@@ -542,7 +542,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
                   {skills.map(s => (
                     <span
                       key={s}
-                      className="px-3 py-1.5 rounded-xl bg-[#eaf5f2] border border-[#beece2] text-[#12796b] text-xs font-bold flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-xl bg-[#eeeaf5] border border-[#cfbded] text-[#641bd9] text-xs font-bold flex items-center gap-1.5"
                     >
                       {s}
                       <button type="button" onClick={() => removeSkill(s)} className="text-[#8a9e98] hover:text-red-500">
@@ -564,7 +564,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="w-full py-4 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-sm font-black shadow-md active:scale-95 transition flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-2xl bg-[#641bd9] hover:bg-[#4b13a5] text-white text-sm font-black shadow-md active:scale-95 transition flex items-center justify-center gap-2"
             >
               <Plus className="w-4 h-4" />
               <span>بڵاوکردنەوەی هەلی کار</span>

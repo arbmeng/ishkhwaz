@@ -12,7 +12,7 @@ export const HeroControls = ({ onBack, actions = [] }) => (
     ) : <span />}
     <div className="flex items-center gap-2">
       {actions.map(({ icon: Icon, label, onClick, active }, i) => (
-        <button key={i} type="button" onClick={onClick} aria-label={label} className={`${BTN} ${active ? '!bg-white !text-[#0d5c50]' : ''}`}><Icon className="h-[18px] w-[18px]" /></button>
+        <button key={i} type="button" onClick={onClick} aria-label={label} className={`${BTN} ${active ? '!bg-white !text-[#4b13a5]' : ''}`}><Icon className="h-[18px] w-[18px]" /></button>
       ))}
     </div>
   </div>

@@ -3,7 +3,7 @@ import { Globe, Instagram, Facebook, Linkedin, Twitter, Youtube, Github, Message
 
 // One list drives the edit form, the profile page and the public profile pages.
 export const SOCIAL_FIELDS = [
-  { key: 'website', label: 'ماڵپەڕ', placeholder: 'example.com', icon: Globe, color: '#12796b' },
+  { key: 'website', label: 'ماڵپەڕ', placeholder: 'example.com', icon: Globe, color: '#641bd9' },
   { key: 'whatsapp', label: 'WhatsApp', placeholder: '+964 750 123 4567', icon: MessageCircle, color: '#25d366' },
   { key: 'instagram', label: 'Instagram', placeholder: '@username', icon: Instagram, color: '#e1306c' },
   { key: 'facebook', label: 'Facebook', placeholder: 'facebook.com/yourpage', icon: Facebook, color: '#1877f2' },
@@ -51,7 +51,7 @@ export const SocialLinks = ({ links, className = '', size = 'md', onDark = false
       {items.map(({ key, label, icon: Icon, color }) => (
         <a key={key} href={socialUrl(key, data[key])} target="_blank" rel="noopener noreferrer nofollow" aria-label={label} title={label}
           onClick={(e) => e.stopPropagation()}
-          className={`${box} grid place-items-center rounded-full border transition active:scale-95 hover:-translate-y-0.5 ${onDark ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' : 'border-[#e5ece9] bg-white hover:shadow-md'}`}
+          className={`${box} grid place-items-center rounded-full border transition active:scale-95 hover:-translate-y-0.5 ${onDark ? 'border-white/20 bg-white/10 text-white hover:bg-white/20' : 'border-[#e8e5ec] bg-white hover:shadow-md'}`}
           style={onDark ? undefined : { color }}>
           <Icon className={size === 'sm' ? 'h-4 w-4' : 'h-[18px] w-[18px]'} />
         </a>

@@ -64,7 +64,7 @@ const SingleToast = ({ toast, onClose }) => {
           {toast.action && (
             <button
               onClick={() => { toast.action.onClick?.(); onClose(); }}
-              className="mt-3 rounded-full bg-white px-4 py-2 text-xs font-bold text-[#0d5c50] shadow active:scale-95"
+              className="mt-3 rounded-full bg-white px-4 py-2 text-xs font-bold text-[#4b13a5] shadow active:scale-95"
             >
               {toast.action.label}
             </button>

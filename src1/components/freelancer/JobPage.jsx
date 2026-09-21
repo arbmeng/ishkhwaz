@@ -16,10 +16,10 @@ import {
 } from 'lucide-react';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
-const TEAL = '#12796b';
-const TEAL_DARK = '#0d5c50';
-const MINT = '#d4f7ee';
-const MINT_BG = '#e8f7f4';
+const TEAL = '#641bd9';
+const TEAL_DARK = '#4b13a5';
+const MINT = '#e1d3f8';
+const MINT_BG = '#eee8f7';
 
 const JOB_TYPE_LABELS = {
   fullTime: 'کاتی تەواو',
@@ -129,10 +129,10 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
 
   if (!job) {
     return (
-      <div dir="rtl" className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ background: '#f4f7f6', fontFamily: NK }}>
+      <div dir="rtl" className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center" style={{ background: '#f5f4f7', fontFamily: NK }}>
         {waited ? (
           <>
-            <div className="text-sm font-black text-[#111d1a]">ئەم هەلە کارە نەدۆزرایەوە یان چیتر چالاک نییە</div>
+            <div className="text-sm font-black text-[#16111d]">ئەم هەلە کارە نەدۆزرایەوە یان چیتر چالاک نییە</div>
             <button onClick={onBack} className="px-5 py-3 rounded-2xl text-white text-xs font-black" style={{ background: TEAL }}>گەڕانەوە</button>
           </>
         ) : (
@@ -312,26 +312,26 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
     }
   };
   const detailStats = [
-    ['مووچە', salaryText, 'text-[#12796b]'],
-    ['جۆری کار', jobType, 'text-[#111d1a]'],
-    ['شێوازی کار', workplace, 'text-[#111d1a]'],
-    ['بینین', viewCount.toLocaleString(), 'text-[#111d1a]'],
+    ['مووچە', salaryText, 'text-[#641bd9]'],
+    ['جۆری کار', jobType, 'text-[#16111d]'],
+    ['شێوازی کار', workplace, 'text-[#16111d]'],
+    ['بینین', viewCount.toLocaleString(), 'text-[#16111d]'],
   ];
 
   return (
     <div
       dir="rtl"
-      className="min-h-[100dvh] w-full bg-[#f3f6f5] text-[#111d1a]"
+      className="min-h-[100dvh] w-full bg-[#f4f3f6] text-[#16111d]"
       style={{ fontFamily: NK }}
     >
       {/* Premium page shell */}
       <div className="min-h-[100dvh]">
 
         {/* Hero */}
-        <section className="relative overflow-hidden bg-[#101b18] text-white" style={{ marginTop: 'calc(-1 * env(safe-area-inset-top))' }}>
+        <section className="relative overflow-hidden bg-[#14101b] text-white" style={{ marginTop: 'calc(-1 * env(safe-area-inset-top))' }}>
           <HeroControls onBack={() => { soundService.playTick?.(); onClose(); }} actions={[{ icon: Bookmark, label: 'پاشەکەوتکردن', onClick: () => { soundService.playTick?.(); toggleSaveJob(job.id); }, active: isSaved }, { icon: Share2, label: 'هاوبەشکردن', onClick: handleShare }]} />
-          <div className="pointer-events-none absolute -right-28 -top-32 h-96 w-96 rounded-full bg-[#12796b]/25 blur-3xl" />
-          <div className="pointer-events-none absolute -left-28 -bottom-44 h-[430px] w-[430px] rounded-full bg-[#43c8ad]/10 blur-3xl" />
+          <div className="pointer-events-none absolute -right-28 -top-32 h-96 w-96 rounded-full bg-[#641bd9]/25 blur-3xl" />
+          <div className="pointer-events-none absolute -left-28 -bottom-44 h-[430px] w-[430px] rounded-full bg-[#a37fdd]/10 blur-3xl" />
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.045]"
             style={{
@@ -360,7 +360,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="truncate text-sm font-black">{companyName}</span>
-                      <BadgeCheck className="h-4 w-4 shrink-0 text-[#73dec7]" />
+                      <BadgeCheck className="h-4 w-4 shrink-0 text-[#9b70e1]" />
                     </div>
                     <div className="mt-1 text-xs font-bold text-white/50">
                       {district ? `${gov} • ${district}` : gov}
@@ -370,13 +370,13 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
 
                 <div className="mb-4 flex flex-wrap gap-2">
                   {isBoosted && (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#12796b] px-3 py-1.5 text-[10px] font-black">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#641bd9] px-3 py-1.5 text-[10px] font-black">
                       <Sparkles className="h-3 w-3" />
                       بەرزکراوە
                     </span>
                   )}
                   {isNew && (
-                    <span className="rounded-full bg-[#d4f7ee] px-3 py-1.5 text-[10px] font-black text-[#126b5e]">
+                    <span className="rounded-full bg-[#e1d3f8] px-3 py-1.5 text-[10px] font-black text-[#5b1cc0]">
                       نوێ
                     </span>
                   )}
@@ -409,7 +409,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                 <div className="rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm">
                   <div className="text-[10px] font-bold text-white/40">بینین</div>
                   <div className="mt-1 flex items-center gap-2 text-lg font-black text-white">
-                    <Eye className="h-4 w-4 text-[#73dec7]" />
+                    <Eye className="h-4 w-4 text-[#9b70e1]" />
                     {viewCount.toLocaleString()}
                   </div>
                 </div>
@@ -427,7 +427,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                 {detailStats.map(([label, value, valueClass]) => (
                   <div
                     key={label}
-                    className="rounded-2xl border border-[#e2eae7] bg-white p-4 shadow-[0_8px_25px_rgba(17,29,26,.035)]"
+                    className="rounded-2xl border border-[#e5e2ea] bg-white p-4 shadow-[0_8px_25px_rgba(22,17,29,.035)]"
                   >
                     <div className="mb-1.5 text-[10px] font-bold text-[#87948f]">{label}</div>
                     <div className={`truncate text-sm font-black ${valueClass}`}>{value}</div>
@@ -435,13 +435,13 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                 ))}
               </section>
 
-              <section className="rounded-3xl border border-[#e2eae7] bg-white p-5 shadow-[0_8px_30px_rgba(17,29,26,.04)] sm:p-7">
+              <section className="rounded-3xl border border-[#e5e2ea] bg-white p-5 shadow-[0_8px_30px_rgba(22,17,29,.04)] sm:p-7">
                 <div className="mb-5 flex items-center justify-between gap-3">
                   <div>
-                    <div className="mb-1 text-[10px] font-black text-[#12796b]">JOB DETAILS</div>
+                    <div className="mb-1 text-[10px] font-black text-[#641bd9]">JOB DETAILS</div>
                     <h2 className="text-xl font-black">دەربارەی هەلی کار</h2>
                   </div>
-                  <div className="hidden rounded-xl bg-[#edf8f5] px-3 py-2 text-[10px] font-black text-[#12796b] sm:block">
+                  <div className="hidden rounded-xl bg-[#f1edf8] px-3 py-2 text-[10px] font-black text-[#641bd9] sm:block">
                     {categoryName}
                   </div>
                 </div>
@@ -454,7 +454,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                 />
               </section>
 
-              <section className="rounded-3xl border border-[#e2eae7] bg-white p-5 shadow-[0_8px_30px_rgba(17,29,26,.04)] sm:p-7">
+              <section className="rounded-3xl border border-[#e5e2ea] bg-white p-5 shadow-[0_8px_30px_rgba(22,17,29,.04)] sm:p-7">
                 <div className="mb-5 flex items-center justify-between">
                   <h2 className="text-xl font-black">تواناکانی پێویست</h2>
                   <span className="text-[10px] font-bold text-[#87948f]">{skills.length} تواناکە</span>
@@ -465,22 +465,22 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                     {skills.map((skill, index) => (
                       <span
                         key={`${String(skill)}-${index}`}
-                        className="rounded-xl border border-[#d4ece5] bg-[#eff9f6] px-3.5 py-2.5 text-xs font-black text-[#146e61]"
+                        className="rounded-xl border border-[#ddd3ed] bg-[#f3eff9] px-3.5 py-2.5 text-xs font-black text-[#5f1fc6]"
                       >
                         {String(skill)}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-2xl bg-[#f7f9f8] p-5 text-sm font-bold text-[#7d8b86]">
+                  <div className="rounded-2xl bg-[#f8f7f9] p-5 text-sm font-bold text-[#7d8b86]">
                     تواناکانی تایبەت بۆ ئەم کارە دیاری نەکراون.
                   </div>
                 )}
               </section>
 
-              <section className="rounded-3xl border border-[#e2eae7] bg-white p-5 shadow-[0_8px_30px_rgba(17,29,26,.04)] sm:p-7">
+              <section className="rounded-3xl border border-[#e5e2ea] bg-white p-5 shadow-[0_8px_30px_rgba(22,17,29,.04)] sm:p-7">
                 <div className="mb-6">
-                  <div className="mb-1 text-[10px] font-black text-[#12796b]">HOW IT WORKS</div>
+                  <div className="mb-1 text-[10px] font-black text-[#641bd9]">HOW IT WORKS</div>
                   <h2 className="text-xl font-black">چۆن داواکاری بکەیت؟</h2>
                 </div>
 
@@ -490,8 +490,8 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                     ['٢', 'پێداچوونەوە', 'زانیارییەکانت پشکنینەوە بکە و ئەگەر پێویست بوو نامە زیاد بکە.'],
                     ['٣', 'داواکاری بنێرە', 'داواکارییەکەت بنێرە و دۆخی داواکارییەکە بەدواداچوون بکە.'],
                   ].map(([num, heading, body]) => (
-                    <div key={num} className="rounded-2xl bg-[#f7faf9] p-4">
-                      <div className="mb-4 grid h-9 w-9 place-items-center rounded-xl bg-[#dff5ef] text-xs font-black text-[#12796b]">
+                    <div key={num} className="rounded-2xl bg-[#f8f7fa] p-4">
+                      <div className="mb-4 grid h-9 w-9 place-items-center rounded-xl bg-[#e7def6] text-xs font-black text-[#641bd9]">
                         {num}
                       </div>
                       <div className="text-sm font-black">{heading}</div>
@@ -505,8 +505,8 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
             {/* Desktop application card */}
             <aside className="hidden lg:block">
               <div className="sticky top-24 space-y-4">
-                <section className="overflow-hidden rounded-3xl border border-[#e2eae7] bg-white shadow-[0_14px_40px_rgba(17,29,26,.07)]">
-                  <div className="bg-[#101b18] p-6 text-white">
+                <section className="overflow-hidden rounded-3xl border border-[#e5e2ea] bg-white shadow-[0_14px_40px_rgba(22,17,29,.07)]">
+                  <div className="bg-[#14101b] p-6 text-white">
                     <div className="mb-2 inline-flex rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[9px] font-black text-white/60">
                       KARNAMA
                     </div>
@@ -518,8 +518,8 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
 
                   <div className="p-5">
                     {hasAlreadyApplied ? (
-                      <div className="rounded-2xl border border-[#c9ece3] bg-[#effaf7] p-4">
-                        <div className="flex items-center gap-2 text-sm font-black text-[#126b5e]">
+                      <div className="rounded-2xl border border-[#d6c8ed] bg-[#f3effa] p-4">
+                        <div className="flex items-center gap-2 text-sm font-black text-[#5b1cc0]">
                           <CheckCircle2 className="h-5 w-5" />
                           داواکاری نێردراوە
                         </div>
@@ -529,7 +529,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                         <button
                           type="button"
                           onClick={() => onNavigate?.('my_applications')}
-                          className="mt-4 w-full rounded-xl bg-[#111d1a] py-3 text-xs font-black text-white"
+                          className="mt-4 w-full rounded-xl bg-[#16111d] py-3 text-xs font-black text-white"
                         >
                           داواکارییەکانم ببینە
                         </button>
@@ -539,7 +539,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                         <button
                           type="button"
                           onClick={handleStartApply}
-                          className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-[#12796b] px-5 py-4 text-sm font-black text-white shadow-[0_10px_25px_rgba(18,121,107,.2)] transition hover:bg-[#0d5c50] active:scale-[.99]"
+                          className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-[#641bd9] px-5 py-4 text-sm font-black text-white shadow-[0_10px_25px_rgba(100,27,217,.2)] transition hover:bg-[#4b13a5] active:scale-[.99]"
                         >
                           <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
                           <Send className="relative h-4 w-4" />
@@ -547,13 +547,13 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                         </button>
 
                         <div className="mt-3 grid grid-cols-2 gap-2">
-                          <div className="rounded-xl bg-[#f6f9f8] p-3">
+                          <div className="rounded-xl bg-[#f7f6f9] p-3">
                             <div className="text-[9px] font-bold text-[#87948f]">کرێ</div>
-                            <div className="mt-1 text-sm font-black text-[#111d1a]">{CV_FEE_DISPLAY}</div>
+                            <div className="mt-1 text-sm font-black text-[#16111d]">{CV_FEE_DISPLAY}</div>
                           </div>
-                          <div className="rounded-xl bg-[#f6f9f8] p-3">
+                          <div className="rounded-xl bg-[#f7f6f9] p-3">
                             <div className="text-[9px] font-bold text-[#87948f]">کریدیتی بەخۆڕایی</div>
-                            <div className="mt-1 text-sm font-black text-[#12796b]">
+                            <div className="mt-1 text-sm font-black text-[#641bd9]">
                               {freeCreditsLeft.toLocaleString()}
                             </div>
                           </div>
@@ -569,24 +569,24 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                       }}
                       className={`mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border py-3.5 text-xs font-black transition ${
                         isSaved
-                          ? 'border-[#b8e8dc] bg-[#effaf7] text-[#12796b]'
-                          : 'border-[#e2eae7] bg-white text-[#5b6964] hover:bg-[#f7faf9]'
+                          ? 'border-[#cab7e9] bg-[#f3effa] text-[#641bd9]'
+                          : 'border-[#e5e2ea] bg-white text-[#5b6964] hover:bg-[#f8f7fa]'
                       }`}
                     >
                       <Bookmark className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
                       {isSaved ? 'پاشەکەوتکراوە' : 'پاشەکەوتکردن'}
                     </button>
 
-                    <div className="mt-5 flex items-start gap-2 border-t border-[#edf1ef] pt-5 text-[10px] font-bold leading-5 text-[#84918c]">
-                      <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#12796b]" />
+                    <div className="mt-5 flex items-start gap-2 border-t border-[#efedf1] pt-5 text-[10px] font-bold leading-5 text-[#84918c]">
+                      <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#641bd9]" />
                       زانیارییەکانی داواکارییەکەت بە شێوەی پارێزراو بەڕێوەدەبرێن.
                     </div>
                   </div>
                 </section>
 
                 {!hasAlreadyApplied && (
-                  <section className="overflow-hidden rounded-3xl bg-[#101b18] p-5 text-white shadow-[0_14px_40px_rgba(17,29,26,.08)]">
-                    <div className="flex items-center gap-2 text-[#83e5d0]">
+                  <section className="overflow-hidden rounded-3xl bg-[#14101b] p-5 text-white shadow-[0_14px_40px_rgba(22,17,29,.08)]">
+                    <div className="flex items-center gap-2 text-[#a881e7]">
                       <Sparkles className="h-4 w-4" />
                       <span className="text-[10px] font-black">KARNAMA PRO</span>
                     </div>
@@ -597,11 +597,11 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                     <button
                       type="button"
                       onClick={handleOpenPlans}
-                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[10px] font-black text-[#111d1a]"
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-3 text-[10px] font-black text-[#16111d]"
                     >
-                      <Crown className="h-4 w-4 text-[#12796b]" />
+                      <Crown className="h-4 w-4 text-[#641bd9]" />
                       {isProPlusPlan ? 'پلانەکەت بەڕێوەبەرە' : isProPlan ? 'بەرزکردنەوە بۆ Pro+' : 'بینینی پلانەکان'}
-                      <ChevronRight className="h-4 w-4 text-[#12796b]" />
+                      <ChevronRight className="h-4 w-4 text-[#641bd9]" />
                     </button>
                   </section>
                 )}
@@ -612,11 +612,11 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
 
         {/* Mobile bottom CTA */}
         {step === 'detail' && !hasAlreadyApplied && (
-          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#dfe8e4] bg-white/95 p-3 backdrop-blur-xl lg:hidden" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#e2dfe8] bg-white/95 p-3 backdrop-blur-xl lg:hidden" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
             <button
               type="button"
               onClick={handleStartApply}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#12796b] py-4 text-sm font-black text-white shadow-[0_8px_25px_rgba(18,121,107,.22)] active:scale-[.99]"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#641bd9] py-4 text-sm font-black text-white shadow-[0_8px_25px_rgba(100,27,217,.22)] active:scale-[.99]"
             >
               <Send className="h-4 w-4" />
               ئێستا داواکاری بکە
@@ -630,7 +630,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
             <div className="max-h-[94dvh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-[30px] bg-white p-5 shadow-2xl sm:rounded-[30px] sm:p-7">
               <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
-                  <div className="mb-2 text-[10px] font-black text-[#12796b]">STEP 1 OF 3</div>
+                  <div className="mb-2 text-[10px] font-black text-[#641bd9]">STEP 1 OF 3</div>
                   <h2 className="text-2xl font-black">CV ـەکەت هەڵبژێرە</h2>
                   <p className="mt-1 text-xs font-medium leading-6 text-[#7b8984]">
                     ئەو CV ـە هەڵبژێرە کە زۆرترین گونجاوی بۆ ئەم کارە هەیە.
@@ -639,16 +639,16 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                 <button
                   type="button"
                   onClick={() => setStep('detail')}
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f4f7f6] text-[#65736e]"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f5f4f7] text-[#65736e]"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
               <div className="mb-6 flex gap-1.5">
-                <div className="h-1.5 flex-1 rounded-full bg-[#12796b]" />
-                <div className="h-1.5 flex-1 rounded-full bg-[#e1e9e6]" />
-                <div className="h-1.5 flex-1 rounded-full bg-[#e1e9e6]" />
+                <div className="h-1.5 flex-1 rounded-full bg-[#641bd9]" />
+                <div className="h-1.5 flex-1 rounded-full bg-[#e4e1e9]" />
+                <div className="h-1.5 flex-1 rounded-full bg-[#e4e1e9]" />
               </div>
 
               <div className="grid gap-3">
@@ -669,18 +669,18 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                     }}
                     className={`relative cursor-pointer rounded-2xl border-2 p-4 transition ${
                       cvMode === mode
-                        ? 'border-[#12796b] bg-[#eaf8f5]'
-                        : 'border-[#e5ece9] bg-white hover:border-[#bdddd5]'
+                        ? 'border-[#641bd9] bg-[#efeaf8]'
+                        : 'border-[#e8e5ec] bg-white hover:border-[#c9bcde]'
                     }`}
                   >
                     {cvMode === mode && (
-                      <div className="absolute left-4 top-4 grid h-5 w-5 place-items-center rounded-full bg-[#12796b] text-white">
+                      <div className="absolute left-4 top-4 grid h-5 w-5 place-items-center rounded-full bg-[#641bd9] text-white">
                         <Check className="h-3 w-3" />
                       </div>
                     )}
 
                     <div className="flex items-center gap-3">
-                      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#dff5ef] text-[#12796b]">
+                      <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e7def6] text-[#641bd9]">
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="min-w-0">
@@ -704,7 +704,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                             e.stopPropagation();
                             fileInputRef.current?.click();
                           }}
-                          className="w-full rounded-xl border border-dashed border-[#9ccfc2] bg-white px-4 py-3 text-xs font-black text-[#12796b]"
+                          className="w-full rounded-xl border border-dashed border-[#af9bd0] bg-white px-4 py-3 text-xs font-black text-[#641bd9]"
                         >
                           {cvFile ? cvFile.name : 'هەڵبژاردنی فایل'}
                         </button>
@@ -723,8 +723,8 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                             }}
                             className={`w-full rounded-xl border p-3 text-right ${
                               selectedResumeId === resume.id
-                                ? 'border-[#9ccfc2] bg-white'
-                                : 'border-[#e5ece9] bg-[#f8faf9]'
+                                ? 'border-[#af9bd0] bg-white'
+                                : 'border-[#e8e5ec] bg-[#f9f8fa]'
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2">
@@ -732,7 +732,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                                 {resume.title || resume.name || `CV ${resume.id}`}
                               </span>
                               {selectedResumeId === resume.id && (
-                                <CheckCircle2 className="h-4 w-4 text-[#12796b]" />
+                                <CheckCircle2 className="h-4 w-4 text-[#641bd9]" />
                               )}
                             </div>
                           </button>
@@ -754,7 +754,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                   value={coverLetter}
                   onChange={(e) => setCoverLetter(e.target.value)}
                   placeholder="کورتەیەک دەربارەی ئەزموون و بەردەستبوونت بنووسە..."
-                  className="w-full resize-none rounded-2xl border border-[#e3eae7] bg-[#fafcfb] p-4 text-sm font-medium leading-7 outline-none transition focus:border-[#8ccfc2]"
+                  className="w-full resize-none rounded-2xl border border-[#e6e3ea] bg-[#fbfafc] p-4 text-sm font-medium leading-7 outline-none transition focus:border-[#a58ad1]"
                 />
               </div>
 
@@ -762,7 +762,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                 type="button"
                 onClick={handleContinueToPayment}
                 disabled={isSubmitting}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#111d1a] py-4 text-sm font-black text-white transition hover:bg-black active:scale-[.99] disabled:opacity-60"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#16111d] py-4 text-sm font-black text-white transition hover:bg-black active:scale-[.99] disabled:opacity-60"
               >
                 {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : hasCredit ? <Send className="h-4 w-4" /> : null}
                 {isSubmitting ? 'لە ناردندایە...' : hasCredit ? 'ناردنی سیڤی · ١ کریدیت بەکاردێت' : 'بەردەوامبوون بۆ پارەدان'}
@@ -778,34 +778,34 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
             <div className="max-h-[94dvh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-[30px] bg-white p-5 shadow-2xl sm:rounded-[30px] sm:p-7">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="mb-2 text-[10px] font-black text-[#12796b]">STEP 2 OF 2</div>
+                  <div className="mb-2 text-[10px] font-black text-[#641bd9]">STEP 2 OF 2</div>
                   <h2 className="text-2xl font-black">پارەدان</h2>
                   <p className="mt-1 text-xs font-medium text-[#7b8984]">کریدیتت نەماوە — کرێی داواکارییەکە بە ZeraPay بدە.</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setStep('cv_mode')}
-                  className="grid h-10 w-10 place-items-center rounded-xl bg-[#f4f7f6] text-[#65736e]"
+                  className="grid h-10 w-10 place-items-center rounded-xl bg-[#f5f4f7] text-[#65736e]"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
               <div className="mt-6 flex gap-1.5">
-                <div className="h-1.5 flex-1 rounded-full bg-[#12796b]" />
-                <div className="h-1.5 flex-1 rounded-full bg-[#12796b]" />
+                <div className="h-1.5 flex-1 rounded-full bg-[#641bd9]" />
+                <div className="h-1.5 flex-1 rounded-full bg-[#641bd9]" />
               </div>
 
-              <div className="mt-5 rounded-3xl bg-[#101b18] p-5 text-white">
+              <div className="mt-5 rounded-3xl bg-[#14101b] p-5 text-white">
                 <div className="text-[10px] font-bold text-white/45">کرێی ئەم داواکارییە</div>
                 <div className="mt-1 text-3xl font-black">{CV_FEE_DISPLAY}</div>
                 <div className="mt-3 flex items-center gap-2 text-[10px] font-bold text-white/50">
-                  <ShieldCheck className="h-4 w-4 text-[#73dec7]" />
+                  <ShieldCheck className="h-4 w-4 text-[#9b70e1]" />
                   پارەدان لەسەر پەڕەی پارێزراوی ZeraPay ئەنجام دەدرێت.
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-[#e3eae7] bg-[#f9fbfa] p-4 text-xs font-medium leading-6 text-[#5f6f69]">
+              <div className="mt-4 rounded-2xl border border-[#e6e3ea] bg-[#faf9fb] p-4 text-xs font-medium leading-6 text-[#5f6f69]">
                 دوای پارەدان و پشتڕاستکردنەوە، سیڤییەکەت ڕاستەوخۆ دەگاتە کۆمپانیا. دەتوانیت داواکارییەکەت لە بەشی «داواکارییەکانم» بەدوادا بچیت.
               </div>
 
@@ -813,7 +813,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleZeraPay}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#12796b] py-4 text-sm font-black text-white shadow-[0_8px_24px_rgba(18,121,107,.2)] disabled:opacity-50"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#641bd9] py-4 text-sm font-black text-white shadow-[0_8px_24px_rgba(100,27,217,.2)] disabled:opacity-50"
               >
                 {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                 {isSubmitting ? 'کرانەوەی ZeraPay...' : `پارەدان بە ZeraPay · ${CV_FEE_DISPLAY}`}
@@ -822,7 +822,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
               <button
                 type="button"
                 onClick={handleOpenPlans}
-                className="mt-2 w-full rounded-2xl py-3 text-xs font-black text-[#12796b] transition hover:bg-[#edf8f5]"
+                className="mt-2 w-full rounded-2xl py-3 text-xs font-black text-[#641bd9] transition hover:bg-[#f1edf8]"
               >
                 یان پلانێک بکڕە بۆ کریدیتی زیاتر
               </button>
@@ -832,19 +832,19 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
 
         {/* Step 3 — Success */}
         {step === 'success' && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#101b18]/75 p-4 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#14101b]/75 p-4 backdrop-blur-md">
             <div className="w-full max-w-lg rounded-[30px] bg-white p-6 text-center shadow-2xl sm:p-8">
-              <div className="mx-auto grid h-20 w-20 place-items-center rounded-[24px] bg-[#e4f8f3] text-[#12796b]">
+              <div className="mx-auto grid h-20 w-20 place-items-center rounded-[24px] bg-[#ece4f8] text-[#641bd9]">
                 <Check className="h-10 w-10 stroke-[3]" />
               </div>
 
-              <div className="mt-5 text-[10px] font-black text-[#12796b]">STEP 3 OF 3 • COMPLETED</div>
+              <div className="mt-5 text-[10px] font-black text-[#641bd9]">STEP 3 OF 3 • COMPLETED</div>
               <h2 className="mt-2 text-2xl font-black">داواکارییەکەت نێردرا!</h2>
               <p className="mx-auto mt-2 max-w-sm text-sm font-medium leading-7 text-[#71807a]">
                 داواکارییەکەت بە سەرکەوتوویی تۆمارکرا. دەتوانیت لە بەشی داواکارییەکان دۆخەکەی بەدواداچوون بکەیت.
               </p>
 
-              <div className="mt-6 divide-y divide-[#edf1ef] rounded-2xl bg-[#f7faf9] px-4 text-right">
+              <div className="mt-6 divide-y divide-[#efedf1] rounded-2xl bg-[#f8f7fa] px-4 text-right">
                 <div className="flex items-center justify-between gap-3 py-3 text-xs">
                   <span className="max-w-[65%] truncate font-black">{title}</span>
                   <span className="font-bold text-[#87948f]">هەلی کار</span>
@@ -854,7 +854,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                   <span className="font-bold text-[#87948f]">کۆدی مامەڵە</span>
                 </div>
                 <div className="flex items-center justify-between gap-3 py-3 text-xs">
-                  <span className="rounded-full bg-[#dff5ef] px-2.5 py-1 font-black text-[#12796b]">نێردراوە</span>
+                  <span className="rounded-full bg-[#e7def6] px-2.5 py-1 font-black text-[#641bd9]">نێردراوە</span>
                   <span className="font-bold text-[#87948f]">دۆخ</span>
                 </div>
               </div>
@@ -865,7 +865,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                   soundService.playTick?.();
                   onNavigate?.('my_applications');
                 }}
-                className="mt-5 w-full rounded-2xl bg-[#111d1a] py-4 text-sm font-black text-white"
+                className="mt-5 w-full rounded-2xl bg-[#16111d] py-4 text-sm font-black text-white"
               >
                 داواکارییەکانم ببینە
               </button>
@@ -876,7 +876,7 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
                   soundService.playTick?.();
                   onClose();
                 }}
-                className="mt-2 w-full rounded-2xl border border-[#e3eae7] bg-white py-3.5 text-xs font-black text-[#5b6964]"
+                className="mt-2 w-full rounded-2xl border border-[#e6e3ea] bg-white py-3.5 text-xs font-black text-[#5b6964]"
               >
                 گەڕان بۆ کاری تر
               </button>

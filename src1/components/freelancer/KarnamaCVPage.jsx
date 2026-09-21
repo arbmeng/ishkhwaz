@@ -9,9 +9,9 @@ import {
   User, Briefcase, GraduationCap, Layers, Languages, Award, FolderGit2, Users2, CheckCircle2,
 } from 'lucide-react';
 
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
-const TEAL_SOFT = '#e7f4f1';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
+const TEAL_SOFT = '#ece7f4';
 
 const newId = () => `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -228,7 +228,7 @@ export const KarnamaCVPage = ({ onBack, onProceed }) => {
   const unusedSuggestions = SKILL_SUGGESTIONS.filter(s => !skills.some(k => k.name.toLowerCase() === s.toLowerCase())).slice(0, 4);
 
   return (
-    <div dir="rtl" className="min-h-screen font-vazirmatn" style={{ background: '#f4f7f6', paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}>
+    <div dir="rtl" className="min-h-screen font-vazirmatn" style={{ background: '#f5f4f7', paddingBottom: 'calc(7rem + env(safe-area-inset-bottom))' }}>
       {/* HEADER — shared page header; the step label + progress bars are plain content under it */}
       <PageHeader
         title={`دروستکردنی سیڤی پیشەیی · ${step + 1}/${STEPS.length}`}
@@ -442,7 +442,7 @@ export const KarnamaCVPage = ({ onBack, onProceed }) => {
                       {LANGUAGE_LEVELS.map(l => (
                         <button type="button" key={l} onClick={() => update({ level: l })}
                           className="py-2 rounded-xl text-[11px] font-bold transition-all"
-                          style={item.level === l ? { background: TEAL, color: '#fff' } : { background: '#f4f7f6', color: '#5a6b65' }}>
+                          style={item.level === l ? { background: TEAL, color: '#fff' } : { background: '#f5f4f7', color: '#5a6b65' }}>
                           {l}
                         </button>
                       ))}
@@ -530,7 +530,7 @@ export const KarnamaCVPage = ({ onBack, onProceed }) => {
                     { key: 'languages', label: 'زمانەکان' },
                   ].map(({ key, label }) => (
                     <span key={key} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold"
-                      style={sectionDone[key] ? { background: TEAL_SOFT, color: TEAL_DEEP } : { background: '#f4f7f6', color: '#a8b0ac' }}>
+                      style={sectionDone[key] ? { background: TEAL_SOFT, color: TEAL_DEEP } : { background: '#f5f4f7', color: '#a8b0ac' }}>
                       {sectionDone[key] && <CheckCircle2 className="w-3 h-3" />}
                       {label}
                     </span>

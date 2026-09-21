@@ -7,7 +7,7 @@ import { TEMPLATE_LIST } from '../../cvTemplates/registry';
 import { ArrowRight, Check, Eye, Crown, X, Loader2, Lock } from 'lucide-react';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
-const TEAL = '#12796b';
+const TEAL = '#641bd9';
 
 // Real A4 template dimensions (see cvTemplates/*.jsx — every one renders at
 // this fixed pixel size so the Resumes page's PDF export screenshots it
@@ -30,7 +30,7 @@ const TemplateFallback = () => (
 const LiveThumbnail = ({ template, resume, locked }) => {
   const Comp = template.component;
   return (
-    <div className="w-full h-72 rounded-[22px] border border-[#e8eeed] relative overflow-hidden bg-white shadow-inner flex items-center justify-center">
+    <div className="w-full h-72 rounded-[22px] border border-[#eae8ee] relative overflow-hidden bg-white shadow-inner flex items-center justify-center">
       <div style={{ width: A4_W * THUMB_SCALE, height: A4_H * THUMB_SCALE, overflow: 'hidden' }}>
         <div style={{ width: A4_W, height: A4_H, transform: `scale(${THUMB_SCALE})`, transformOrigin: 'top right' }}>
           <Suspense fallback={<TemplateFallback />}>
@@ -39,13 +39,13 @@ const LiveThumbnail = ({ template, resume, locked }) => {
         </div>
       </div>
       {template.isPremium && (
-        <span className="absolute top-3 left-3 px-2 py-0.5 rounded-full bg-[#12796b] text-white text-[9px] font-black flex items-center gap-1 shadow-2xs">
+        <span className="absolute top-3 left-3 px-2 py-0.5 rounded-full bg-[#641bd9] text-white text-[9px] font-black flex items-center gap-1 shadow-2xs">
           <Crown className="w-2.5 h-2.5" /> پارەدان
         </span>
       )}
       {locked && (
         <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] flex items-center justify-center">
-          <div className="w-9 h-9 rounded-full bg-[#111d1a] text-white flex items-center justify-center shadow-lg">
+          <div className="w-9 h-9 rounded-full bg-[#16111d] text-white flex items-center justify-center shadow-lg">
             <Lock className="w-4 h-4" />
           </div>
         </div>
@@ -144,7 +144,7 @@ export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) 
 
   if (loadingResume) {
     return (
-      <div dir="rtl" className="min-h-screen flex items-center justify-center" style={{ background: '#f4f7f6', fontFamily: NK }}>
+      <div dir="rtl" className="min-h-screen flex items-center justify-center" style={{ background: '#f5f4f7', fontFamily: NK }}>
         <Loader2 className="w-6 h-6 animate-spin text-stone-300" />
       </div>
     );
@@ -155,7 +155,7 @@ export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) 
       dir="rtl"
       className="min-h-screen select-none"
       style={{
-        background: '#f4f7f6',
+        background: '#f5f4f7',
         fontFamily: NK,
         paddingBottom: 'calc(8.5rem + env(safe-area-inset-bottom))',
       }}
@@ -172,7 +172,7 @@ export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) 
           <div className="flex items-center gap-3">
             <button
               onClick={onBack}
-              className="w-10 h-10 rounded-2xl bg-white border border-[#e8eeed] flex items-center justify-center text-[#111d1a] shadow-2xs hover:bg-[#f8faf9] active:scale-95 transition"
+              className="w-10 h-10 rounded-2xl bg-white border border-[#eae8ee] flex items-center justify-center text-[#16111d] shadow-2xs hover:bg-[#f9f8fa] active:scale-95 transition"
               aria-label="گەڕانەوە"
             >
               <ArrowRight className="w-5 h-5" />
@@ -186,10 +186,10 @@ export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) 
             <span className="text-xs font-bold text-[#7b8e88]">
               بە هێزکراوی ئیش خواز
             </span>
-            <span className="text-sm font-black text-[#111d1a]">
+            <span className="text-sm font-black text-[#16111d]">
               کارنامە
             </span>
-            <div className="w-8 h-8 rounded-xl bg-[#12796b] text-white flex items-center justify-center font-black text-xs">
+            <div className="w-8 h-8 rounded-xl bg-[#641bd9] text-white flex items-center justify-center font-black text-xs">
               ک
             </div>
           </div>
@@ -197,7 +197,7 @@ export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) 
 
         {/* ── Title & Intro ────────────────────────────────────── */}
         <div className="text-center space-y-1 pt-2">
-          <h1 className="text-2xl sm:text-3xl font-black text-[#111d1a] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-[#16111d] tracking-tight">
             شێوازی کارنامەکەت هەڵبژێرە
           </h1>
           <p className="text-xs text-[#7b8e88] font-bold">
@@ -220,8 +220,8 @@ export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) 
               }}
               className={`px-5 py-2 rounded-2xl text-xs font-black transition-all active:scale-95 ${
                 filterType === f.id
-                  ? 'bg-[#111d1a] text-white shadow-xs'
-                  : 'bg-white text-[#62736e] border border-[#e8eeed] hover:border-[#12796b]/40'
+                  ? 'bg-[#16111d] text-white shadow-xs'
+                  : 'bg-white text-[#62736e] border border-[#eae8ee] hover:border-[#641bd9]/40'
               }`}
             >
               {f.label}
@@ -241,20 +241,20 @@ export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) 
                 onClick={() => pickTemplate(t)}
                 className={`bg-white rounded-[28px] border-2 p-3 pb-4 transition-all duration-200 cursor-pointer flex flex-col justify-between group ${
                   isSelected
-                    ? 'border-[#12796b] shadow-[0_4px_24px_rgba(18,121,107,0.12)]'
-                    : 'border-[#e8eeec] hover:border-[#cbd5d1] shadow-2xs'
+                    ? 'border-[#641bd9] shadow-[0_4px_24px_rgba(100,27,217,0.12)]'
+                    : 'border-[#eae8ee] hover:border-[#cfcbd5] shadow-2xs'
                 }`}
               >
                 <LiveThumbnail template={t} resume={resumeData} locked={locked} />
 
                 <div className="pt-3.5 px-2 flex items-center justify-between">
                   <div className="text-right">
-                    <h4 className="text-sm font-black text-[#111d1a]">{t.name}</h4>
+                    <h4 className="text-sm font-black text-[#16111d]">{t.name}</h4>
                     <p className="text-[11px] text-[#7b8e88] font-bold mt-0.5">{t.isPremium ? 'پارەدان — پلانی پرۆ/VIP' : 'بەخۆڕایی'}</p>
                   </div>
 
                   {isSelected && (
-                    <div className="w-6 h-6 rounded-full bg-[#12796b] text-white flex items-center justify-center text-xs font-black shadow-2xs">
+                    <div className="w-6 h-6 rounded-full bg-[#641bd9] text-white flex items-center justify-center text-xs font-black shadow-2xs">
                       ✓
                     </div>
                   )}
@@ -265,13 +265,13 @@ export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) 
         </div>
 
         {/* ── Bottom Floating Bar ──────────────────────────────── */}
-        <div className="fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#e8eeec] px-4 sm:px-8 py-3.5 shadow-lg space-y-2.5">
+        <div className="fixed inset-x-0 bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#eae8ee] px-4 sm:px-8 py-3.5 shadow-lg space-y-2.5">
           <div className="max-w-[1400px] mx-auto flex items-center gap-3">
             <input
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="ناوی ئەم سیڤییە (بۆ نموونە: سیڤی بواری تەکنیکی)"
-              className="flex-1 min-w-0 py-2.5 px-3.5 rounded-xl bg-[#f4f7f6] border border-[#e8eeed] text-xs font-bold text-[#111d1a] outline-none focus:border-[#12796b]"
+              className="flex-1 min-w-0 py-2.5 px-3.5 rounded-xl bg-[#f5f4f7] border border-[#eae8ee] text-xs font-bold text-[#16111d] outline-none focus:border-[#641bd9]"
             />
           </div>
           <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-4">
@@ -279,7 +279,7 @@ export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) 
               <button
                 type="button"
                 onClick={() => { soundService.playTick?.(); setPreviewOpen(true); }}
-                className="px-4 py-3 rounded-2xl bg-white border border-[#e8eeed] text-[#4a5854] text-xs font-black hover:bg-[#f8faf9] active:scale-95 transition flex items-center gap-1.5"
+                className="px-4 py-3 rounded-2xl bg-white border border-[#eae8ee] text-[#4a5854] text-xs font-black hover:bg-[#f9f8fa] active:scale-95 transition flex items-center gap-1.5"
               >
                 <Eye className="w-4 h-4" />
                 <span>پێشبینین</span>
@@ -289,7 +289,7 @@ export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) 
                 type="button"
                 onClick={handleSelect}
                 disabled={saving}
-                className="px-6 py-3 rounded-2xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-xs font-black shadow-[0_4px_14px_rgba(18,121,107,0.3)] active:scale-95 transition flex items-center gap-2 disabled:opacity-60"
+                className="px-6 py-3 rounded-2xl bg-[#641bd9] hover:bg-[#4b13a5] text-white text-xs font-black shadow-[0_4px_14px_rgba(100,27,217,0.3)] active:scale-95 transition flex items-center gap-2 disabled:opacity-60"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 <span>{saving ? 'پاشەکەوتکردن...' : (isEditMode ? 'پاشەکەوتکردنی شێوازی نوێ' : 'دیاریکردنی ئەم شێوازە')}</span>
@@ -298,9 +298,9 @@ export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) 
 
             <div className="text-right text-xs font-bold text-[#7b8e88]">
               <span>شێوازی هەڵبژێردراو: </span>
-              <strong className="text-[#111d1a] font-black">{selectedTemplate.name}</strong>
+              <strong className="text-[#16111d] font-black">{selectedTemplate.name}</strong>
               <span> — </span>
-              <span className="text-[#12796b]">{selectedTemplate.isPremium ? 'پارەدان' : 'بەخۆڕایی'}</span>
+              <span className="text-[#641bd9]">{selectedTemplate.isPremium ? 'پارەدان' : 'بەخۆڕایی'}</span>
             </div>
 
           </div>
@@ -315,7 +315,7 @@ export const KarnamaTemplatePicker = ({ baseResume, resumeId, onBack, onDone }) 
               className="fixed top-4 left-4 w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-lg active:scale-95 transition z-10"
               aria-label="داخستن"
             >
-              <X className="w-5 h-5 text-[#111d1a]" />
+              <X className="w-5 h-5 text-[#16111d]" />
             </button>
             <div
               onClick={e => e.stopPropagation()}

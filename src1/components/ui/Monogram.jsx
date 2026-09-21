@@ -6,11 +6,11 @@ import React from 'react';
 // pretending to be theirs or a flat, identical generic icon on every card.
 const MONOGRAM_PALETTE = [
   ['#1d4ed8', '#3b82f6'], // blue
-  ['#059669', '#10b981'], // emerald
+  ['#6d14fd', '#a16cf6'], // emerald
   ['#7c3aed', '#a78bfa'], // violet
   ['#ea580c', '#fb923c'], // orange
   ['#db2777', '#f472b6'], // pink
-  ['#0891b2', '#22d3ee'], // cyan
+  ['#0891b2', '#9a61f7'], // cyan
   ['#4338ca', '#818cf8'], // indigo
 ];
 

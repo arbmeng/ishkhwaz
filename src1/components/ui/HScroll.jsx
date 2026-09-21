@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const TEAL = '#12796b';
+const TEAL = '#641bd9';
 
 // A horizontally scrolling row that tells you it scrolls and lets you drive it:
 //  - round arrow buttons (desktop) that only show when there is more in that direction
@@ -82,7 +82,7 @@ export const HScroll = ({ children, className = '', bar = true, arrows = true, s
   // A drag must not count as a click on the card under the cursor.
   const onClickCapture = (e) => { if (dragMoved.current) { e.preventDefault(); e.stopPropagation(); } };
 
-  const arrowCls = 'absolute top-1/2 -translate-y-1/2 z-10 hidden sm:flex w-9 h-9 rounded-full bg-white border border-stone-100 shadow-[0_6px_18px_rgba(20,45,40,.16)] items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95';
+  const arrowCls = 'absolute top-1/2 -translate-y-1/2 z-10 hidden sm:flex w-9 h-9 rounded-full bg-white border border-stone-100 shadow-[0_6px_18px_rgba(29,19,46,.16)] items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95';
 
   return (
     <div className="relative group/hs">
@@ -96,7 +96,7 @@ export const HScroll = ({ children, className = '', bar = true, arrows = true, s
         onClickCapture={onClickCapture}
         onKeyDown={(e) => { if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); } else if (e.key === 'ArrowRight') { e.preventDefault(); go(1); } }}
         tabIndex={st.can ? 0 : -1}
-        className={`overflow-x-auto scrollbar-none scroll-smooth snap-x snap-proximity [&>*]:snap-start outline-none focus-visible:ring-2 focus-visible:ring-[#12796b]/30 rounded-2xl ${st.can ? 'sm:cursor-grab sm:active:cursor-grabbing' : ''} ${className}`}
+        className={`overflow-x-auto scrollbar-none scroll-smooth snap-x snap-proximity [&>*]:snap-start outline-none focus-visible:ring-2 focus-visible:ring-[#641bd9]/30 rounded-2xl ${st.can ? 'sm:cursor-grab sm:active:cursor-grabbing' : ''} ${className}`}
       >
         {children}
       </div>
@@ -117,7 +117,7 @@ export const HScroll = ({ children, className = '', bar = true, arrows = true, s
       {bar && st.can && (
         <div onClick={jump} className="mt-3 h-1.5 rounded-full bg-stone-200/70 relative cursor-pointer" role="presentation">
           <div className="absolute top-0 h-full rounded-full transition-[inset-inline-start] duration-150"
-            style={{ width: `${st.thumb}%`, insetInlineStart: `${st.pos * (100 - st.thumb)}%`, background: `linear-gradient(90deg, ${TEAL}, #43bea4)` }} />
+            style={{ width: `${st.thumb}%`, insetInlineStart: `${st.pos * (100 - st.thumb)}%`, background: `linear-gradient(90deg, ${TEAL}, #aa8dda)` }} />
         </div>
       )}
     </div>

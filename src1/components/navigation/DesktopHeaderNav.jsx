@@ -9,7 +9,7 @@ import { getPlanIcon, getPlanColor } from '../../utils/planPresets';
 import { FEATURES, canSeePlans } from '../../config/features';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
-const TEAL = '#12796b';
+const TEAL = '#641bd9';
 
 export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
   const { user, token, logout } = useAuth();
@@ -57,7 +57,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
   return (
     <header
       dir="rtl"
-      className="hidden lg:block w-full bg-white/95 backdrop-blur-md border-b border-[#e8eeec] sticky top-0 z-50 select-none shadow-[0_2px_12px_rgba(0,0,0,0.03)]"
+      className="hidden lg:block w-full bg-white/95 backdrop-blur-md border-b border-[#eae8ee] sticky top-0 z-50 select-none shadow-[0_2px_12px_rgba(0,0,0,0.03)]"
       style={{ fontFamily: NK }}
     >
       <div className="max-w-[1440px] mx-auto px-6 h-[72px] flex items-center justify-between gap-6">
@@ -69,8 +69,8 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
             onClick={() => handleNav('home')}
             className="flex items-center gap-2.5 cursor-pointer group"
           >
-            <img src="/logo-green.png" alt="ئیش خواز" className="h-10 w-10 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform" />
-            <span className="text-xl font-black text-[#111d1a]">
+            <img src="/logo-app.png" alt="ئیش خواز" className="h-10 w-10 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform" />
+            <span className="text-xl font-black text-[#16111d]">
               ئیش خواز
             </span>
           </div>
@@ -82,13 +82,13 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
               onClick={() => handleNav('home')}
               className={`px-3.5 py-2 rounded-xl transition-all relative ${
                 activeTab === 'home'
-                  ? 'text-[#12796b] font-black'
-                  : 'text-[#5a6b65] hover:text-[#111d1a]'
+                  ? 'text-[#641bd9] font-black'
+                  : 'text-[#5a6b65] hover:text-[#16111d]'
               }`}
             >
               ماڵەوە
               {activeTab === 'home' && (
-                <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />
+                <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#641bd9] rounded-full" />
               )}
             </button>
 
@@ -97,13 +97,13 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
               onClick={() => handleNav('search')}
               className={`px-3.5 py-2 rounded-xl transition-all relative ${
                 searchActive
-                  ? 'text-[#12796b] font-black'
-                  : 'text-[#5a6b65] hover:text-[#111d1a]'
+                  ? 'text-[#641bd9] font-black'
+                  : 'text-[#5a6b65] hover:text-[#16111d]'
               }`}
             >
               گەڕان
               {searchActive && (
-                <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />
+                <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#641bd9] rounded-full" />
               )}
             </button>
 
@@ -111,10 +111,10 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
               <button
                 key={id}
                 onClick={() => handleNav(id)}
-                className={`px-3.5 py-2 rounded-xl transition-all relative ${activeTab === id ? 'text-[#12796b] font-black' : 'text-[#5a6b65] hover:text-[#111d1a]'}`}
+                className={`px-3.5 py-2 rounded-xl transition-all relative ${activeTab === id ? 'text-[#641bd9] font-black' : 'text-[#5a6b65] hover:text-[#16111d]'}`}
               >
                 {id === 'about' ? 'دەربارە' : 'پەیوەندی'}
-                {activeTab === id && <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />}
+                {activeTab === id && <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#641bd9] rounded-full" />}
               </button>
             ))}
 
@@ -124,13 +124,13 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
               onClick={() => handleNav('map')}
               className={`px-3.5 py-2 rounded-xl transition-all relative ${
                 activeTab === 'map'
-                  ? 'text-[#12796b] font-black'
-                  : 'text-[#5a6b65] hover:text-[#111d1a]'
+                  ? 'text-[#641bd9] font-black'
+                  : 'text-[#5a6b65] hover:text-[#16111d]'
               }`}
             >
               نەخشە
               {activeTab === 'map' && (
-                <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />
+                <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#641bd9] rounded-full" />
               )}
             </button>
 )}
@@ -141,13 +141,13 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
               onClick={() => handleNav('plans')}
               className={`px-3.5 py-2 rounded-xl transition-all relative ${
                 activeTab === 'plans'
-                  ? 'text-[#12796b] font-black'
-                  : 'text-[#5a6b65] hover:text-[#111d1a]'
+                  ? 'text-[#641bd9] font-black'
+                  : 'text-[#5a6b65] hover:text-[#16111d]'
               }`}
             >
               پلانەکان
               {activeTab === 'plans' && (
-                <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />
+                <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#641bd9] rounded-full" />
               )}
             </button>
 )}
@@ -156,8 +156,8 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
               onClick={() => handleNav(isEmployer ? 'my_company_dashboard' : 'my_applications')}
               className={`px-3.5 py-2 rounded-xl transition-all relative flex items-center gap-1.5 ${
                 activeTab === 'my_company_dashboard' || activeTab === 'my_applications'
-                  ? 'text-[#12796b] font-black'
-                  : 'text-[#5a6b65] hover:text-[#111d1a]'
+                  ? 'text-[#641bd9] font-black'
+                  : 'text-[#5a6b65] hover:text-[#16111d]'
               }`}
             >
               <span>داشبۆرد</span>
@@ -167,7 +167,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
                 </span>
               )}
               {(activeTab === 'my_company_dashboard' || activeTab === 'my_applications') && (
-                <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />
+                <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#641bd9] rounded-full" />
               )}
             </button>
           </nav>
@@ -181,7 +181,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
           <button
             data-tour="hdr-messages"
             onClick={() => handleNav('messages')}
-            className="w-10 h-10 rounded-2xl bg-[#f4f7f6] border border-[#e8eeed] flex items-center justify-center text-[#4a5854] hover:bg-[#eaf5f2] active:scale-95 transition relative"
+            className="w-10 h-10 rounded-2xl bg-[#f5f4f7] border border-[#eae8ee] flex items-center justify-center text-[#4a5854] hover:bg-[#eeeaf5] active:scale-95 transition relative"
             title="پەیامەکان"
           >
             <MessageSquare className="w-4.5 h-4.5" />
@@ -196,7 +196,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
           <button
             data-tour="hdr-notifications"
             onClick={() => handleNav('notifications')}
-            className="w-10 h-10 rounded-2xl bg-[#f4f7f6] border border-[#e8eeed] flex items-center justify-center text-[#4a5854] hover:bg-[#eaf5f2] active:scale-95 transition relative"
+            className="w-10 h-10 rounded-2xl bg-[#f5f4f7] border border-[#eae8ee] flex items-center justify-center text-[#4a5854] hover:bg-[#eeeaf5] active:scale-95 transition relative"
             title="ئاگادارکردنەوەکان"
           >
             <Bell className="w-4.5 h-4.5" />
@@ -226,12 +226,12 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
             <button
               data-tour="hdr-profile"
               onClick={() => handleNav('profile')}
-              className="flex items-center gap-2.5 py-1.5 px-3 rounded-full bg-[#f4f7f6] hover:bg-[#eaf5f2] border border-[#e8eeed] transition active:scale-95 cursor-pointer"
+              className="flex items-center gap-2.5 py-1.5 px-3 rounded-full bg-[#f5f4f7] hover:bg-[#eeeaf5] border border-[#eae8ee] transition active:scale-95 cursor-pointer"
             >
-              <span className="text-xs font-black text-[#111d1a] max-w-[120px] truncate" title={displayName}>
+              <span className="text-xs font-black text-[#16111d] max-w-[120px] truncate" title={displayName}>
                 {displayName}
               </span>
-              <div className="w-8 h-8 rounded-full bg-[#c8eee6] flex items-center justify-center text-[#12796b] font-black text-xs shrink-0 overflow-hidden border border-white">
+              <div className="w-8 h-8 rounded-full bg-[#d6c7ef] flex items-center justify-center text-[#641bd9] font-black text-xs shrink-0 overflow-hidden border border-white">
                 {user.avatar ? (
                   <img src={user.avatar} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
@@ -243,7 +243,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
             <button
               data-tour="hdr-login"
               onClick={() => handleNav('login')}
-              className="px-5 py-2 rounded-xl bg-[#12796b] text-white text-xs font-black hover:bg-[#0d5c50] transition shadow-sm"
+              className="px-5 py-2 rounded-xl bg-[#641bd9] text-white text-xs font-black hover:bg-[#4b13a5] transition shadow-sm"
             >
               چوونەژوورەوە
             </button>

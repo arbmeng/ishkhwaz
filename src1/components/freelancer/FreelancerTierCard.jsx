@@ -3,8 +3,8 @@ import { BadgeCheck, MapPin, Send, Crown, Rocket } from 'lucide-react';
 import { getPlanColor, getPlanIcon, getContrastColor, hexToRgba, tintToward } from '../../utils/planPresets';
 import { monogramColors } from '../ui/Monogram';
 
-const TEAL = '#12796b';
-const INK = '#0b1211';
+const TEAL = '#641bd9';
+const INK = '#0e0b12';
 
 const parseSkills = (raw) => {
   if (Array.isArray(raw)) return raw;
@@ -142,7 +142,7 @@ export const FreelancerTierCard = ({ f, tier, isVip = false, matched = false, on
           <MapPin className="h-3 w-3" />{f.governorate || 'کوردستان'}
         </span>
         {boosted && <span className="absolute left-3 top-11 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black text-white shadow-sm" style={{ background: TEAL }}><Rocket className="h-3 w-3" />بەرزکراوە</span>}
-        {matched && <span className="absolute bottom-2 left-3 rounded-full bg-[#0d5c50] px-2.5 py-1 text-[10px] font-black text-white shadow-sm">گونجاو بۆ تۆ</span>}
+        {matched && <span className="absolute bottom-2 left-3 rounded-full bg-[#4b13a5] px-2.5 py-1 text-[10px] font-black text-white shadow-sm">گونجاو بۆ تۆ</span>}
 
         <div className="relative -mt-8 flex flex-1 flex-col px-4 pb-4 text-center">
           <Avatar f={f} ring={accent} className="mx-auto" />
@@ -150,9 +150,9 @@ export const FreelancerTierCard = ({ f, tier, isVip = false, matched = false, on
             <span className="truncate">{f.name || 'کارخواز'}</span>
             {verified && <BadgeCheck className="h-4 w-4 shrink-0" style={{ color: TEAL }} />}
           </h3>
-          <p className="mt-1 truncate text-[11px] font-bold text-[#0d5c50]">{headline}</p>
-          <Tags skills={skills} style={{ background: hexToRgba(accent, .13), border: `1px solid ${hexToRgba(accent, .45)}`, color: '#20312d' }} />
-          <div className="mt-auto pt-4"><button onClick={invite} className="flex w-full items-center justify-center gap-1.5 rounded-2xl py-3 text-[11px] font-black text-white shadow-[0_8px_20px_rgba(18,121,107,.2)] transition active:scale-95 hover:brightness-105" style={{ background: TEAL }}>
+          <p className="mt-1 truncate text-[11px] font-bold text-[#4b13a5]">{headline}</p>
+          <Tags skills={skills} style={{ background: hexToRgba(accent, .13), border: `1px solid ${hexToRgba(accent, .45)}`, color: '#262031' }} />
+          <div className="mt-auto pt-4"><button onClick={invite} className="flex w-full items-center justify-center gap-1.5 rounded-2xl py-3 text-[11px] font-black text-white shadow-[0_8px_20px_rgba(100,27,217,.2)] transition active:scale-95 hover:brightness-105" style={{ background: TEAL }}>
             <Send className="h-3.5 w-3.5" />ناردنی داواکاری
           </button></div>
         </div>
@@ -162,7 +162,7 @@ export const FreelancerTierCard = ({ f, tier, isVip = false, matched = false, on
 
   /* ───── free: clean plain card ───── */
   return (
-    <div onClick={open} className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-[26px] border border-stone-100 bg-white shadow-[0_4px_18px_rgba(20,45,40,.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(20,45,40,.1)]">
+    <div onClick={open} className="group flex h-full cursor-pointer flex-col overflow-hidden rounded-[26px] border border-stone-100 bg-white shadow-[0_4px_18px_rgba(29,19,46,.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_36px_rgba(29,19,46,.1)]">
       <div className="relative shrink-0">
         <Cover f={f} accent={TEAL} />
         <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1.5 text-[10px] font-black text-stone-700 shadow-sm"><MapPin className="h-3 w-3" />{f.governorate || 'کوردستان'}</span>
@@ -174,7 +174,7 @@ export const FreelancerTierCard = ({ f, tier, isVip = false, matched = false, on
           {verified && <BadgeCheck className="h-4 w-4 shrink-0" style={{ color: TEAL }} />}
         </h3>
         <p className="mt-1 truncate text-[11px] font-bold text-stone-400">{headline}</p>
-        <Tags skills={skills} max={3} style={{ background: '#f3f6f5', color: '#4a5854' }} />
+        <Tags skills={skills} max={3} style={{ background: '#f4f3f6', color: '#4a5854' }} />
         <div className="mt-auto pt-4"><button onClick={invite} className="flex w-full items-center justify-center gap-1.5 rounded-2xl py-2.5 text-[11px] font-black text-white transition active:scale-95" style={{ background: TEAL }}>
           <Send className="h-3.5 w-3.5" />ناردنی داواکاری
         </button></div>

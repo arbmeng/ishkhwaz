@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
-const TEAL = '#12796b';
+const TEAL = '#641bd9';
 
 const GOVERNORATES = ['all', 'سلێمانی', 'هەولێر', 'دهۆک', 'کەرکووک', 'هەڵەبجە'];
 const SKILLS = ['all', 'React', 'Node.js', 'Figma', 'UI/UX', 'AutoCAD', 'Python', 'Tailwind'];
@@ -167,13 +167,13 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
     <div
       dir="rtl"
       className="min-h-screen pb-28 select-none font-vazirmatn"
-      style={{ background: '#f4f7f6', fontFamily: NK }}
+      style={{ background: '#f5f4f7', fontFamily: NK }}
     >
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 pt-6 space-y-6">
 
         {/* ── 1. Page Title & Count Header ── */}
         <div className="text-center space-y-1 pt-2">
-          <h1 className="text-2xl sm:text-3xl font-black text-[#111d1a] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-[#16111d] tracking-tight">
             {isFreelancers ? 'ڕێنمای کارخوازان' : 'ڕێنمای کۆمپانیاکان'}
           </h1>
           <p className="text-xs text-[#7b8e88] font-bold">
@@ -182,7 +182,7 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
         </div>
 
         {/* ── 2. Filter Bar with Toggle & Chips ── */}
-        <div className="bg-white rounded-3xl p-3 border border-[#e8eeec] shadow-[0_2px_14px_rgba(0,0,0,0.03)] flex flex-wrap items-center justify-between gap-3">
+        <div className="bg-white rounded-3xl p-3 border border-[#eae8ee] shadow-[0_2px_14px_rgba(0,0,0,0.03)] flex flex-wrap items-center justify-between gap-3">
           
           {/* Right: Search Input */}
           <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -191,7 +191,7 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder={isFreelancers ? 'گەڕان بۆ کارخواز، پیشە...' : 'گەڕان بۆ کۆمپانیا...'}
-              className="w-full bg-[#f4f7f6] rounded-2xl pr-10 pl-4 py-2 text-xs font-bold text-[#111d1a] placeholder-[#9faea9] outline-none border border-[#e8eeed] focus:bg-white focus:border-[#12796b] transition-all"
+              className="w-full bg-[#f5f4f7] rounded-2xl pr-10 pl-4 py-2 text-xs font-bold text-[#16111d] placeholder-[#9faea9] outline-none border border-[#eae8ee] focus:bg-white focus:border-[#641bd9] transition-all"
               style={{ fontFamily: NK }}
             />
           </div>
@@ -203,8 +203,8 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
               onClick={() => { soundService.playTick?.(); setGovFilter('all'); }}
               className={`px-4 py-2 rounded-2xl text-xs font-black transition-all ${
                 govFilter === 'all'
-                  ? 'bg-[#111d1a] text-white shadow-xs'
-                  : 'bg-[#f4f7f6] text-[#5a6b65] hover:text-[#111d1a]'
+                  ? 'bg-[#16111d] text-white shadow-xs'
+                  : 'bg-[#f5f4f7] text-[#5a6b65] hover:text-[#16111d]'
               }`}
             >
               هەموو پارێزگاکان
@@ -220,8 +220,8 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
                 }}
                 className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all border ${
                   categoryFilter === cat
-                    ? 'bg-[#12796b] text-white border-[#12796b]'
-                    : 'bg-white border-[#e8eeed] text-[#5a6b65] hover:text-[#111d1a]'
+                    ? 'bg-[#641bd9] text-white border-[#641bd9]'
+                    : 'bg-white border-[#eae8ee] text-[#5a6b65] hover:text-[#16111d]'
                 }`}
               >
                 {cat}
@@ -236,23 +236,23 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
               }}
               className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-1.5 border ${
                 verifiedOnly
-                  ? 'bg-[#d4f7ee] border-[#beece2] text-[#12796b] font-black'
-                  : 'bg-white border-[#e8eeed] text-[#5a6b65] hover:text-[#111d1a]'
+                  ? 'bg-[#e1d3f8] border-[#cfbded] text-[#641bd9] font-black'
+                  : 'bg-white border-[#eae8ee] text-[#5a6b65] hover:text-[#16111d]'
               }`}
             >
-              <span className={`w-2 h-2 rounded-full ${verifiedOnly ? 'bg-[#12796b]' : 'bg-[#a0afa9]'}`} />
+              <span className={`w-2 h-2 rounded-full ${verifiedOnly ? 'bg-[#641bd9]' : 'bg-[#a0afa9]'}`} />
               تەنها پشتڕاستکراوەکان
             </button>
           </div>
 
           {/* Left: Mode Toggle Pill */}
-          <div className="p-1 rounded-2xl bg-[#f4f7f6] border border-[#e8eeed] flex items-center gap-1 shrink-0">
+          <div className="p-1 rounded-2xl bg-[#f5f4f7] border border-[#eae8ee] flex items-center gap-1 shrink-0">
             <button
               onClick={() => switchMode('companies')}
               className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
                 !isFreelancers
-                  ? 'bg-white text-[#111d1a] shadow-xs'
-                  : 'text-[#62736e] hover:text-[#111d1a]'
+                  ? 'bg-white text-[#16111d] shadow-xs'
+                  : 'text-[#62736e] hover:text-[#16111d]'
               }`}
             >
               کۆمپانیاکان
@@ -261,8 +261,8 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
               onClick={() => switchMode('freelancers')}
               className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
                 isFreelancers
-                  ? 'bg-white text-[#111d1a] shadow-xs'
-                  : 'text-[#62736e] hover:text-[#111d1a]'
+                  ? 'bg-white text-[#16111d] shadow-xs'
+                  : 'text-[#62736e] hover:text-[#16111d]'
               }`}
             >
               کارخوازان
@@ -274,9 +274,9 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
         {/* ── 3. Grid of 4-Column Cards ── */}
         {!isFreelancers ? (
           filteredCompanies.length === 0 ? (
-            <div className="bg-white rounded-3xl p-16 text-center space-y-2 border border-[#e8eeed]">
+            <div className="bg-white rounded-3xl p-16 text-center space-y-2 border border-[#eae8ee]">
               <Building2 className="w-10 h-10 text-[#a0afa9] mx-auto" />
-              <h3 className="text-base font-black text-[#111d1a]">هیچ کۆمپانیایەک نەدۆزرایەوە</h3>
+              <h3 className="text-base font-black text-[#16111d]">هیچ کۆمپانیایەک نەدۆزرایەوە</h3>
               <p className="text-xs text-[#7b8e88] font-medium">پاڵاوتنەکان بگۆڕە یان ناوی تر بنووسە.</p>
             </div>
           ) : (
@@ -291,8 +291,8 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
                     onClick={() => { soundService.playTick?.(); openCompany(c); }}
                     className={`bg-white rounded-[24px] border overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between cursor-pointer group ${
                       isFeatured
-                        ? 'border-[#beece2] shadow-[0_4px_20px_rgba(18,121,107,0.08)]'
-                        : 'border-[#e8eeec] shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
+                        ? 'border-[#cfbded] shadow-[0_4px_20px_rgba(100,27,217,0.08)]'
+                        : 'border-[#eae8ee] shadow-[0_2px_12px_rgba(0,0,0,0.03)]'
                     }`}
                   >
                     {/* Top Decorative Ribbon */}
@@ -300,12 +300,12 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
                       className="h-20 w-full relative flex items-center justify-center"
                       style={{
                         background: isFeatured
-                          ? 'linear-gradient(135deg, #c2eae1 0%, #e0f5f0 100%)'
-                          : 'linear-gradient(135deg, #f0f4f2 0%, #f7faf9 100%)',
+                          ? 'linear-gradient(135deg, #d1c1eb 0%, #e8dff6 100%)'
+                          : 'linear-gradient(135deg, #f2f0f4 0%, #f8f7fa 100%)',
                       }}
                     >
                       {/* Avatar Centered in Ribbon */}
-                      <div className="absolute -bottom-5 w-12 h-12 rounded-2xl bg-white border border-[#e8eeed] shadow-md flex items-center justify-center text-base font-black text-[#111d1a] overflow-hidden group-hover:scale-105 transition-transform">
+                      <div className="absolute -bottom-5 w-12 h-12 rounded-2xl bg-white border border-[#eae8ee] shadow-md flex items-center justify-center text-base font-black text-[#16111d] overflow-hidden group-hover:scale-105 transition-transform">
                         {c.logo ? (
                           <img src={c.logo} alt={c.name} className="w-full h-full object-cover" />
                         ) : (
@@ -318,11 +318,11 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
                     <div className="p-4 pt-7 text-center space-y-1.5 flex-1 flex flex-col justify-between">
                       <div>
                         <div className="flex items-center justify-center gap-1.5">
-                          <h3 className="text-sm font-black text-[#111d1a] truncate">
+                          <h3 className="text-sm font-black text-[#16111d] truncate">
                             {c.name}
                           </h3>
                           {c.verified && (
-                            <span className="w-3.5 h-3.5 rounded-full bg-[#12796b] text-white text-[9px] flex items-center justify-center font-bold" title="پشتڕاستکراو">
+                            <span className="w-3.5 h-3.5 rounded-full bg-[#641bd9] text-white text-[9px] flex items-center justify-center font-bold" title="پشتڕاستکراو">
                               ✓
                             </span>
                           )}
@@ -333,9 +333,9 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
                       </div>
 
                       {/* Active Jobs Bottom Row */}
-                      <div className="pt-3 border-t border-[#f4f7f6] flex items-center justify-between text-xs">
+                      <div className="pt-3 border-t border-[#f5f4f7] flex items-center justify-between text-xs">
                         <span className="text-[#62736e] font-bold">کاری چالاک</span>
-                        <span className="font-mono font-black text-[#111d1a]">
+                        <span className="font-mono font-black text-[#16111d]">
                           {c.jobs.length}
                         </span>
                       </div>
@@ -347,9 +347,9 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
           )
         ) : (
           filteredFreelancers.length === 0 ? (
-            <div className="bg-white rounded-3xl p-16 text-center space-y-2 border border-[#e8eeed]">
+            <div className="bg-white rounded-3xl p-16 text-center space-y-2 border border-[#eae8ee]">
               <Users className="w-10 h-10 text-[#a0afa9] mx-auto" />
-              <h3 className="text-base font-black text-[#111d1a]">هیچ کارخوازێک نەدۆزرایەوە</h3>
+              <h3 className="text-base font-black text-[#16111d]">هیچ کارخوازێک نەدۆزرایەوە</h3>
               <p className="text-xs text-[#7b8e88] font-medium">پاڵاوتنەکان بگۆڕە یان ناوی تر بنووسە.</p>
             </div>
           ) : (

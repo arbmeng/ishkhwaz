@@ -4,8 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { X, Send, Building2, Briefcase, DollarSign, FileText, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 
-const TEAL = '#12796b';
-const TEAL_SOFT = '#e7f4f1';
+const TEAL = '#641bd9';
+const TEAL_SOFT = '#ece7f4';
 
 export const SendOfferModal = ({ freelancer, isOpen, onClose, onSendOffer }) => {
   const { user } = useAuth();
@@ -121,7 +121,7 @@ export const SendOfferModal = ({ freelancer, isOpen, onClose, onSendOffer }) => 
               value={jobTitle}
               onChange={(e) => setJobTitle(e.target.value)}
               required
-              className="w-full bg-stone-50 border border-stone-200 focus:border-[#12796b] focus:bg-white rounded-2xl px-4 py-3 text-xs font-bold text-stone-900 focus:outline-none transition"
+              className="w-full bg-stone-50 border border-stone-200 focus:border-[#641bd9] focus:bg-white rounded-2xl px-4 py-3 text-xs font-bold text-stone-900 focus:outline-none transition"
             />
           </div>
 
@@ -136,7 +136,7 @@ export const SendOfferModal = ({ freelancer, isOpen, onClose, onSendOffer }) => 
               placeholder="نموونە: 1,200,000 IQD یان گفتوگۆکراو"
               value={salary}
               onChange={(e) => setSalary(e.target.value)}
-              className="w-full bg-stone-50 border border-stone-200 focus:border-[#12796b] focus:bg-white rounded-2xl px-4 py-3 text-xs font-bold text-stone-900 focus:outline-none font-mono transition"
+              className="w-full bg-stone-50 border border-stone-200 focus:border-[#641bd9] focus:bg-white rounded-2xl px-4 py-3 text-xs font-bold text-stone-900 focus:outline-none font-mono transition"
             />
           </div>
 
@@ -151,7 +151,7 @@ export const SendOfferModal = ({ freelancer, isOpen, onClose, onSendOffer }) => 
               placeholder="تێبینییەکانت یان مەرجەکانی دەستپێکردنی کار بنووسە..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full bg-stone-50 border border-stone-200 focus:border-[#12796b] focus:bg-white rounded-2xl p-4 text-xs font-medium leading-relaxed text-stone-900 focus:outline-none resize-none transition"
+              className="w-full bg-stone-50 border border-stone-200 focus:border-[#641bd9] focus:bg-white rounded-2xl p-4 text-xs font-medium leading-relaxed text-stone-900 focus:outline-none resize-none transition"
             />
           </div>
 

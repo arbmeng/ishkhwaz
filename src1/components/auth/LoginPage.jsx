@@ -17,8 +17,8 @@ const GoogleIcon = () => (
 );
 
 // Brand teal — matches the logo mark.
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
 const LAST_PHONE_KEY = 'ishkhwaz_last_phone';
 
 // "0770 123 4567" / "770 123 4567" — groups digits as they're typed and accepts a pasted +964 number.
@@ -108,14 +108,14 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
   const fieldCls = (hasError) =>
     `w-full rounded-2xl bg-white border outline-none transition-all text-sm h-14 ${hasError
       ? 'border-rose-300 focus:border-rose-400 focus:ring-4 focus:ring-rose-400/10'
-      : 'border-[#d7e0dd] hover:border-[#b9c9c4] focus:border-[#12796b] focus:ring-4 focus:ring-[#12796b]/12'
+      : 'border-[#dad7e0] hover:border-[#bfb9c9] focus:border-[#641bd9] focus:ring-4 focus:ring-[#641bd9]/12'
     }`;
 
   return (
     <div
       dir="rtl"
       className={`fixed inset-0 z-40 font-vazirmatn overflow-y-auto ${AUTH_PAD_LG}`}
-      style={{ backgroundColor: '#f4f7f6' }}
+      style={{ backgroundColor: '#f5f4f7' }}
     >
       <AuthBrandPanel variant="login" />
       <AuthAssistant variant="login" actions={{ register: onNavigateRegister, forgot: onForgotPassword }} />
@@ -123,10 +123,10 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
 
       <div className="relative min-h-[calc(100dvh-7rem)] lg:min-h-full flex flex-col">
         <div className="flex-1 flex items-start lg:items-center justify-center">
-          <div className={`relative w-full max-w-[480px] bg-[#f4f7f6] lg:bg-transparent -mt-8 lg:mt-0 rounded-t-[32px] lg:rounded-none px-5 sm:px-8 pt-8 lg:pt-12 pb-10 ${shake ? 'animate-[shake_0.4s_ease]' : ''}`}>
+          <div className={`relative w-full max-w-[480px] bg-[#f5f4f7] lg:bg-transparent -mt-8 lg:mt-0 rounded-t-[32px] lg:rounded-none px-5 sm:px-8 pt-8 lg:pt-12 pb-10 ${shake ? 'animate-[shake_0.4s_ease]' : ''}`}>
 
             <div className="mb-7">
-              <h1 className="text-[clamp(28px,7vw,36px)] font-black text-[#111d1a]">بەخێربێیتەوە</h1>
+              <h1 className="text-[clamp(28px,7vw,36px)] font-black text-[#16111d]">بەخێربێیتەوە</h1>
               <p className="mt-1.5 text-sm font-bold leading-6 text-[#7b8e88]">بۆ بەردەوامبوون، زانیارییەکانت بنووسە</p>
             </div>
 
@@ -158,7 +158,7 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
                     onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
                     aria-invalid={!!phoneError}
                     aria-describedby={phoneError ? 'login-phone-err' : undefined}
-                    className={`${fieldCls(!!phoneError)} font-mono pr-[5.6rem] pl-4 text-left text-[#111d1a] shadow-[0_4px_20px_rgba(15,23,42,.025)]`}
+                    className={`${fieldCls(!!phoneError)} font-mono pr-[5.6rem] pl-4 text-left text-[#16111d] shadow-[0_4px_20px_rgba(15,23,42,.025)]`}
                   />
                 </div>
                 {phoneError && <p id="login-phone-err" className="mt-1.5 text-xs font-bold text-rose-500">{phoneError}</p>}
@@ -181,14 +181,14 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
                     onBlur={() => { setCapsOn(false); setTouched((t) => ({ ...t, password: true })); }}
                     aria-invalid={!!passwordError}
                     aria-describedby={passwordError ? 'login-password-err' : undefined}
-                    className={`${fieldCls(!!errorMsg || !!passwordError)} pr-11 pl-12 text-[#111d1a] shadow-[0_4px_20px_rgba(15,23,42,.025)]`}
+                    className={`${fieldCls(!!errorMsg || !!passwordError)} pr-11 pl-12 text-[#16111d] shadow-[0_4px_20px_rgba(15,23,42,.025)]`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
                     aria-label={showPassword ? 'شاردنەوەی وشەی نهێنی' : 'پیشاندانی وشەی نهێنی'}
                     aria-pressed={showPassword}
-                    className="absolute left-1.5 grid h-11 w-11 place-items-center rounded-xl text-[#9aa1a0] transition hover:bg-[#f0f5f3] hover:text-[#4a5b55]"
+                    className="absolute left-1.5 grid h-11 w-11 place-items-center rounded-xl text-[#9aa1a0] transition hover:bg-[#f2f0f5] hover:text-[#4a5b55]"
                   >
                     {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
                   </button>
@@ -216,16 +216,16 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
             </form>
 
             <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-[#e2e8e5]" />
+              <div className="h-px flex-1 bg-[#e4e2e8]" />
               <span className="text-[11px] font-bold text-[#9aa1a0]">یان</span>
-              <div className="h-px flex-1 bg-[#e2e8e5]" />
+              <div className="h-px flex-1 bg-[#e4e2e8]" />
             </div>
 
             <button
               type="button"
               onClick={handleGoogleLogin}
               disabled={isGoogleSubmitting}
-              className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#d7e0dd] bg-white text-sm font-black text-[#111d1a] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(15,23,42,.08)] active:scale-[0.985] disabled:opacity-60"
+              className="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl border border-[#dad7e0] bg-white text-sm font-black text-[#16111d] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(15,23,42,.08)] active:scale-[0.985] disabled:opacity-60"
             >
               {isGoogleSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
               {isGoogleSubmitting ? 'خەریکی چوونەژوورەوەیە...' : 'چوونەژوورەوە بە گووگڵ'}
@@ -242,7 +242,7 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
               <button
                 type="button"
                 onClick={() => { soundService.playTick(); onGuest(); }}
-                className="mx-auto mt-4 flex items-center gap-2 rounded-full border border-[#d7e0dd] bg-white/70 px-4 py-2.5 text-xs font-black text-[#4a5b55] transition hover:bg-white hover:border-[#b9c9c4]"
+                className="mx-auto mt-4 flex items-center gap-2 rounded-full border border-[#dad7e0] bg-white/70 px-4 py-2.5 text-xs font-black text-[#4a5b55] transition hover:bg-white hover:border-[#bfb9c9]"
               >
                 <Compass className="h-4 w-4" style={{ color: TEAL }} />
                 بێ هەژمار هەلی کارەکان ببینە

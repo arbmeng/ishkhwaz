@@ -11,19 +11,19 @@ import { ArrowRight } from 'lucide-react';
 //    that padding above pages, so with `insideMain` (default) the card pulls itself up by that
 //    amount and uses it as its own top padding. Overlays with no such padding pass insideMain={false}.
 export const HEADER_BTN = 'w-11 h-11 rounded-2xl bg-white/15 backdrop-blur text-white flex items-center justify-center hover:bg-white/25 active:scale-95 transition shrink-0';
-const GRAD = 'linear-gradient(155deg,#12897a 0%,#0d6a5d 48%,#083f37 100%)';
-const btnCls = (active, mobileOnly) => `${HEADER_BTN} ${active ? '!bg-white !text-[#0d5c50]' : ''} ${mobileOnly ? 'lg:hidden' : ''}`;
+const GRAD = 'linear-gradient(155deg,#7229e8 0%,#5513bf 48%,#1d0740 100%)';
+const btnCls = (active, mobileOnly) => `${HEADER_BTN} ${active ? '!bg-white !text-[#4b13a5]' : ''} ${mobileOnly ? 'lg:hidden' : ''}`;
 
 export const PageHeader = ({ title, subtitle, onBack, actions = [], desktop = false, insideMain = true, children }) => (
   <div
-    className="sticky top-0 z-30 lg:relative overflow-hidden text-white rounded-b-[30px] lg:rounded-b-[36px] shadow-[0_14px_34px_rgba(8,63,55,.22)]"
+    className="sticky top-0 z-30 lg:relative overflow-hidden text-white rounded-b-[30px] lg:rounded-b-[36px] shadow-[0_14px_34px_rgba(29,7,64,.22)]"
     style={{
       background: GRAD,
       paddingTop: 'env(safe-area-inset-top)',
       marginTop: insideMain ? 'calc(-1 * env(safe-area-inset-top))' : undefined,
     }}
   >
-    <div className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-[#43d1b8]/25 blur-3xl" />
+    <div className="pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full bg-[#9d74e0]/25 blur-3xl" />
     <div className="pointer-events-none absolute inset-0 opacity-[.07]"
       style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.9) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.9) 1px,transparent 1px)', backgroundSize: '36px 36px' }} />
 

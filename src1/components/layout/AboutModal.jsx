@@ -3,8 +3,8 @@ import { X, Briefcase, Mail, Globe, ShieldCheck } from 'lucide-react';
 
 // Shared light theme — matches DesktopHeaderNav, UserProfilePage, Dashboard.
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
-const TEAL = '#12796b';
-const TEAL_SOFT = '#e7f4f1';
+const TEAL = '#641bd9';
+const TEAL_SOFT = '#ece7f4';
 
 // Real contact info only — info@ishkhwaz.iq is the address already used as
 // the placeholder/example everywhere else in the app (CV templates, forms).
@@ -13,11 +13,11 @@ const TEAL_SOFT = '#e7f4f1';
 export const AboutModal = ({ onClose }) => {
   return (
     <div dir="rtl" className="safe-top fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 select-none animate-fadeIn" style={{ fontFamily: NK }}>
-      <div className="relative w-full max-w-md bg-white border border-[#e8eeec] rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 my-auto max-h-[90vh] overflow-y-auto text-right">
+      <div className="relative w-full max-w-md bg-white border border-[#eae8ee] rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 my-auto max-h-[90vh] overflow-y-auto text-right">
 
         <button
           onClick={onClose}
-          className="absolute top-5 left-5 p-2 rounded-xl bg-[#f4f7f6] border border-[#e8eeed] text-[#7b8e88] hover:text-[#111d1a] transition"
+          className="absolute top-5 left-5 p-2 rounded-xl bg-[#f5f4f7] border border-[#eae8ee] text-[#7b8e88] hover:text-[#16111d] transition"
         >
           <X className="w-5 h-5" />
         </button>
@@ -26,7 +26,7 @@ export const AboutModal = ({ onClose }) => {
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto text-white font-black text-xl" style={{ background: TEAL }}>
             ئ
           </div>
-          <h2 className="text-xl font-black text-[#111d1a]">ئیش خواز</h2>
+          <h2 className="text-xl font-black text-[#16111d]">ئیش خواز</h2>
           <p className="text-xs text-[#7b8e88]">پلاتفۆرمی کار و دۆزینەوەی ئیش لە عێراق</p>
         </div>
 
@@ -35,7 +35,7 @@ export const AboutModal = ({ onClose }) => {
         </p>
 
         <div className="space-y-2.5">
-          <div className="p-4 rounded-2xl bg-[#f8faf9] border border-[#e8eeec] flex items-center gap-3">
+          <div className="p-4 rounded-2xl bg-[#f9f8fa] border border-[#eae8ee] flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: TEAL_SOFT, color: TEAL }}>
               <Mail className="w-4 h-4" />
             </div>
@@ -45,7 +45,7 @@ export const AboutModal = ({ onClose }) => {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#f8faf9] border border-[#e8eeec] flex items-center gap-3">
+          <div className="p-4 rounded-2xl bg-[#f9f8fa] border border-[#eae8ee] flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: TEAL_SOFT, color: TEAL }}>
               <Globe className="w-4 h-4" />
             </div>
@@ -55,13 +55,13 @@ export const AboutModal = ({ onClose }) => {
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#f8faf9] border border-[#e8eeec] flex items-center gap-3">
+          <div className="p-4 rounded-2xl bg-[#f9f8fa] border border-[#eae8ee] flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: TEAL_SOFT, color: TEAL }}>
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
               <div className="text-[10px] font-bold text-[#7b8e88]">وەشان</div>
-              <span className="text-xs font-black text-[#111d1a] font-mono" dir="ltr">v2.5.0</span>
+              <span className="text-xs font-black text-[#16111d] font-mono" dir="ltr">v2.5.0</span>
             </div>
           </div>
         </div>

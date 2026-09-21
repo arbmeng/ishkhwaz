@@ -30,10 +30,10 @@ import {
   X,
 } from 'lucide-react';
 
-const TEAL = '#12796b';
-const TEAL_DARK = '#0d5c50';
-const TEAL_SOFT = '#e7f4f1';
-const PAGE_BG = '#f5f8f7';
+const TEAL = '#641bd9';
+const TEAL_DARK = '#4b13a5';
+const TEAL_SOFT = '#ece7f4';
+const PAGE_BG = '#f6f5f8';
 
 const JOB_TYPE_LABELS = {
   fullTime: 'کاتی تەواو',
@@ -142,7 +142,7 @@ const JobCard = ({ job, company, applied, onOpen, onShare }) => {
   return (
     <article
       onClick={() => onOpen(job)}
-      className="group relative bg-white rounded-[26px] border border-stone-100 p-4 sm:p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_55px_rgba(16,70,60,.11)] shadow-[0_5px_24px_rgba(16,40,35,.045)]"
+      className="group relative bg-white rounded-[26px] border border-stone-100 p-4 sm:p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_55px_rgba(64,26,126,.11)] shadow-[0_5px_24px_rgba(25,15,41,.045)]"
     >
       <button
         type="button"
@@ -443,8 +443,8 @@ export const CompanyProfilePage = ({
       --teal-dark: ${TEAL_DARK};
       min-height: 100%;
       background:
-        radial-gradient(800px 360px at 50% -120px, rgba(18,121,107,.12), transparent 70%),
-        linear-gradient(180deg, #f9fbfa 0%, ${PAGE_BG} 42%, #eef3f1 100%);
+        radial-gradient(800px 360px at 50% -120px, rgba(100,27,217,.12), transparent 70%),
+        linear-gradient(180deg, #faf9fb 0%, ${PAGE_BG} 42%, #f0eef3 100%);
     }
 
     .company-page-scroll {
@@ -458,15 +458,15 @@ export const CompanyProfilePage = ({
 
     .company-hero {
       background:
-        radial-gradient(500px 240px at 10% 0%, rgba(92,211,190,.22), transparent 70%),
-        radial-gradient(500px 280px at 90% 100%, rgba(18,121,107,.18), transparent 70%),
-        linear-gradient(135deg, #0b211d 0%, #0d3029 48%, #0a1714 100%);
+        radial-gradient(500px 240px at 10% 0%, rgba(147,104,218,.22), transparent 70%),
+        radial-gradient(500px 280px at 90% 100%, rgba(100,27,217,.18), transparent 70%),
+        linear-gradient(135deg, #130a22 0%, #1a0c31 48%, #0f0a17 100%);
     }
 
     .company-glass {
       background: rgba(255,255,255,.78);
       border: 1px solid rgba(255,255,255,.78);
-      box-shadow: 0 18px 55px rgba(16,55,48,.08);
+      box-shadow: 0 18px 55px rgba(31,15,56,.08);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
     }
@@ -513,12 +513,12 @@ export const CompanyProfilePage = ({
                   alt=""
                   className="absolute inset-0 w-full h-full object-cover opacity-35"
                 />
-                <div className="absolute inset-0 bg-gradient-to-b from-[#06110f]/45 via-[#081a16]/60 to-[#08110f]" />
+                <div className="absolute inset-0 bg-gradient-to-b from-[#0a0611]/45 via-[#0f081a]/60 to-[#0b0811]" />
               </>
             ) : (
               <div className="absolute inset-0 opacity-90">
-                <div className="absolute -top-24 -right-20 w-72 h-72 rounded-full bg-[#43bea4]/20 blur-3xl" />
-                <div className="absolute -bottom-32 -left-10 w-96 h-96 rounded-full bg-[#12796b]/25 blur-3xl" />
+                <div className="absolute -top-24 -right-20 w-72 h-72 rounded-full bg-[#aa8dda]/20 blur-3xl" />
+                <div className="absolute -bottom-32 -left-10 w-96 h-96 rounded-full bg-[#641bd9]/25 blur-3xl" />
               </div>
             )}
 
@@ -548,7 +548,7 @@ export const CompanyProfilePage = ({
                       </h1>
 
                       {company.verified && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-[#a7eee0] text-[9px] font-black">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-[#c2a5f0] text-[9px] font-black">
                           <BadgeCheck className="w-3.5 h-3.5" />
                           پشتڕاستکراو
                         </span>
@@ -613,8 +613,8 @@ export const CompanyProfilePage = ({
           )}
 
           {/* Tabs */}
-          <nav className="sticky top-[calc(env(safe-area-inset-top)+57px)] lg:top-[73px] z-20 mt-5 py-2 bg-[#f5f8f7]/90 backdrop-blur-xl">
-            <div className="flex items-center gap-1 p-1 rounded-2xl bg-white border border-stone-100 shadow-[0_5px_25px_rgba(16,40,35,.045)]">
+          <nav className="sticky top-[calc(env(safe-area-inset-top)+57px)] lg:top-[73px] z-20 mt-5 py-2 bg-[#f6f5f8]/90 backdrop-blur-xl">
+            <div className="flex items-center gap-1 p-1 rounded-2xl bg-white border border-stone-100 shadow-[0_5px_25px_rgba(25,15,41,.045)]">
               <button
                 type="button"
                 onClick={() => setActiveTab('about')}
@@ -643,7 +643,7 @@ export const CompanyProfilePage = ({
 
           {activeTab === 'about' && (
             <section className="mt-3 grid lg:grid-cols-[1.35fr_.65fr] gap-4 lg:gap-5">
-              <div className="bg-white rounded-[28px] border border-stone-100 shadow-[0_8px_35px_rgba(16,40,35,.05)] p-5 sm:p-7">
+              <div className="bg-white rounded-[28px] border border-stone-100 shadow-[0_8px_35px_rgba(25,15,41,.05)] p-5 sm:p-7">
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: TEAL_SOFT }}>
                     <Briefcase className="w-5 h-5" style={{ color: TEAL }} />
@@ -718,11 +718,11 @@ export const CompanyProfilePage = ({
               </div>
 
               <aside className="space-y-4">
-                <div className="bg-[#0c211d] rounded-[28px] p-5 sm:p-6 text-white overflow-hidden relative">
-                  <div className="absolute -right-16 -top-16 w-44 h-44 rounded-full bg-[#43bea4]/15 blur-3xl" />
+                <div className="bg-[#140b22] rounded-[28px] p-5 sm:p-6 text-white overflow-hidden relative">
+                  <div className="absolute -right-16 -top-16 w-44 h-44 rounded-full bg-[#aa8dda]/15 blur-3xl" />
                   <div className="relative">
                     <div className="w-11 h-11 rounded-2xl bg-white/10 flex items-center justify-center">
-                      <BadgeCheck className="w-5 h-5 text-[#8de8d7]" />
+                      <BadgeCheck className="w-5 h-5 text-[#af8bea]" />
                     </div>
                     <h3 className="mt-5 text-base font-black">پڕۆفایلی کۆمپانیا</h3>
                     <p className="mt-2 text-[11px] text-white/45 leading-6 font-bold">
@@ -732,7 +732,7 @@ export const CompanyProfilePage = ({
                   </div>
                 </div>
 
-                <div className="bg-white rounded-[28px] border border-stone-100 shadow-[0_8px_35px_rgba(16,40,35,.05)] p-5">
+                <div className="bg-white rounded-[28px] border border-stone-100 shadow-[0_8px_35px_rgba(25,15,41,.05)] p-5">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl bg-amber-50 flex items-center justify-center">
                       <Star className="w-4 h-4 text-amber-500" />
@@ -764,7 +764,7 @@ export const CompanyProfilePage = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="text-xl font-black">هەلی کارەکان</h2>
-                    <span className="px-2 py-1 rounded-full bg-[#e7f4f1] text-[#0d5c50] text-[9px] font-black">
+                    <span className="px-2 py-1 rounded-full bg-[#ece7f4] text-[#4b13a5] text-[9px] font-black">
                       {companyJobs.length}
                     </span>
                   </div>
@@ -788,7 +788,7 @@ export const CompanyProfilePage = ({
                     value={jobQuery}
                     onChange={(event) => setJobQuery(event.target.value)}
                     placeholder="گەڕان لە هەلی کارەکان..."
-                    className="w-full h-13 py-3.5 pr-11 pl-11 rounded-2xl bg-white border border-stone-100 shadow-[0_5px_22px_rgba(16,40,35,.04)] outline-none text-sm font-bold placeholder:text-stone-300 focus:border-[#12796b] focus:ring-4 focus:ring-[#12796b]/10 transition-all"
+                    className="w-full h-13 py-3.5 pr-11 pl-11 rounded-2xl bg-white border border-stone-100 shadow-[0_5px_22px_rgba(25,15,41,.04)] outline-none text-sm font-bold placeholder:text-stone-300 focus:border-[#641bd9] focus:ring-4 focus:ring-[#641bd9]/10 transition-all"
                   />
                   {jobQuery && (
                     <button
@@ -803,7 +803,7 @@ export const CompanyProfilePage = ({
               )}
 
               {filteredJobs.length === 0 ? (
-                <div className="bg-white rounded-[30px] border border-stone-100 shadow-[0_8px_35px_rgba(16,40,35,.05)] py-20 px-5 text-center">
+                <div className="bg-white rounded-[30px] border border-stone-100 shadow-[0_8px_35px_rgba(25,15,41,.05)] py-20 px-5 text-center">
                   <div
                     className="w-16 h-16 mx-auto rounded-[22px] flex items-center justify-center"
                     style={{ background: TEAL_SOFT }}
@@ -858,7 +858,7 @@ export const CompanyProfilePage = ({
                       <button
                         type="button"
                         onClick={() => setJobQuery('')}
-                        className="text-[#12796b] font-black"
+                        className="text-[#641bd9] font-black"
                       >
                         سڕینەوەی گەڕان
                       </button>

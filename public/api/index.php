@@ -468,17 +468,17 @@ function sendAppEmail(string $toEmail, string $subject, string $htmlBody, string
 function sendVerificationEmail(string $toEmail, string $name, string $token, ?string $otp = null): bool {
     $link = 'https://ishkhwaz.zeraworld.com/verify-email?token=' . urlencode($token);
     $otpBlock = $otp === null ? '' : '<p style="color:#4a5854;line-height:1.8;">کۆدی دڵنیاکردنەوەت (لە ئەپەکەدا بینووسە، ماوەی ١٠ خولەک کاردەکات):</p>'
-        . '<p style="text-align:center;margin:18px 0;"><span dir="ltr" style="display:inline-block;background:#fff;border:2px dashed #12796b;border-radius:12px;padding:12px 26px;font-size:30px;letter-spacing:8px;font-weight:bold;color:#0d5c50;font-family:monospace;">' . $otp . '</span></p>'
+        . '<p style="text-align:center;margin:18px 0;"><span dir="ltr" style="display:inline-block;background:#fff;border:2px dashed #641bd9;border-radius:12px;padding:12px 26px;font-size:30px;letter-spacing:8px;font-weight:bold;color:#4b13a5;font-family:monospace;">' . $otp . '</span></p>'
         . '<p style="color:#4a5854;line-height:1.8;">یان ئەم بەستەرەی خوارەوە بەکاربێنە:</p>';
     $subject = 'دڵنیاکردنەوەی ئیمەیل — ئیش خواز';
     $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
     $body = <<<HTML
-    <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f4f7f6;">
-      <h2 style="color:#111d1a;">سڵاو {$safeName} 👋</h2>
+    <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f5f4f7;">
+      <h2 style="color:#16111d;">سڵاو {$safeName} 👋</h2>
       {$otpBlock}
       <p style="color:#4a5854;line-height:1.8;">بۆ دڵنیابوونەوە لە ئیمەیلەکەت لەسەر ئیش خواز، کرتە لەسەر دوگمەی خوارەوە بکە:</p>
       <p style="text-align:center;margin:28px 0;">
-        <a href="{$link}" style="background:#12796b;color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;display:inline-block;">دڵنیاکردنەوەی ئیمەیل</a>
+        <a href="{$link}" style="background:#641bd9;color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;display:inline-block;">دڵنیاکردنەوەی ئیمەیل</a>
       </p>
       <p style="color:#9faea9;font-size:12px;">ئەگەر داوات نەکردووە، ئەم ئیمەیلە پشتگوێ بخە.</p>
     </div>
@@ -503,10 +503,10 @@ function emailProofValid(string $email, string $proof): bool {
 }
 function sendEmailCodeEmail(string $toEmail, string $otp): bool {
     $subject = 'کۆدی دڵنیاکردنەوە — ئیش خواز';
-    $body = '<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f4f7f6;">'
-        . '<h2 style="color:#111d1a;">سڵاو 👋</h2>'
+    $body = '<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f5f4f7;">'
+        . '<h2 style="color:#16111d;">سڵاو 👋</h2>'
         . '<p style="color:#4a5854;line-height:1.8;">کۆدی دڵنیاکردنەوەی ئیمەیڵت بۆ تۆمارکردن لە ئیش خواز (ماوەی ١٠ خولەک کاردەکات):</p>'
-        . '<p style="text-align:center;margin:18px 0;"><span dir="ltr" style="display:inline-block;background:#fff;border:2px dashed #12796b;border-radius:12px;padding:12px 26px;font-size:30px;letter-spacing:8px;font-weight:bold;color:#0d5c50;font-family:monospace;">' . $otp . '</span></p>'
+        . '<p style="text-align:center;margin:18px 0;"><span dir="ltr" style="display:inline-block;background:#fff;border:2px dashed #641bd9;border-radius:12px;padding:12px 26px;font-size:30px;letter-spacing:8px;font-weight:bold;color:#4b13a5;font-family:monospace;">' . $otp . '</span></p>'
         . '<p style="color:#9faea9;font-size:12px;">ئەگەر تۆ داوات نەکردووە، ئەم ئیمەیلە پشتگوێ بخە.</p></div>';
     return sendAppEmail($toEmail, $subject, $body, "کۆدی دڵنیاکردنەوەت: {$otp}");
 }
@@ -523,17 +523,17 @@ function issueEmailOtp(PDO $pdo, string $userId): string {
 function sendPasswordResetEmail(string $toEmail, string $name, string $token, ?string $otp = null): bool {
     $link = 'https://ishkhwaz.zeraworld.com/reset-password?token=' . urlencode($token);
     $otpBlock = $otp === null ? '' : '<p style="color:#4a5854;line-height:1.8;">کۆدی پشتڕاستکردنەوەت (لە ئەپەکەدا بینووسە، ماوەی ١٠ خولەک کاردەکات):</p>'
-        . '<p style="text-align:center;margin:18px 0;"><span dir="ltr" style="display:inline-block;background:#fff;border:2px dashed #12796b;border-radius:12px;padding:12px 26px;font-size:30px;letter-spacing:8px;font-weight:bold;color:#0d5c50;font-family:monospace;">' . $otp . '</span></p>'
+        . '<p style="text-align:center;margin:18px 0;"><span dir="ltr" style="display:inline-block;background:#fff;border:2px dashed #641bd9;border-radius:12px;padding:12px 26px;font-size:30px;letter-spacing:8px;font-weight:bold;color:#4b13a5;font-family:monospace;">' . $otp . '</span></p>'
         . '<p style="color:#4a5854;line-height:1.8;">یان ئەم بەستەرەی خوارەوە بەکاربێنە:</p>';
     $subject = 'گەڕاندنەوەی وشەی نهێنی — ئیش خواز';
     $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
     $body = <<<HTML
-    <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f4f7f6;">
-      <h2 style="color:#111d1a;">سڵاو {$safeName} 👋</h2>
+    <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f5f4f7;">
+      <h2 style="color:#16111d;">سڵاو {$safeName} 👋</h2>
       {$otpBlock}
       <p style="color:#4a5854;line-height:1.8;">داواکارییەک کرا بۆ گەڕاندنەوەی وشەی نهێنی هەژمارەکەت لەسەر ئیش خواز. کرتە لەسەر دوگمەی خوارەوە بکە بۆ دانانی وشەی نهێنی نوێ:</p>
       <p style="text-align:center;margin:28px 0;">
-        <a href="{$link}" style="background:#12796b;color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;display:inline-block;">دانانی وشەی نهێنی نوێ</a>
+        <a href="{$link}" style="background:#641bd9;color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;display:inline-block;">دانانی وشەی نهێنی نوێ</a>
       </p>
       <p style="color:#9faea9;font-size:12px;">ئەم بەستەرە تەنها بۆ ماوەی ١ کاتژمێر کاردەکات. ئەگەر داوات نەکردووە، ئەم ئیمەیلە پشتگوێ بخە — وشەی نهێنیت ناگۆڕدرێت.</p>
     </div>
@@ -3187,7 +3187,7 @@ function renderSharePreview(string $title, string $description, string $image, s
 }
 
 $origin = (($_SERVER['HTTPS'] ?? '') !== '' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'ishkhwaz.zeraworld.com');
-$defaultShareImage = $origin . '/icon-512x512-v3.png';
+$defaultShareImage = $origin . '/icon-512x512-v4.png';
 
 // Logos/covers/avatars are stored as inline base64 data: URIs (no real image hosting in this app), which
 // og:image cannot use at all - crawlers need a real fetchable HTTP(S) URL. So a data: URI is served back

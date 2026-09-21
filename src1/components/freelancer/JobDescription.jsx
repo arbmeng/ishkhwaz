@@ -3,7 +3,7 @@ import {
   ChevronDown, Building2, FileText, ListChecks, ClipboardCheck, Sparkles, Clock, Gift, Send, AlignRight,
 } from 'lucide-react';
 
-const TEAL = '#12796b';
+const TEAL = '#641bd9';
 
 // Section headings are "Title:" lines in the job text (that's how the description is written).
 // Pick an icon from what the title says, so each dropdown reads at a glance.
@@ -84,7 +84,7 @@ export const JobDescription = ({ text }) => {
         <button
           type="button"
           onClick={() => setOpen(allOpen ? new Set() : new Set(sections.map((_, i) => i)))}
-          className="rounded-lg px-2.5 py-1.5 text-[11px] font-black text-[#12796b] transition hover:bg-[#edf8f5]"
+          className="rounded-lg px-2.5 py-1.5 text-[11px] font-black text-[#641bd9] transition hover:bg-[#f1edf8]"
         >
           {allOpen ? 'هەمووی بپێچەوە' : 'هەمووی بکەرەوە'}
         </button>
@@ -95,17 +95,17 @@ export const JobDescription = ({ text }) => {
           const Icon = iconFor(sec.title);
           const isOpen = open.has(i);
           return (
-            <div key={i} className={`overflow-hidden rounded-2xl border transition-colors ${isOpen ? 'border-[#cfe8e2] bg-[#fbfefd]' : 'border-[#e6eeeb] bg-white'}`}>
+            <div key={i} className={`overflow-hidden rounded-2xl border transition-colors ${isOpen ? 'border-[#d8cee9] bg-[#fcfbfe]' : 'border-[#e9e6ee] bg-white'}`}>
               <button
                 type="button"
                 onClick={() => toggle(i)}
                 aria-expanded={isOpen}
-                className="flex w-full items-center gap-3 px-4 py-3.5 text-right transition hover:bg-[#f5faf8] sm:px-5"
+                className="flex w-full items-center gap-3 px-4 py-3.5 text-right transition hover:bg-[#f7f5fa] sm:px-5"
               >
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#e7f4f1]" style={{ color: TEAL }}>
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#ece7f4]" style={{ color: TEAL }}>
                   <Icon className="h-[18px] w-[18px]" />
                 </span>
-                <span className="min-w-0 flex-1 text-sm font-black text-[#111d1a] sm:text-[15px]">{sec.title}</span>
+                <span className="min-w-0 flex-1 text-sm font-black text-[#16111d] sm:text-[15px]">{sec.title}</span>
                 <ChevronDown className={`h-5 w-5 shrink-0 text-[#87948f] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
               </button>
 

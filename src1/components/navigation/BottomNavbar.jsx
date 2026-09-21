@@ -87,7 +87,7 @@ export const BottomNavbar = ({ activeTab, setActiveTab }) => {
     setActiveTab(tabId);
   };
 
-  const navItem = (id, Icon, label, iconColor = 'text-[#12796b]', badge = 0) => (
+  const navItem = (id, Icon, label, iconColor = 'text-[#641bd9]', badge = 0) => (
     <div key={id} className="relative flex-1">
       <button
         data-tour={`nav-${id}`}
@@ -96,7 +96,7 @@ export const BottomNavbar = ({ activeTab, setActiveTab }) => {
           activeTab === id ? 'text-slate-900 font-black scale-105' : 'text-slate-500 hover:text-slate-900 font-medium'
         }`}
       >
-        {activeTab === id && <span className="absolute -top-1.5 w-7 h-1 rounded-full shadow-sm" style={{ background: '#12796b' }} />}
+        {activeTab === id && <span className="absolute -top-1.5 w-7 h-1 rounded-full shadow-sm" style={{ background: '#641bd9' }} />}
         <span className="relative">
           <Icon className={`w-5 h-5 mb-0.5 transition-colors ${activeTab === id ? iconColor : 'text-slate-400'}`} />
           {badge > 0 && (
@@ -111,7 +111,7 @@ export const BottomNavbar = ({ activeTab, setActiveTab }) => {
   );
 
   return createPortal(
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t-2 border-[#12796b]/30 px-3 flex items-center justify-around shadow-[0_-5px_25px_rgba(0,0,0,0.06)] select-none md:hidden"
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t-2 border-[#641bd9]/30 px-3 flex items-center justify-around shadow-[0_-5px_25px_rgba(0,0,0,0.06)] select-none md:hidden"
       style={{
         paddingTop: '10px',
         paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
@@ -121,9 +121,9 @@ export const BottomNavbar = ({ activeTab, setActiveTab }) => {
       {navItem('home',   Home,   'ماڵەوە')}
       {navItem('search', Search, 'گەڕان')}
       {isEmployer
-        ? navItem('my_company_dashboard', Briefcase, 'داواکاری', 'text-[#12796b]', requestsBadge)
-        : navItem('my_applications',      FileText,  'داواکاری', 'text-[#12796b]', requestsBadge)}
-      {navItem('messages', MessageCircle, 'پەیام', 'text-[#12796b]', unreadMessageCount)}
+        ? navItem('my_company_dashboard', Briefcase, 'داواکاری', 'text-[#641bd9]', requestsBadge)
+        : navItem('my_applications',      FileText,  'داواکاری', 'text-[#641bd9]', requestsBadge)}
+      {navItem('messages', MessageCircle, 'پەیام', 'text-[#641bd9]', unreadMessageCount)}
       {navItem('profile',  User,          'پرۆفایل')}
     </nav>,
     document.body

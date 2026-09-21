@@ -3,8 +3,8 @@ import { apiService } from '../../services/api';
 import { soundService } from '../../services/soundService';
 import { Eye, EyeOff, AlertCircle, Lock, CheckCircle2, XCircle } from 'lucide-react';
 
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
 
 // Landing spot for the link inside the password-reset email. Unlike
 // VerifyEmailPage, this never fires anything automatically on mount (no
@@ -23,7 +23,7 @@ export const ResetPasswordPage = ({ onDone }) => {
 
   if (!token) {
     return (
-      <div dir="rtl" className="fixed inset-0 z-40 bg-white font-vazirmatn flex flex-col items-center justify-center px-6 text-center" style={{ backgroundColor: '#f4f7f6' }}>
+      <div dir="rtl" className="fixed inset-0 z-40 bg-white font-vazirmatn flex flex-col items-center justify-center px-6 text-center" style={{ backgroundColor: '#f5f4f7' }}>
         <XCircle className="w-10 h-10 mb-4" style={{ color: '#dc2626' }} />
         <h1 className="text-lg font-black mb-2" style={{ color: '#111' }}>بەستەرەکە نادروستە</h1>
         <button onClick={() => onDone?.()} className="mt-6 px-6 py-3 rounded-2xl text-white font-black text-sm" style={{ background: TEAL }}>گەڕانەوە بۆ چوونەژوورەوە</button>
@@ -54,8 +54,8 @@ export const ResetPasswordPage = ({ onDone }) => {
       dir="rtl"
       className="fixed inset-0 z-40 bg-white font-vazirmatn select-none overflow-y-auto flex flex-col items-center"
       style={{
-        backgroundColor: '#f4f7f6',
-        backgroundImage: 'radial-gradient(120% 45% at 50% 0%, #dcefeb, #f4f7f6 62%)',
+        backgroundColor: '#f5f4f7',
+        backgroundImage: 'radial-gradient(120% 45% at 50% 0%, #e3dcef, #f5f4f7 62%)',
         paddingTop: 'max(2.5rem, calc(env(safe-area-inset-top) + 2rem))',
       }}
     >
@@ -85,7 +85,7 @@ export const ResetPasswordPage = ({ onDone }) => {
                     type={showPassword ? 'text' : 'password'} required placeholder="••••••••" value={password}
                     onChange={e => setPassword(e.target.value)} autoComplete="new-password"
                     className="w-full rounded-[20px] bg-white border outline-none transition-all text-sm py-3.5 pr-11 pl-11"
-                    style={{ color: '#111', borderColor: errorMsg ? '#fca5a5' : '#d7e0dd' }}
+                    style={{ color: '#111', borderColor: errorMsg ? '#fca5a5' : '#dad7e0' }}
                   />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4" style={{ color: '#9aa1a0' }}>
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -101,7 +101,7 @@ export const ResetPasswordPage = ({ onDone }) => {
                     type={showPassword ? 'text' : 'password'} required placeholder="••••••••" value={confirm}
                     onChange={e => setConfirm(e.target.value)} autoComplete="new-password"
                     className="w-full rounded-[20px] bg-white border outline-none transition-all text-sm py-3.5 pr-11 pl-4"
-                    style={{ color: '#111', borderColor: errorMsg ? '#fca5a5' : '#d7e0dd' }}
+                    style={{ color: '#111', borderColor: errorMsg ? '#fca5a5' : '#dad7e0' }}
                   />
                 </div>
                 {errorMsg && (

@@ -6,8 +6,8 @@ import { ArrowRight, Bell, CheckCheck } from 'lucide-react';
 
 // Shared light theme — matches DesktopHeaderNav, UserProfilePage, Dashboard.
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
-const TEAL = '#12796b';
-const TEAL_SOFT = '#e7f4f1';
+const TEAL = '#641bd9';
+const TEAL_SOFT = '#ece7f4';
 
 const formatWhen = (iso) => {
   if (!iso) return '';
@@ -33,7 +33,7 @@ export const NotificationsPage = ({ onBack }) => {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen pb-16" style={{ background: '#f4f7f6', fontFamily: NK }}>
+    <div dir="rtl" className="min-h-screen pb-16" style={{ background: '#f5f4f7', fontFamily: NK }}>
       <PageHeader
         title="ئاگادارکردنەوەکان"
         onBack={onBack}
@@ -46,7 +46,7 @@ export const NotificationsPage = ({ onBack }) => {
             <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: TEAL_SOFT }}>
               <Bell className="w-7 h-7" style={{ color: TEAL }} />
             </div>
-            <p className="text-sm font-black text-[#111d1a]">هیچ ئاگادارکردنەوەیەک نییە</p>
+            <p className="text-sm font-black text-[#16111d]">هیچ ئاگادارکردنەوەیەک نییە</p>
             <p className="text-xs text-[#7b8e88] max-w-xs">کاتێک شتێکی نوێ ڕووبدات — داواکارییەک، پەیامێک یان گۆڕانکارییەک — لێرەدا دەردەکەوێت.</p>
           </div>
         ) : (
@@ -59,14 +59,14 @@ export const NotificationsPage = ({ onBack }) => {
                 disabled={!n.target_url}
                 className={`w-full text-right p-4 rounded-2xl border flex items-start gap-3.5 transition-all ${
                   n.target_url ? 'cursor-pointer hover:shadow-sm active:scale-[0.99]' : 'cursor-default'
-                } ${isUnread ? 'bg-white border-[#12796b]/25 shadow-2xs' : 'bg-[#fbfdfc] border-[#e8eeec]'}`}
+                } ${isUnread ? 'bg-white border-[#641bd9]/25 shadow-2xs' : 'bg-[#fcfbfd] border-[#eae8ee]'}`}
               >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: isUnread ? TEAL_SOFT : '#f0f4f2', color: isUnread ? TEAL : '#a0afa9' }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: isUnread ? TEAL_SOFT : '#f2f0f4', color: isUnread ? TEAL : '#a0afa9' }}>
                   <Bell className="w-4.5 h-4.5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-black text-[#111d1a]">{n.title}</h3>
+                    <h3 className="text-sm font-black text-[#16111d]">{n.title}</h3>
                     {isUnread && <span className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ background: TEAL }} />}
                   </div>
                   {n.body && <p className="text-xs text-[#7b8e88] mt-1 leading-relaxed">{n.body}</p>}

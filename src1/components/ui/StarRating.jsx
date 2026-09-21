@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Star } from 'lucide-react';
 
-const TEAL = '#12796b';
+const TEAL = '#641bd9';
 
 // Read-only display: a row of filled/empty stars plus the numeric average
 // and count, e.g. "★★★★☆ 4.2 (13)". Renders nothing (not a fabricated
@@ -17,12 +17,12 @@ export const StarRatingDisplay = ({ average = 0, count = 0, size = 'sm' }) => {
           <Star
             key={i}
             className={starCls}
-            style={{ color: i < Math.round(average) ? '#f5a524' : '#d9e2df' }}
+            style={{ color: i < Math.round(average) ? '#f5a524' : '#dcd9e2' }}
             fill={i < Math.round(average) ? '#f5a524' : 'none'}
           />
         ))}
       </div>
-      <span className="text-xs font-black text-[#111d1a] font-mono">{average}</span>
+      <span className="text-xs font-black text-[#16111d] font-mono">{average}</span>
       <span className="text-[11px] text-[#7b8e88] font-bold">({count})</span>
     </div>
   );
@@ -37,8 +37,8 @@ export const StarRatingInput = ({ onSubmit, submitting = false, label = 'هەڵ�
   const [comment, setComment] = useState('');
 
   return (
-    <div className="p-4 rounded-2xl bg-[#f8faf9] border border-[#e8eeec] space-y-3">
-      <span className="text-xs font-black text-[#111d1a] block">{label}</span>
+    <div className="p-4 rounded-2xl bg-[#f9f8fa] border border-[#eae8ee] space-y-3">
+      <span className="text-xs font-black text-[#16111d] block">{label}</span>
       <div className="flex items-center gap-1.5" dir="ltr">
         {Array.from({ length: 5 }).map((_, i) => {
           const n = i + 1;
@@ -52,7 +52,7 @@ export const StarRatingInput = ({ onSubmit, submitting = false, label = 'هەڵ�
               onMouseLeave={() => setHovered(0)}
               className="active:scale-90 transition-transform"
             >
-              <Star className="w-6 h-6" style={{ color: active ? '#f5a524' : '#d9e2df' }} fill={active ? '#f5a524' : 'none'} />
+              <Star className="w-6 h-6" style={{ color: active ? '#f5a524' : '#dcd9e2' }} fill={active ? '#f5a524' : 'none'} />
             </button>
           );
         })}
@@ -62,7 +62,7 @@ export const StarRatingInput = ({ onSubmit, submitting = false, label = 'هەڵ�
         onChange={e => setComment(e.target.value)}
         placeholder="بۆچوونێک بنووسە (ئارەزوومەندانە)..."
         rows={2}
-        className="w-full bg-white border border-[#e8eeec] rounded-xl px-3 py-2.5 text-xs text-[#111d1a] placeholder-[#a0afa9] outline-none focus:border-[#12796b] resize-none"
+        className="w-full bg-white border border-[#eae8ee] rounded-xl px-3 py-2.5 text-xs text-[#16111d] placeholder-[#a0afa9] outline-none focus:border-[#641bd9] resize-none"
       />
       <button
         type="button"

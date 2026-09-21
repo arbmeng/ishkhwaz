@@ -21,9 +21,9 @@ import {
 } from 'lucide-react';
 
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
-const TEAL_SOFT = '#e7f4f1';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
+const TEAL_SOFT = '#ece7f4';
 
 const STAGE_LABELS = {
   payment_review: 'لە پشکنینی پارەدایە',
@@ -62,10 +62,10 @@ const GlassButton = ({ children, primary, className = '', ...props }) => (
     {...props}
     className={[
       'inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-black transition-all duration-200',
-      'active:scale-[.97] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#12796b]/40',
+      'active:scale-[.97] disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641bd9]/40',
       primary
-        ? 'bg-[#12796b] text-white shadow-[0_10px_28px_rgba(18,121,107,.20)] hover:bg-[#0d5c50]'
-        : 'bg-white text-[#33433e] border border-[#e4ebe8] hover:border-[#12796b]/30 hover:bg-[#f8fbfa]',
+        ? 'bg-[#641bd9] text-white shadow-[0_10px_28px_rgba(100,27,217,.20)] hover:bg-[#4b13a5]'
+        : 'bg-white text-[#645977] border border-[#e7e4eb] hover:border-[#641bd9]/30 hover:bg-[#f9f8fb]',
       className,
     ].join(' ')}
   >
@@ -74,11 +74,11 @@ const GlassButton = ({ children, primary, className = '', ...props }) => (
 );
 
 const EmptyState = ({ icon: Icon = FileText, title, description, action }) => (
-  <div className="rounded-[28px] border border-dashed border-[#dce7e3] bg-white/90 p-10 sm:p-14 text-center">
-    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#eaf5f2] text-[#12796b]">
+  <div className="rounded-[28px] border border-dashed border-[#e0dce7] bg-white/90 p-10 sm:p-14 text-center">
+    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#eeeaf5] text-[#641bd9]">
       <Icon className="h-6 w-6" />
     </div>
-    <h3 className="text-sm sm:text-base font-black text-[#17231f]">{title}</h3>
+    <h3 className="text-sm sm:text-base font-black text-[#1c1723]">{title}</h3>
     {description && <p className="mx-auto mt-2 max-w-md text-xs leading-6 font-medium text-[#7b8e88]">{description}</p>}
     {action}
   </div>
@@ -90,30 +90,30 @@ const StatCard = ({ icon: Icon, value, label, accent, hint, onClick }) => (
     onClick={onClick}
     className={[
       'group relative overflow-hidden rounded-[26px] border p-4 sm:p-5 text-right transition-all duration-300',
-      'hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(18,53,47,.08)]',
-      accent ? 'border-[#0d5c50] bg-[#12796b] text-white' : 'border-[#e5ece9] bg-white text-[#17231f]',
+      'hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(31,17,54,.08)]',
+      accent ? 'border-[#4b13a5] bg-[#641bd9] text-white' : 'border-[#e8e5ec] bg-white text-[#1c1723]',
     ].join(' ')}
   >
-    <div className={`absolute -left-8 -top-8 h-24 w-24 rounded-full blur-2xl ${accent ? 'bg-white/10' : 'bg-[#12796b]/5'}`} />
+    <div className={`absolute -left-8 -top-8 h-24 w-24 rounded-full blur-2xl ${accent ? 'bg-white/10' : 'bg-[#641bd9]/5'}`} />
     <div className="relative flex items-start justify-between gap-3">
-      <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${accent ? 'bg-white/12' : 'bg-[#eaf5f2]'} ${accent ? 'text-white' : 'text-[#12796b]'}`}>
+      <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${accent ? 'bg-white/12' : 'bg-[#eeeaf5]'} ${accent ? 'text-white' : 'text-[#641bd9]'}`}>
         <Icon className="h-5 w-5" />
       </div>
       {hint && (
-        <span className={`rounded-full px-2 py-1 text-[9px] font-black ${accent ? 'bg-white/10 text-white/80' : 'bg-[#f3f7f5] text-[#80908a]'}`}>
+        <span className={`rounded-full px-2 py-1 text-[9px] font-black ${accent ? 'bg-white/10 text-white/80' : 'bg-[#f5f3f7] text-[#80908a]'}`}>
           {hint}
         </span>
       )}
     </div>
     <div className="relative mt-5">
-      <div className={`text-[28px] sm:text-[32px] leading-none font-black tracking-tight ${accent ? 'text-white' : 'text-[#17231f]'}`}>{value}</div>
+      <div className={`text-[28px] sm:text-[32px] leading-none font-black tracking-tight ${accent ? 'text-white' : 'text-[#1c1723]'}`}>{value}</div>
       <div className={`mt-2 text-[11px] font-bold ${accent ? 'text-white/75' : 'text-[#7b8e88]'}`}>{label}</div>
     </div>
   </button>
 );
 
 const SegmentedTabs = ({ tabs, active, onChange }) => (
-  <HScroll bar={false} arrows={false} className="flex w-full rounded-[22px] border border-[#e5ece9] bg-white p-1.5 shadow-[0_4px_18px_rgba(18,53,47,.035)]">
+  <HScroll bar={false} arrows={false} className="flex w-full rounded-[22px] border border-[#e8e5ec] bg-white p-1.5 shadow-[0_4px_18px_rgba(31,17,54,.035)]">
     {tabs.map(({ id, label, Icon, count }) => {
       const selected = active === id;
       return (
@@ -121,7 +121,7 @@ const SegmentedTabs = ({ tabs, active, onChange }) => (
           key={id}
           type="button"
           onClick={() => onChange(id)}
-          className={`min-w-[110px] flex-1 rounded-[16px] px-3 py-2.5 text-xs font-black transition-all ${selected ? 'bg-[#12796b] text-white shadow-[0_7px_18px_rgba(18,121,107,.18)]' : 'text-[#7b8e88] hover:bg-[#f6f9f8] hover:text-[#17231f]'
+          className={`min-w-[110px] flex-1 rounded-[16px] px-3 py-2.5 text-xs font-black transition-all ${selected ? 'bg-[#641bd9] text-white shadow-[0_7px_18px_rgba(100,27,217,.18)]' : 'text-[#7b8e88] hover:bg-[#f7f6f9] hover:text-[#1c1723]'
             }`}
         >
           <span className="inline-flex items-center justify-center gap-1.5">
@@ -137,10 +137,10 @@ const SegmentedTabs = ({ tabs, active, onChange }) => (
 
 const StatusPill = ({ type, children }) => {
   const styles = {
-    success: 'bg-[#e7f4f1] text-[#0d5c50] border-[#c5e8df]',
+    success: 'bg-[#ece7f4] text-[#4b13a5] border-[#d2c4e9]',
     danger: 'bg-rose-50 text-rose-700 border-rose-100',
     warning: 'bg-amber-50 text-amber-700 border-amber-100',
-    neutral: 'bg-[#f4f7f6] text-[#687872] border-[#e5ece9]',
+    neutral: 'bg-[#f5f4f7] text-[#687872] border-[#e8e5ec]',
   };
   return <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-black ${styles[type] || styles.neutral}`}>{children}</span>;
 };
@@ -150,20 +150,20 @@ const ApplicantCard = ({ app, onCV, onApprove, onReject, onRate, ratingOpen, rat
   const rejected = app.status === 'rejected';
 
   return (
-    <article className={`group rounded-[26px] border p-4 sm:p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(18,53,47,.07)] ${accepted ? 'border-[#c6e9e1] bg-[#f7fcfa]' : rejected ? 'border-rose-100 bg-rose-50/25' : 'border-[#e5ece9] bg-white'
+    <article className={`group rounded-[26px] border p-4 sm:p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(31,17,54,.07)] ${accepted ? 'border-[#d3c5ea] bg-[#f9f7fc]' : rejected ? 'border-rose-100 bg-rose-50/25' : 'border-[#e8e5ec] bg-white'
       }`}>
       <div className="flex items-start gap-3.5">
         {app.avatar ? (
-          <img src={app.avatar} alt="" className="h-14 w-14 shrink-0 rounded-[18px] object-cover border border-[#d2ebe5]" />
+          <img src={app.avatar} alt="" className="h-14 w-14 shrink-0 rounded-[18px] object-cover border border-[#dbd1ec]" />
         ) : (
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] border border-[#c8e8e1] bg-[#e4f5f1] text-lg font-black text-[#12796b]">{app.initial}</div>
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] border border-[#d4c7e9] bg-[#eae4f5] text-lg font-black text-[#641bd9]">{app.initial}</div>
         )}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="truncate text-sm sm:text-base font-black text-[#17231f]">{app.freelancer_name}</h3>
-            {app.isVIP && <span className="inline-flex items-center gap-1 rounded-full bg-[#17231f] px-2 py-1 text-[9px] font-black text-white"><Crown className="h-3 w-3 text-amber-300" /> VIP</span>}
+            <h3 className="truncate text-sm sm:text-base font-black text-[#1c1723]">{app.freelancer_name}</h3>
+            {app.isVIP && <span className="inline-flex items-center gap-1 rounded-full bg-[#1c1723] px-2 py-1 text-[9px] font-black text-white"><Crown className="h-3 w-3 text-amber-300" /> VIP</span>}
           </div>
-          <div className="mt-1.5 inline-flex max-w-full rounded-full bg-[#f3f7f5] px-2.5 py-1 text-[10px] font-bold text-[#596963]">
+          <div className="mt-1.5 inline-flex max-w-full rounded-full bg-[#f5f3f7] px-2.5 py-1 text-[10px] font-bold text-[#596963]">
             <span className="truncate">{app.job_title}</span>
           </div>
         </div>
@@ -182,11 +182,11 @@ const ApplicantCard = ({ app, onCV, onApprove, onReject, onRate, ratingOpen, rat
         </StatusPill>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#edf2f0] pt-4">
+      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#efedf2] pt-4">
         <GlassButton onClick={() => onCV(app)}><FileText className="h-3.5 w-3.5" />بینینی CV</GlassButton>
         {!accepted && !rejected && (
           <>
-            <button onClick={() => onReject(app.id)} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#e5ece9] bg-white text-[#7b8e88] transition hover:border-rose-200 hover:text-rose-600 active:scale-95" aria-label="ڕەتکردنەوە"><X className="h-4 w-4" /></button>
+            <button onClick={() => onReject(app.id)} className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#e8e5ec] bg-white text-[#7b8e88] transition hover:border-rose-200 hover:text-rose-600 active:scale-95" aria-label="ڕەتکردنەوە"><X className="h-4 w-4" /></button>
             <GlassButton primary onClick={() => onApprove(app.id)}><Check className="h-3.5 w-3.5" />پەسەندکردن</GlassButton>
           </>
         )}
@@ -215,14 +215,14 @@ const JobCard = ({ job, onOpen, onEdit, onToggle, toggling }) => {
   }[job.status] || ['چالاکە', 'success'];
 
   return (
-    <article onClick={onOpen} className="group cursor-pointer rounded-[26px] border border-[#e5ece9] bg-white p-4 sm:p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#12796b]/25 hover:shadow-[0_18px_45px_rgba(18,53,47,.07)]">
+    <article onClick={onOpen} className="group cursor-pointer rounded-[26px] border border-[#e8e5ec] bg-white p-4 sm:p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#641bd9]/25 hover:shadow-[0_18px_45px_rgba(31,17,54,.07)]">
       <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eaf5f2] text-[#12796b]"><Briefcase className="h-5 w-5" /></div>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eeeaf5] text-[#641bd9]"><Briefcase className="h-5 w-5" /></div>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-black text-[#17231f] group-hover:text-[#12796b]">{job.title_ku || job.title}</h3>
+          <h3 className="truncate text-sm font-black text-[#1c1723] group-hover:text-[#641bd9]">{job.title_ku || job.title}</h3>
           <div className="mt-2"><StatusPill type={status[1]}>{status[0]}</StatusPill></div>
         </div>
-        <ArrowUpRight className="h-4 w-4 shrink-0 text-[#b1bfba] transition group-hover:-translate-y-0.5 group-hover:text-[#12796b]" />
+        <ArrowUpRight className="h-4 w-4 shrink-0 text-[#b1bfba] transition group-hover:-translate-y-0.5 group-hover:text-[#641bd9]" />
       </div>
 
       <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-[#7b8e88]">
@@ -230,10 +230,10 @@ const JobCard = ({ job, onOpen, onEdit, onToggle, toggling }) => {
         <span>{Number(job.applications_count) || 0} داواکاری</span>
       </div>
 
-      <div className="mt-4 flex items-center gap-2 border-t border-[#edf2f0] pt-3">
-        <button onClick={(e) => { e.stopPropagation(); onEdit(job); }} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e5ece9] bg-[#f7f9f8] text-[#5a6b65] transition hover:text-[#12796b]" aria-label="دەستکاریکردن"><Edit className="h-4 w-4" /></button>
+      <div className="mt-4 flex items-center gap-2 border-t border-[#efedf2] pt-3">
+        <button onClick={(e) => { e.stopPropagation(); onEdit(job); }} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e8e5ec] bg-[#f8f7f9] text-[#5a6b65] transition hover:text-[#641bd9]" aria-label="دەستکاریکردن"><Edit className="h-4 w-4" /></button>
         {canToggle && (
-          <button disabled={toggling} onClick={(e) => { e.stopPropagation(); onToggle(job); }} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e5ece9] bg-[#f7f9f8] text-[#5a6b65] transition hover:text-[#12796b] disabled:opacity-50" aria-label="گۆڕینی دۆخ">
+          <button disabled={toggling} onClick={(e) => { e.stopPropagation(); onToggle(job); }} className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e8e5ec] bg-[#f8f7f9] text-[#5a6b65] transition hover:text-[#641bd9] disabled:opacity-50" aria-label="گۆڕینی دۆخ">
             {job.status === 'active' ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
         )}
@@ -252,27 +252,27 @@ const ApplicationCard = ({ req, dispute, expanded, onExpand, onRate, rated, rati
   const rejected = bucket === 'rejected';
 
   return (
-    <article className={`rounded-[26px] border p-4 sm:p-5 transition-all duration-300 hover:shadow-[0_15px_40px_rgba(18,53,47,.06)] ${accepted ? 'border-[#c6e9e1] bg-[#f7fcfa]' : rejected ? 'border-rose-100 bg-rose-50/20' : 'border-[#e5ece9] bg-white'
+    <article className={`rounded-[26px] border p-4 sm:p-5 transition-all duration-300 hover:shadow-[0_15px_40px_rgba(31,17,54,.06)] ${accepted ? 'border-[#d3c5ea] bg-[#f9f7fc]' : rejected ? 'border-rose-100 bg-rose-50/20' : 'border-[#e8e5ec] bg-white'
       }`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate text-sm sm:text-base font-black text-[#17231f]">{req.title}</h3>
+          <h3 className="truncate text-sm sm:text-base font-black text-[#1c1723]">{req.title}</h3>
           <p className="mt-1 truncate text-[11px] font-bold text-[#7b8e88]">{req.company}</p>
         </div>
         <StatusPill type={accepted ? 'success' : rejected ? 'danger' : 'warning'}>{STAGE_LABELS[req.stage]}</StatusPill>
       </div>
 
-      <div className="my-4 h-px bg-[#edf2f0]" />
+      <div className="my-4 h-px bg-[#efedf2]" />
 
       {accepted && (
         <div className="space-y-3">
           <div className="flex items-center justify-between text-[10px] font-black text-[#7b8e88]"><span>قۆناغی داواکاری</span><span>{step}/3 · {pct}%</span></div>
           <div className="flex gap-1.5">
-            {[0, 1, 2].map(i => <div key={i} className="h-1.5 flex-1 rounded-full" style={{ background: i < step ? TEAL : '#dfeae6' }} />)}
+            {[0, 1, 2].map(i => <div key={i} className="h-1.5 flex-1 rounded-full" style={{ background: i < step ? TEAL : '#e3dfea' }} />)}
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <button onClick={() => onExpand(req.id)} className="inline-flex items-center gap-1.5 text-xs font-black text-[#12796b]"><Layers className="h-3.5 w-3.5" />وردەکاری</button>
+              <button onClick={() => onExpand(req.id)} className="inline-flex items-center gap-1.5 text-xs font-black text-[#641bd9]"><Layers className="h-3.5 w-3.5" />وردەکاری</button>
               {!rated && <button onClick={() => onRate(req.id)} className="inline-flex items-center gap-1.5 text-xs font-black text-amber-700"><Star className="h-3.5 w-3.5 text-amber-500" />هەڵسەنگاندن</button>}
             </div>
             <span className="text-[10px] font-bold text-[#7b8e88]">قۆناغەکان بە سەرکەوتوویی تێپەڕین</span>
@@ -285,7 +285,7 @@ const ApplicationCard = ({ req, dispute, expanded, onExpand, onRate, rated, rati
       {bucket === 'pending' && (
         <div className="space-y-3">
           <div className="flex gap-1.5">
-            {[0, 1, 2].map(i => <div key={i} className="h-1.5 flex-1 rounded-full" style={{ background: i < step ? TEAL : '#dfeae6' }} />)}
+            {[0, 1, 2].map(i => <div key={i} className="h-1.5 flex-1 rounded-full" style={{ background: i < step ? TEAL : '#e3dfea' }} />)}
           </div>
         <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold text-[#7b8e88]">
           {req.txId && <span className="font-mono">مامەڵە: {req.txId}</span>}
@@ -303,7 +303,7 @@ const ApplicationCard = ({ req, dispute, expanded, onExpand, onRate, rated, rati
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#edf2f0] pt-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#efedf2] pt-3">
         <span className="text-[9px] font-mono text-[#8a9994]">{req.appliedAt ? `نێردراوە: ${req.appliedAt}` : ''}</span>
         <div className="flex flex-wrap gap-2">
           {req.stage === 'payment_review' && (
@@ -548,7 +548,7 @@ export const Dashboard = ({ onNavigate }) => {
   ];
 
   return (
-    <div dir="rtl" className="min-h-screen select-none bg-[#f4f7f6] pb-24 text-right" style={{ fontFamily: NK }}>
+    <div dir="rtl" className="min-h-screen select-none bg-[#f5f4f7] pb-24 text-right" style={{ fontFamily: NK }}>
       <style>{`
         @keyframes dashboardRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
         .dashboard-rise{animation:dashboardRise .45s cubic-bezier(.22,.9,.34,1) both}
@@ -557,8 +557,8 @@ export const Dashboard = ({ onNavigate }) => {
       `}</style>
 
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#12796b]/5 blur-3xl" />
-        <div className="absolute -left-40 top-[38%] h-96 w-96 rounded-full bg-[#12796b]/4 blur-3xl" />
+        <div className="absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#641bd9]/5 blur-3xl" />
+        <div className="absolute -left-40 top-[38%] h-96 w-96 rounded-full bg-[#641bd9]/4 blur-3xl" />
       </div>
 
       <PageHeader
@@ -597,7 +597,7 @@ export const Dashboard = ({ onNavigate }) => {
 
             {employerSubTab === 'applicants' && (
               <div className="space-y-4">
-                <div className="flex flex-col gap-3 rounded-[26px] border border-[#e5ece9] bg-white p-3 sm:p-4">
+                <div className="flex flex-col gap-3 rounded-[26px] border border-[#e8e5ec] bg-white p-3 sm:p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                     <div className="relative min-w-0 flex-1">
                       <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9aaaa4]" />
@@ -605,13 +605,13 @@ export const Dashboard = ({ onNavigate }) => {
                         value={query}
                         onChange={e => setQuery(e.target.value)}
                         placeholder="گەڕان بە ناوی کاندید، کار یان شوێن..."
-                        className="h-11 w-full rounded-2xl border border-[#e6edea] bg-[#f8faf9] pr-10 pl-4 text-xs font-bold text-[#17231f] outline-none transition focus:border-[#12796b]/40 focus:bg-white"
+                        className="h-11 w-full rounded-2xl border border-[#e9e6ed] bg-[#f9f8fa] pr-10 pl-4 text-xs font-bold text-[#1c1723] outline-none transition focus:border-[#641bd9]/40 focus:bg-white"
                       />
                     </div>
                     <div className="min-w-0 sm:max-w-[55%]">
                     <HScroll bar={false} className="flex items-center gap-2 px-1 py-0.5">
                       {applicantCategoryFilters.map(c => (
-                        <button key={c.id} onClick={() => setSelectedCategoryFilter(c.id)} className={`shrink-0 rounded-full px-3.5 py-2 text-[10px] font-black transition ${selectedCategoryFilter === c.id ? 'bg-[#17231f] text-white' : 'border border-[#e5ece9] bg-white text-[#65766f] hover:border-[#12796b]/30'}`}>{c.label}</button>
+                        <button key={c.id} onClick={() => setSelectedCategoryFilter(c.id)} className={`shrink-0 rounded-full px-3.5 py-2 text-[10px] font-black transition ${selectedCategoryFilter === c.id ? 'bg-[#1c1723] text-white' : 'border border-[#e8e5ec] bg-white text-[#65766f] hover:border-[#641bd9]/30'}`}>{c.label}</button>
                       ))}
                     </HScroll>
                     </div>
@@ -651,8 +651,8 @@ export const Dashboard = ({ onNavigate }) => {
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       {companyJobs.map(job => <JobCard key={job.id} job={job} onOpen={() => onNavigate?.('job_view', { jobId: job.id })} onEdit={setEditingJob} onToggle={handleToggleJobStatus} toggling={togglingJobId === job.id} />)}
                     </div>
-                    <button onClick={() => { soundService.playTick?.(); setShowBrandingModal(true); }} className="flex w-full items-center justify-center gap-2 rounded-[22px] border border-[#e5ece9] bg-white py-3.5 text-xs font-black text-[#263630] transition hover:border-[#12796b]/30 hover:text-[#12796b]">
-                      <Palette className="h-4 w-4 text-[#12796b]" />نوێکردنەوەی براندی هەموو کارەکان
+                    <button onClick={() => { soundService.playTick?.(); setShowBrandingModal(true); }} className="flex w-full items-center justify-center gap-2 rounded-[22px] border border-[#e8e5ec] bg-white py-3.5 text-xs font-black text-[#4e4260] transition hover:border-[#641bd9]/30 hover:text-[#641bd9]">
+                      <Palette className="h-4 w-4 text-[#641bd9]" />نوێکردنەوەی براندی هەموو کارەکان
                     </button>
                   </>
                 )}
@@ -662,12 +662,12 @@ export const Dashboard = ({ onNavigate }) => {
             {employerSubTab === 'analytics' && (
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                  <div className="rounded-[24px] border border-[#e5ece9] bg-white p-4"><div className="flex items-center gap-2 text-[10px] font-black text-[#7b8e88]"><Eye className="h-4 w-4 text-[#12796b]" />بینین</div><div className="mt-3 text-2xl font-black text-[#17231f]">{analytics.totals.views || 0}</div></div>
-                  <div className="rounded-[24px] border border-[#e5ece9] bg-white p-4"><div className="flex items-center gap-2 text-[10px] font-black text-[#7b8e88]"><Send className="h-4 w-4 text-[#12796b]" />داواکاری</div><div className="mt-3 text-2xl font-black text-[#17231f]">{analytics.totals.applications || 0}</div></div>
+                  <div className="rounded-[24px] border border-[#e8e5ec] bg-white p-4"><div className="flex items-center gap-2 text-[10px] font-black text-[#7b8e88]"><Eye className="h-4 w-4 text-[#641bd9]" />بینین</div><div className="mt-3 text-2xl font-black text-[#1c1723]">{analytics.totals.views || 0}</div></div>
+                  <div className="rounded-[24px] border border-[#e8e5ec] bg-white p-4"><div className="flex items-center gap-2 text-[10px] font-black text-[#7b8e88]"><Send className="h-4 w-4 text-[#641bd9]" />داواکاری</div><div className="mt-3 text-2xl font-black text-[#1c1723]">{analytics.totals.applications || 0}</div></div>
                 </div>
                 {analyticsLoading ? (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    {[1, 2].map(i => <div key={i} className="h-64 animate-pulse rounded-[26px] border border-[#e5ece9] bg-white" />)}
+                    {[1, 2].map(i => <div key={i} className="h-64 animate-pulse rounded-[26px] border border-[#e8e5ec] bg-white" />)}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -695,7 +695,7 @@ export const Dashboard = ({ onNavigate }) => {
                 <HScroll bar={false} className="flex gap-2 px-1 py-1">
                   {STATUS_FILTERS.map(f => {
                     const count = f.id === 'all' ? sentRequests.length : sentRequests.filter(r => stageBucket(r.stage) === f.id).length;
-                    return <button key={f.id} onClick={() => { soundService.playTick?.(); setStatusFilter(f.id); }} className={`shrink-0 rounded-full px-4 py-2 text-[10px] font-black transition ${statusFilter === f.id ? 'bg-[#12796b] text-white shadow-[0_7px_18px_rgba(18,121,107,.16)]' : 'border border-[#e5ece9] bg-white text-[#6d7d77]'}`}>{f.label} ({count})</button>;
+                    return <button key={f.id} onClick={() => { soundService.playTick?.(); setStatusFilter(f.id); }} className={`shrink-0 rounded-full px-4 py-2 text-[10px] font-black transition ${statusFilter === f.id ? 'bg-[#641bd9] text-white shadow-[0_7px_18px_rgba(100,27,217,.16)]' : 'border border-[#e8e5ec] bg-white text-[#6d7d77]'}`}>{f.label} ({count})</button>;
                   })}
                 </HScroll>
 
@@ -736,24 +736,24 @@ export const Dashboard = ({ onNavigate }) => {
                 {receivedOffers.length === 0 ? (
                   <EmptyState icon={Inbox} title="هیچ ئۆفەرێکی نوێت نییە" description="کاتێک کۆمپانیاکان بەپێی سیڤیەکەت داوات دەکەن، ئۆفەرەکان لێرە دەردەکەون." />
                 ) : receivedOffers.map(offer => (
-                  <article key={offer.id} className="rounded-[26px] border border-[#e5ece9] bg-white p-4 sm:p-5 shadow-[0_4px_18px_rgba(18,53,47,.03)]">
+                  <article key={offer.id} className="rounded-[26px] border border-[#e8e5ec] bg-white p-4 sm:p-5 shadow-[0_4px_18px_rgba(31,17,54,.03)]">
                     <div className="flex items-start gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eaf5f2] text-[#12796b]"><Building2 className="h-5 w-5" /></div>
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eeeaf5] text-[#641bd9]"><Building2 className="h-5 w-5" /></div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-sm sm:text-base font-black text-[#17231f]">{offer.title}</h3>
+                        <h3 className="truncate text-sm sm:text-base font-black text-[#1c1723]">{offer.title}</h3>
                         <p className="mt-1 truncate text-[11px] font-bold text-[#7b8e88]">ئۆفەر لە: {offer.company}</p>
                       </div>
-                      {offer.salary && <span className="shrink-0 rounded-xl bg-[#12796b] px-3 py-1.5 font-mono text-[10px] font-black text-white">{offer.salary}</span>}
+                      {offer.salary && <span className="shrink-0 rounded-xl bg-[#641bd9] px-3 py-1.5 font-mono text-[10px] font-black text-white">{offer.salary}</span>}
                     </div>
 
-                    {offer.message && <div className="mt-4 rounded-2xl bg-[#f5f8f7] p-4 text-xs leading-6 text-[#53645e]"><b className="text-[#17231f]">پەیامی کۆمپانیا:</b><p className="mt-1">{offer.message}</p></div>}
+                    {offer.message && <div className="mt-4 rounded-2xl bg-[#f6f5f8] p-4 text-xs leading-6 text-[#53645e]"><b className="text-[#1c1723]">پەیامی کۆمپانیا:</b><p className="mt-1">{offer.message}</p></div>}
 
-                    <div className="mt-4 flex flex-col gap-3 border-t border-[#edf2f0] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="mt-4 flex flex-col gap-3 border-t border-[#efedf2] pt-4 sm:flex-row sm:items-center sm:justify-between">
                       <span className="text-[9px] font-mono font-bold text-[#8a9994]">نێردراوە: {offer.offeredAt}</span>
                       {offer.status === 'pending' ? (
                         <div className="grid grid-cols-2 gap-2">
                           <button onClick={() => handleRejectOffer(offer.id)} className="rounded-2xl bg-rose-50 px-4 py-3 text-[10px] font-black text-rose-700 transition hover:bg-rose-100"><XCircle className="mr-1 inline h-4 w-4" />ڕەتکردنەوە</button>
-                          <button onClick={() => handleAcceptOffer(offer.id, offer.company)} className="rounded-2xl bg-[#12796b] px-4 py-3 text-[10px] font-black text-white shadow-[0_8px_22px_rgba(18,121,107,.18)] transition hover:bg-[#0d5c50]"><CheckCircle2 className="mr-1 inline h-4 w-4" />قبووڵکردن</button>
+                          <button onClick={() => handleAcceptOffer(offer.id, offer.company)} className="rounded-2xl bg-[#641bd9] px-4 py-3 text-[10px] font-black text-white shadow-[0_8px_22px_rgba(100,27,217,.18)] transition hover:bg-[#4b13a5]"><CheckCircle2 className="mr-1 inline h-4 w-4" />قبووڵکردن</button>
                         </div>
                       ) : offer.status === 'accepted' ? (
                         <StatusPill type="success"><CheckCheck className="h-3.5 w-3.5" />ئەم ئۆفەرەت قبووڵ کردووە</StatusPill>
@@ -775,8 +775,8 @@ export const Dashboard = ({ onNavigate }) => {
             { label: 'پەیامەکان', icon: MessageCircle, action: () => onNavigate?.('messages') },
             { label: 'پرۆفایل', icon: UserRound, action: () => onNavigate?.('profile') },
           ].map(({ label, icon: Icon, action }) => (
-            <button key={label} onClick={action} className="rounded-2xl border border-[#e5ece9] bg-white py-3 text-[9px] font-black text-[#65766f]">
-              <Icon className="mx-auto mb-1 h-4 w-4 text-[#12796b]" />{label}
+            <button key={label} onClick={action} className="rounded-2xl border border-[#e8e5ec] bg-white py-3 text-[9px] font-black text-[#65766f]">
+              <Icon className="mx-auto mb-1 h-4 w-4 text-[#641bd9]" />{label}
             </button>
           ))}
         </div>

@@ -20,9 +20,9 @@ import {
 } from 'lucide-react';
 
 // Brand teal — matches the logo mark and the rest of the light screens.
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
-const TEAL_SOFT = '#e7f4f1';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
+const TEAL_SOFT = '#ece7f4';
 
 const GOV_LABELS = {
   sulaymaniyah: 'سلێمانی', erbil: 'هەولێر', duhok: 'دهۆک',
@@ -151,16 +151,16 @@ const DropdownChip = ({ label, value, options, onChange }) => {
 };
 
 /* Green page header (same look as every other page): greeting on phones, title, search, live counts */
-const FEED_GRAD = 'linear-gradient(155deg,#12897a 0%,#0d6a5d 48%,#083f37 100%)';
+const FEED_GRAD = 'linear-gradient(155deg,#7229e8 0%,#5513bf 48%,#1d0740 100%)';
 const PremiumFeedHero = ({ isEmployer, user, activeJobs, activePeople, newCount, onNavigate, searchTerm, onSearch, unreadMessages = 0, unreadNotifs = 0 }) => {
   const firstName = (user?.name || '').split(' ')[0] || 'بەکارهێنەر';
   const iconBtn = 'relative grid h-11 w-11 place-items-center rounded-2xl border border-white/20 bg-white/12 text-white backdrop-blur active:scale-95 transition';
   return (
     <section
-      className="relative overflow-hidden rounded-b-[30px] text-white shadow-[0_14px_34px_rgba(8,63,55,.22)] lg:rounded-b-[36px]"
+      className="relative overflow-hidden rounded-b-[30px] text-white shadow-[0_14px_34px_rgba(29,7,64,.22)] lg:rounded-b-[36px]"
       style={{ background: FEED_GRAD, marginTop: 'calc(-1 * env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
     >
-      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#43d1b8]/25 blur-3xl" />
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#9d74e0]/25 blur-3xl" />
       <div className="pointer-events-none absolute inset-0 opacity-[.07]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.9) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.9) 1px,transparent 1px)', backgroundSize: '38px 38px' }} />
       <div className="relative mx-auto max-w-6xl px-4 pb-7 pt-4 sm:px-6 lg:px-8 lg:pb-9 lg:pt-9">
         {/* phones: greeting + shortcuts (the desktop header already has these) */}
@@ -182,7 +182,7 @@ const PremiumFeedHero = ({ isEmployer, user, activeJobs, activePeople, newCount,
 
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#c8fff3]">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#ddc8ff]">
               {isEmployer ? <UsersRound className="h-3.5 w-3.5" /> : <WandSparkles className="h-3.5 w-3.5" />}
               {isEmployer ? 'بازاڕی کارخوازان' : 'بازاڕی هەلی کار'}
             </span>
@@ -193,7 +193,7 @@ const PremiumFeedHero = ({ isEmployer, user, activeJobs, activePeople, newCount,
               {isEmployer ? 'کارخوازانی Pro و VIP بە پیشە و شوێن بگەڕێ و بە خێرایی پەیوەندییان پێوە بکە.' : 'بگەڕێ، هەلی نوێ ببینە و بە یەک کرتە سیڤییەکەت بنێرە.'}
             </p>
           </div>
-          <button type="button" onClick={() => onNavigate?.(isEmployer ? 'post-job' : 'profile')} className="group inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-xs font-bold text-[#0d5c50] shadow-[0_12px_28px_rgba(0,0,0,.18)] transition active:scale-95">
+          <button type="button" onClick={() => onNavigate?.(isEmployer ? 'post-job' : 'profile')} className="group inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-xs font-bold text-[#4b13a5] shadow-[0_12px_28px_rgba(0,0,0,.18)] transition active:scale-95">
             {isEmployer ? 'بڵاوکردنەوەی هەلی کار' : 'پڕۆفایلی خۆت تەواو بکە'}
             <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </button>
@@ -203,7 +203,7 @@ const PremiumFeedHero = ({ isEmployer, user, activeJobs, activePeople, newCount,
         <div className="relative mt-5 max-w-2xl">
           <Search className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8aa39d]" />
           <input value={searchTerm} onChange={e => onSearch?.(e.target.value)} placeholder={isEmployer ? 'گەڕان بۆ کارخواز، پیشە...' : 'گەڕان بۆ کار، کۆمپانیا...'}
-            className="w-full rounded-2xl border border-transparent bg-white py-3.5 pl-4 pr-11 text-sm font-bold text-[#111d1a] shadow-[0_10px_28px_rgba(0,0,0,.14)] outline-none placeholder:text-[#9db0ab] focus:ring-4 focus:ring-white/25" />
+            className="w-full rounded-2xl border border-transparent bg-white py-3.5 pl-4 pr-11 text-sm font-bold text-[#16111d] shadow-[0_10px_28px_rgba(0,0,0,.14)] outline-none placeholder:text-[#9db0ab] focus:ring-4 focus:ring-white/25" />
         </div>
 
         <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
@@ -213,7 +213,7 @@ const PremiumFeedHero = ({ isEmployer, user, activeJobs, activePeople, newCount,
             { value: newCount, label: 'نوێ', icon: Sparkles },
           ].map(({ value, label, icon: Icon }) => (
             <div key={label} className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3 backdrop-blur sm:px-4">
-              <div className="flex items-center gap-2"><Icon className="h-4 w-4 text-[#8ff0dc]" /><span className="text-xl font-bold leading-none sm:text-2xl">{value}</span></div>
+              <div className="flex items-center gap-2"><Icon className="h-4 w-4 text-[#b48df2]" /><span className="text-xl font-bold leading-none sm:text-2xl">{value}</span></div>
               <p className="mt-1.5 text-[10px] font-medium text-white/70">{label}</p>
             </div>
           ))}
@@ -224,17 +224,17 @@ const PremiumFeedHero = ({ isEmployer, user, activeJobs, activePeople, newCount,
 };
 
 const PremiumUpgradeBanner = ({ onNavigate, planName }) => (
-  <section className="relative overflow-hidden rounded-[30px] bg-[#0b1714] shadow-[0_18px_55px_rgba(7,35,29,0.18)]">
-    <div className="absolute inset-0 opacity-70" style={{ background: 'radial-gradient(circle at 85% 15%, rgba(48,180,157,.30), transparent 32%), radial-gradient(circle at 10% 90%, rgba(18,121,107,.22), transparent 34%)' }} />
+  <section className="relative overflow-hidden rounded-[30px] bg-[#100b17] shadow-[0_18px_55px_rgba(18,6,36,0.18)]">
+    <div className="absolute inset-0 opacity-70" style={{ background: 'radial-gradient(circle at 85% 15%, rgba(172,138,226,.30), transparent 32%), radial-gradient(circle at 10% 90%, rgba(100,27,217,.22), transparent 34%)' }} />
     <div className="absolute inset-0 opacity-[0.055]" style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,.8) 1px, transparent 1px)', backgroundSize: '14px 14px' }} />
     <div className="relative p-5 sm:p-7"><div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
       <div className="max-w-2xl">
-        <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white/10 border border-white/10 text-[10px] font-black text-[#b7eee3]"><Crown className="w-3.5 h-3.5" />KARNAMA PRO</div>
+        <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white/10 border border-white/10 text-[10px] font-black text-[#ccb6ef]"><Crown className="w-3.5 h-3.5" />KARNAMA PRO</div>
         <h3 className="mt-4 text-2xl sm:text-3xl font-black tracking-tight text-white">بۆ هەر کارێک، سیڤییەکی تایبەت.</h3>
         <p className="mt-2 text-xs sm:text-sm leading-6 font-bold text-white/55">چەند سیڤییەکی جیاواز دروست بکە و بۆ هەر هەلی کارێک ئەوەی گونجاوترە هەڵبژێرە.{planName ? ` پلانەکەی تۆ: ${planName}` : ''}</p>
         <div className="flex flex-wrap gap-2 mt-5">{[['Pro', 'تا ٣ سیڤی'], ['Pro+', 'تا ٦ سیڤی'], ['Smart', 'ئامادەتر بۆ داواکاری']].map(([title, sub]) => <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-2.5"><div className="text-[10px] font-black text-white">{title}</div><div className="text-[9px] font-bold text-white/45 mt-0.5">{sub}</div></div>)}</div>
       </div>
-      <button onClick={() => onNavigate?.('plans')} className="group shrink-0 w-full lg:w-auto min-w-[210px] rounded-2xl bg-white px-5 py-4 text-xs font-black text-[#0b1714] shadow-[0_12px_28px_rgba(0,0,0,.18)] transition-all hover:-translate-y-0.5 active:scale-[0.98]"><span className="flex items-center justify-center gap-2">بەرزکردنەوەی پلان<ArrowUpRight className="w-4 h-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></span><span className="block text-[9px] text-stone-400 mt-1">سیڤییەکانت بە شێوەیەکی زیرەک بەکاربهێنە</span></button>
+      <button onClick={() => onNavigate?.('plans')} className="group shrink-0 w-full lg:w-auto min-w-[210px] rounded-2xl bg-white px-5 py-4 text-xs font-black text-[#100b17] shadow-[0_12px_28px_rgba(0,0,0,.18)] transition-all hover:-translate-y-0.5 active:scale-[0.98]"><span className="flex items-center justify-center gap-2">بەرزکردنەوەی پلان<ArrowUpRight className="w-4 h-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></span><span className="block text-[9px] text-stone-400 mt-1">سیڤییەکانت بە شێوەیەکی زیرەک بەکاربهێنە</span></button>
     </div></div>
   </section>
 );
@@ -510,7 +510,7 @@ export const JobFeed = ({ onNavigate }) => {
         onClick={() => { soundService.playTick?.(); setSelectedFreelancer(f); }}
         className={`relative group h-full overflow-hidden rounded-[30px] cursor-pointer transition-all duration-500 hover:-translate-y-1.5 ${isVip
             ? 'bg-[#130d0c] text-white shadow-[0_18px_55px_rgba(114,39,20,.22)]'
-            : 'bg-white text-stone-900 border border-stone-100 shadow-[0_6px_24px_rgba(20,45,40,.06)] hover:shadow-[0_20px_44px_rgba(20,45,40,.13)]'
+            : 'bg-white text-stone-900 border border-stone-100 shadow-[0_6px_24px_rgba(29,19,46,.06)] hover:shadow-[0_20px_44px_rgba(29,19,46,.13)]'
           }`}
       >
         {isVip && <div className="pointer-events-none absolute inset-[-2px] rounded-[32px] vip-card-border opacity-90" />}
@@ -521,7 +521,7 @@ export const JobFeed = ({ onNavigate }) => {
           {cover ? (
             <img src={cover} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
           ) : (
-            <div className={`absolute inset-0 ${isVip ? 'bg-[radial-gradient(circle_at_20%_15%,rgba(255,153,66,.45),transparent_30%),linear-gradient(135deg,#35110b,#130d0c_55%,#4a1810)]' : 'bg-[radial-gradient(circle_at_85%_10%,rgba(18,121,107,.20),transparent_32%),linear-gradient(135deg,#f5faf8,#e8f4f1)]'}`}>
+            <div className={`absolute inset-0 ${isVip ? 'bg-[radial-gradient(circle_at_20%_15%,rgba(255,153,66,.45),transparent_30%),linear-gradient(135deg,#35110b,#130d0c_55%,#4a1810)]' : 'bg-[radial-gradient(circle_at_85%_10%,rgba(100,27,217,.20),transparent_32%),linear-gradient(135deg,#f7f5fa,#ede8f4)]'}`}>
               <div className={`absolute inset-0 ${isVip ? 'opacity-30' : 'opacity-20'}`} style={{ backgroundImage: 'radial-gradient(currentColor 1px,transparent 1px)', backgroundSize: '16px 16px' }} />
             </div>
           )}
@@ -589,7 +589,7 @@ export const JobFeed = ({ onNavigate }) => {
           {tags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {tags.map((tag, i) => (
-                <span key={`${tag}-${i}`} className={`inline-flex items-center gap-1 max-w-full rounded-full px-2 py-1 text-[9px] font-black ${isVip ? 'bg-orange-400/10 text-orange-100 border border-orange-300/10' : 'bg-[#eef8f5] text-[#0d5c50] border border-[#d8eee8]'}`}>
+                <span key={`${tag}-${i}`} className={`inline-flex items-center gap-1 max-w-full rounded-full px-2 py-1 text-[9px] font-black ${isVip ? 'bg-orange-400/10 text-orange-100 border border-orange-300/10' : 'bg-[#f2eef8] text-[#4b13a5] border border-[#e0d7ef]'}`}>
                   <Hash className="w-2.5 h-2.5 shrink-0" />
                   <span className="truncate">{tag.replace(/^#/, '').replace(/\s+/g, '_')}</span>
                 </span>
@@ -597,7 +597,7 @@ export const JobFeed = ({ onNavigate }) => {
             </div>
           )}
 
-          {matched && <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-black ${isVip ? 'bg-emerald-400/10 text-emerald-200 border border-emerald-300/10' : 'bg-[#e7f4f1] text-[#0d5c50]'}`}><Zap className="w-3 h-3" /> گونجاو بۆ کاری تۆ</div>}
+          {matched && <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-black ${isVip ? 'bg-emerald-400/10 text-emerald-200 border border-emerald-300/10' : 'bg-[#ece7f4] text-[#4b13a5]'}`}><Zap className="w-3 h-3" /> گونجاو بۆ کاری تۆ</div>}
 
           <div className="mt-4 flex gap-2">
             <button onClick={e => { e.stopPropagation(); soundService.playTick?.(); setSelectedFreelancer(f); }} className={`flex-1 py-2.5 rounded-xl text-[10px] font-black border transition-all active:scale-95 ${isVip ? 'border-white/10 bg-white/[.06] text-white hover:bg-white/[.10]' : 'border-stone-100 bg-stone-50 text-stone-600 hover:bg-stone-100'}`}>
@@ -629,7 +629,7 @@ export const JobFeed = ({ onNavigate }) => {
 
     return (
       <div onClick={() => { soundService.playTick?.(); onNavigate?.('job_detail', { jobId: job.id }); }}
-        className="bg-white rounded-[28px] border border-stone-100/90 shadow-[0_4px_20px_rgba(20,45,40,0.055)] hover:shadow-[0_18px_40px_rgba(20,45,40,0.12)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer overflow-hidden group"
+        className="bg-white rounded-[28px] border border-stone-100/90 shadow-[0_4px_20px_rgba(29,19,46,0.055)] hover:shadow-[0_18px_40px_rgba(29,19,46,0.12)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer overflow-hidden group"
         style={isBoosted ? { boxShadow: `0 0 0 2px ${TEAL}, 0 2px 16px rgba(0,0,0,0.05)` } : {}}>
         <div className="relative h-40 sm:h-44">
           <CoverArt seed={job.category || company} cover={job.company_cover} className="w-full h-full" />
@@ -714,10 +714,10 @@ export const JobFeed = ({ onNavigate }) => {
   const planColor = userPlanTier ? getPlanColor(userPlanTier.color) : null;
   const avatarRingStyle = isPaidPlanUser
     ? { padding: 2, background: planColor.gradient || planColor.accent, boxShadow: `0 4px 14px ${planColor.accent}66` }
-    : { padding: 1, background: '#e5e9e7' };
+    : { padding: 1, background: '#e7e5e9' };
 
   return (
-    <div dir="rtl" className="min-h-screen font-vazirmatn select-none pb-28" style={{ background: 'linear-gradient(180deg, #f7faf9 0%, #f2f6f4 48%, #eef3f1 100%)' }}>
+    <div dir="rtl" className="min-h-screen font-vazirmatn select-none pb-28" style={{ background: 'linear-gradient(180deg, #f8f7fa 0%, #f4f2f6 48%, #f0eef3 100%)' }}>
       <PremiumFeedHero
         isEmployer={isEmployer}
         user={user}

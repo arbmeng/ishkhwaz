@@ -9,7 +9,7 @@ import {
 // amount of right padding so the form centres in what's left. Shared by login and register.
 export const AUTH_PANEL_W = 'min(44vw, 600px)';
 export const AUTH_PAD_LG = 'lg:pr-[min(44vw,600px)]';
-export const AUTH_GRADIENT = 'linear-gradient(155deg,#12897a 0%,#0d6a5d 48%,#083f37 100%)';
+export const AUTH_GRADIENT = 'linear-gradient(155deg,#7229e8 0%,#5513bf 48%,#1d0740 100%)';
 const KUFI = "'IBM Plex Sans Arabic','Vazirmatn',system-ui,sans-serif";
 
 const COPY = {
@@ -35,11 +35,11 @@ const StepList = ({ steps, current }) => (
       const last = i === steps.length - 1;
       return (
         <li key={s.title} className="relative flex items-start gap-4 pb-6 last:pb-0">
-          {!last && <span className={`absolute right-[19px] top-10 bottom-0 w-px ${done ? 'bg-[#8ff0dc]/70' : 'bg-white/20'}`} />}
+          {!last && <span className={`absolute right-[19px] top-10 bottom-0 w-px ${done ? 'bg-[#b48df2]/70' : 'bg-white/20'}`} />}
           <span
             className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-2xl border text-sm font-black transition-all duration-300 ${
-              done ? 'border-[#8ff0dc] bg-[#8ff0dc] text-[#08453c]'
-                : active ? 'border-white bg-white text-[#0d6a5d] shadow-[0_0_0_6px_rgba(255,255,255,.14)]'
+              done ? 'border-[#b48df2] bg-[#b48df2] text-[#1f0647]'
+                : active ? 'border-white bg-white text-[#5513bf] shadow-[0_0_0_6px_rgba(255,255,255,.14)]'
                   : 'border-white/25 bg-white/10 text-white/70'
             }`}
           >
@@ -65,14 +65,14 @@ export const AuthBrandPanel = ({ variant = 'login', step = 1, isRecruiter = fals
       className="hidden lg:flex fixed right-0 top-0 bottom-0 z-0 flex-col justify-between overflow-hidden p-10 xl:p-14 text-white"
       style={{ width: AUTH_PANEL_W, background: AUTH_GRADIENT, fontFamily: KUFI }}
     >
-      <div className="pointer-events-none absolute -left-24 -top-24 h-[420px] w-[420px] rounded-full bg-[#43d1b8]/25 blur-3xl" />
-      <div className="pointer-events-none absolute -right-32 bottom-0 h-[440px] w-[440px] rounded-full bg-[#052e28]/60 blur-3xl" />
+      <div className="pointer-events-none absolute -left-24 -top-24 h-[420px] w-[420px] rounded-full bg-[#9d74e0]/25 blur-3xl" />
+      <div className="pointer-events-none absolute -right-32 bottom-0 h-[440px] w-[440px] rounded-full bg-[#14042f]/60 blur-3xl" />
       <div className="pointer-events-none absolute inset-0 opacity-[.07]"
         style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.9) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.9) 1px,transparent 1px)', backgroundSize: '46px 46px' }} />
 
       <div className="relative flex items-center gap-3">
         <div className="h-12 w-12 rounded-2xl shadow-lg overflow-hidden ring-1 ring-white/35">
-          <img src="/logo-green.png" alt="" className="h-full w-full object-cover" />
+          <img src="/logo-app.png" alt="" className="h-full w-full object-cover" />
         </div>
         <div>
           <div className="text-xs font-black tracking-[0.24em]">ISHKHWAZ</div>
@@ -81,7 +81,7 @@ export const AuthBrandPanel = ({ variant = 'login', step = 1, isRecruiter = fals
       </div>
 
       <div className="relative max-w-[460px]">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black text-[#c8fff3]">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-black text-[#ddc8ff]">
           <Sparkles className="h-3.5 w-3.5" /> {c.guide}
         </span>
         <h2 className="mt-4 text-[34px] xl:text-[40px] font-black leading-[1.5]">{c.title}</h2>
@@ -100,12 +100,12 @@ export const AuthMobileHero = ({ children }) => (
     className="lg:hidden relative w-full overflow-hidden text-white"
     style={{ background: AUTH_GRADIENT, paddingTop: 'max(1.25rem, env(safe-area-inset-top))' }}
   >
-    <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#43d1b8]/25 blur-2xl" />
+    <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#9d74e0]/25 blur-2xl" />
     <div className="pointer-events-none absolute inset-0 opacity-[.07]"
       style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.9) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.9) 1px,transparent 1px)', backgroundSize: '34px 34px' }} />
     <div className="relative mx-auto flex w-full max-w-[520px] items-center gap-3 px-6 pb-14 pt-3">
       <div className="h-12 w-12 rounded-2xl shadow-lg overflow-hidden shrink-0 ring-1 ring-white/35">
-        <img src="/logo-green.png" alt="ئیش خواز" className="h-full w-full object-cover" />
+        <img src="/logo-app.png" alt="ئیش خواز" className="h-full w-full object-cover" />
       </div>
       <div className="min-w-0">
         <div className="text-xs font-black tracking-[0.24em]">ISHKHWAZ</div>
@@ -122,7 +122,7 @@ export const AuthMobileHero = ({ children }) => (
 const Typing = () => (
   <div className="flex w-fit items-center gap-1 rounded-2xl rounded-br-md bg-white px-4 py-3 shadow-sm">
     {[0, 1, 2].map(i => (
-      <span key={i} className="h-1.5 w-1.5 rounded-full bg-[#12796b]/60 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+      <span key={i} className="h-1.5 w-1.5 rounded-full bg-[#641bd9]/60 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
     ))}
   </div>
 );
@@ -178,10 +178,10 @@ export const AuthAssistant = ({ variant = 'login', step = 1, isRecruiter = false
         type="button"
         onClick={() => setOpen(true)}
         aria-label="یاریدەدەر"
-        className="lg:hidden fixed z-[45] end-4 grid h-14 w-14 place-items-center rounded-full text-white shadow-[0_14px_34px_rgba(13,106,93,.45)] active:scale-95 transition"
+        className="lg:hidden fixed z-[45] end-4 grid h-14 w-14 place-items-center rounded-full text-white shadow-[0_14px_34px_rgba(85,19,191,.45)] active:scale-95 transition"
         style={{ bottom: 'max(1.25rem, env(safe-area-inset-bottom))', background: AUTH_GRADIENT }}
       >
-        <span className="absolute inset-0 rounded-full bg-[#12796b]/40 animate-ping" style={{ animationDuration: '2.6s' }} />
+        <span className="absolute inset-0 rounded-full bg-[#641bd9]/40 animate-ping" style={{ animationDuration: '2.6s' }} />
         <Sparkles className="relative h-6 w-6" />
       </button>
 
@@ -191,7 +191,7 @@ export const AuthAssistant = ({ variant = 'login', step = 1, isRecruiter = false
             role="dialog"
             aria-label="یاریدەدەر"
             onClick={e => e.stopPropagation()}
-            className="mx-auto flex h-[78dvh] w-full max-w-[560px] flex-col overflow-hidden rounded-t-[28px] bg-[#f3f7f6] shadow-2xl"
+            className="mx-auto flex h-[78dvh] w-full max-w-[560px] flex-col overflow-hidden rounded-t-[28px] bg-[#f5f3f7] shadow-2xl"
             style={{ fontFamily: KUFI, animation: 'assistUp .28s cubic-bezier(.22,.9,.34,1)' }}
           >
             <style>{'@keyframes assistUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}'}</style>
@@ -208,11 +208,11 @@ export const AuthAssistant = ({ variant = 'login', step = 1, isRecruiter = false
               {msgs.map((m, i) => (
                 <div key={i} className={`flex ${m.from === 'me' ? 'justify-start' : 'justify-end'}`}>
                   <div className={`max-w-[86%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 text-[13px] font-bold leading-7 shadow-sm ${
-                    m.from === 'me' ? 'rounded-bl-md bg-[#12796b] text-white' : 'rounded-br-md bg-white text-[#20312d]'
+                    m.from === 'me' ? 'rounded-bl-md bg-[#641bd9] text-white' : 'rounded-br-md bg-white text-[#262031]'
                   }`}>
                     {m.text}
                     {m.action && actions[m.action.key] && (
-                      <button onClick={() => runAction(m.action.key)} className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#12796b] px-3 py-2 text-xs font-black text-white active:scale-95">
+                      <button onClick={() => runAction(m.action.key)} className="mt-2.5 flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#641bd9] px-3 py-2 text-xs font-black text-white active:scale-95">
                         {m.action.label}<ArrowLeft className="h-3.5 w-3.5" />
                       </button>
                     )}
@@ -223,12 +223,12 @@ export const AuthAssistant = ({ variant = 'login', step = 1, isRecruiter = false
               <div ref={endRef} />
             </div>
 
-            <div className="border-t border-[#dde8e5] bg-white px-3 pt-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+            <div className="border-t border-[#e1dde8] bg-white px-3 pt-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
               <div className="mb-2 flex items-center gap-1.5 text-[10px] font-black text-[#7b8e88]"><Send className="h-3 w-3" /> پرسیارێک هەڵبژێرە</div>
               <div className="flex flex-wrap gap-2">
                 {questions.map(item => (
                   <button key={item.q} onClick={() => ask(item)} disabled={typing}
-                    className="rounded-full border border-[#cfe3de] bg-[#f0f8f6] px-3.5 py-2 text-[11px] font-black text-[#0d5c50] transition active:scale-95 disabled:opacity-50">
+                    className="rounded-full border border-[#d7cee3] bg-[#f3f0f8] px-3.5 py-2 text-[11px] font-black text-[#4b13a5] transition active:scale-95 disabled:opacity-50">
                     {item.q}
                   </button>
                 ))}

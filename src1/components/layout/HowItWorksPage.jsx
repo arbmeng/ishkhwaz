@@ -9,10 +9,10 @@ import {
 } from 'lucide-react';
 
 const NK = "'IBM Plex Sans Arabic','Noto Kufi Arabic','Vazirmatn',system-ui,sans-serif";
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
-const TEAL_SOFT = '#e7f4f1';
-const GRAD = 'linear-gradient(155deg,#12897a 0%,#0d6a5d 48%,#083f37 100%)';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
+const TEAL_SOFT = '#ece7f4';
+const GRAD = 'linear-gradient(155deg,#7229e8 0%,#5513bf 48%,#1d0740 100%)';
 
 const SEEKER = [
   { icon: UserPlus, title: 'تۆمارکردن و دڵنیاکردنەوەی ئیمەیڵ', body: 'هەژمارێک دروست بکە: ناو، ژمارەی مۆبایل، ئیمەیڵ و وشەی نهێنی (لانیکم ٨ پیت). یان بە یەک کرتە بە گووگڵ.',
@@ -88,56 +88,56 @@ export const HowItWorksPage = ({ onBack, onStartTour, onNavigate }) => {
     .sort((a, b) => a.price - b.price), [tiers, role]);
 
   return (
-    <div dir="rtl" className="min-h-screen overflow-x-clip pb-24" style={{ background: '#f4f7f6', fontFamily: NK }}>
+    <div dir="rtl" className="min-h-screen overflow-x-clip pb-24" style={{ background: '#f5f4f7', fontFamily: NK }}>
       <PageHeader title="چۆنیەتی کارکردنی ئیش خواز" subtitle="ڕێنمایی تەواو، هەنگاو بە هەنگاو" onBack={onBack} />
 
       <div className="mx-auto max-w-4xl space-y-8 px-4 pt-6 sm:px-6">
         {/* live tour */}
         <section className="relative overflow-hidden rounded-[28px] p-6 text-white sm:p-8" style={{ background: GRAD }}>
-          <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#43d1b8]/25 blur-3xl" />
+          <div className="pointer-events-none absolute -left-16 -top-16 h-56 w-56 rounded-full bg-[#9d74e0]/25 blur-3xl" />
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-md">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#c8fff3]"><Lightbulb className="h-3.5 w-3.5" />ڕێبەری زیندوو</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#ddc8ff]"><Lightbulb className="h-3.5 w-3.5" />ڕێبەری زیندوو</span>
               <h2 className="mt-3 text-[22px] font-bold leading-[1.5]">با بە کردەوە پیشانت بدەین</h2>
               <p className="mt-1.5 text-[13px] leading-7 text-white/75">ڕێبەرەکە دوگمە و بەشە ڕاستەقینەکانی ئەپەکە دیاری دەکات و پێت دەڵێت چی بکەیت، هەنگاو بە هەنگاو. نزیکەی یەک خولەک دەخایەنێت.</p>
             </div>
-            <button type="button" onClick={() => onStartTour?.()} className="flex shrink-0 items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-bold text-[#0d5c50] shadow-[0_14px_34px_rgba(0,0,0,.2)] transition active:scale-95">
-              <Play className="h-4 w-4 fill-[#0d5c50]" />دەستپێکردنی ڕێبەر
+            <button type="button" onClick={() => onStartTour?.()} className="flex shrink-0 items-center justify-center gap-2 rounded-full bg-white px-7 py-4 text-sm font-bold text-[#4b13a5] shadow-[0_14px_34px_rgba(0,0,0,.2)] transition active:scale-95">
+              <Play className="h-4 w-4 fill-[#4b13a5]" />دەستپێکردنی ڕێبەر
             </button>
           </div>
         </section>
 
         {/* role switch */}
-        <div role="tablist" className="mx-auto grid max-w-sm grid-cols-2 gap-1.5 rounded-full bg-[#e6eeeb] p-1.5">
+        <div role="tablist" className="mx-auto grid max-w-sm grid-cols-2 gap-1.5 rounded-full bg-[#e9e6ee] p-1.5">
           {[['seeker', 'کارخواز', Briefcase], ['employer', 'کۆمپانیا', Building2]].map(([id, label, Icon]) => (
             <button key={id} role="tab" aria-selected={role === id} onClick={() => setRole(id)}
-              className={`flex items-center justify-center gap-1.5 rounded-full py-3 text-xs font-bold transition ${role === id ? 'bg-white text-[#0d5c50] shadow-sm' : 'text-[#6d7d79]'}`}><Icon className="h-4 w-4" />{label}</button>
+              className={`flex items-center justify-center gap-1.5 rounded-full py-3 text-xs font-bold transition ${role === id ? 'bg-white text-[#4b13a5] shadow-sm' : 'text-[#6d7d79]'}`}><Icon className="h-4 w-4" />{label}</button>
           ))}
         </div>
 
         {/* steps */}
         <ol className="relative space-y-3">
-          <span className="absolute bottom-6 right-[27px] top-6 hidden w-px bg-[#d6e4df] sm:block" />
+          <span className="absolute bottom-6 right-[27px] top-6 hidden w-px bg-[#dbd6e4] sm:block" />
           {steps.map((s, i) => {
             const open = openStep === i;
             return (
               <li key={s.title} className="relative sm:pr-16">
                 <span className="absolute right-0 top-5 hidden h-[54px] w-[54px] place-items-center rounded-2xl text-lg font-bold text-white shadow-md sm:grid" style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}>{i + 1}</span>
-                <div className={`overflow-hidden rounded-[24px] border bg-white transition ${open ? 'shadow-[0_16px_40px_rgba(13,60,52,.09)]' : ''}`} style={{ borderColor: open ? '#bfe3da' : '#e5ece9' }}>
+                <div className={`overflow-hidden rounded-[24px] border bg-white transition ${open ? 'shadow-[0_16px_40px_rgba(31,12,61,.09)]' : ''}`} style={{ borderColor: open ? '#cdbee4' : '#e8e5ec' }}>
                   <button type="button" onClick={() => setOpenStep(open ? -1 : i)} className="flex w-full items-center gap-3.5 p-4 text-right sm:p-5" aria-expanded={open}>
                     <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl" style={{ background: TEAL_SOFT, color: TEAL }}><s.icon className="h-5 w-5" /></span>
                     <span className="min-w-0 flex-1">
                       <span className="text-[11px] font-bold text-[#9aaaa4] sm:hidden">هەنگاوی {i + 1}</span>
-                      <span className="block text-[15px] font-bold text-[#111d1a]">{s.title}</span>
+                      <span className="block text-[15px] font-bold text-[#16111d]">{s.title}</span>
                     </span>
                     <ChevronDown className={`h-5 w-5 shrink-0 text-[#9aaaa4] transition ${open ? 'rotate-180' : ''}`} />
                   </button>
                   {open && (
-                    <div className="border-t px-4 pb-5 pt-4 sm:px-5" style={{ borderColor: '#eef3f1' }}>
+                    <div className="border-t px-4 pb-5 pt-4 sm:px-5" style={{ borderColor: '#f0eef3' }}>
                       <p className="text-[13px] font-medium leading-8 text-[#4a5b55]">{s.body}</p>
                       <ul className="mt-3 space-y-2">
                         {s.details.map(d => (
-                          <li key={d} className="flex items-start gap-2.5 text-[13px] leading-7 text-[#33433e]">
+                          <li key={d} className="flex items-start gap-2.5 text-[13px] leading-7 text-[#645977]">
                             <span className="mt-1.5 grid h-5 w-5 shrink-0 place-items-center rounded-full" style={{ background: TEAL_SOFT, color: TEAL_DEEP }}><Check className="h-3 w-3" strokeWidth={3} /></span>{d}
                           </li>
                         ))}
@@ -156,11 +156,11 @@ export const HowItWorksPage = ({ onBack, onStartTour, onNavigate }) => {
           <section>
             <div className="mb-4 flex items-end justify-between gap-3">
               <div><h2 className="text-lg font-bold">نرخی پلانەکان</h2><p className="mt-1 text-xs font-medium text-[#7b8e88]">کڕینێکی یەکجارە، بێ تێچووی مانگانە</p></div>
-              <button type="button" onClick={() => onNavigate?.('plans')} className="rounded-full bg-white px-4 py-2 text-xs font-bold text-[#0d5c50] shadow-sm ring-1 ring-[#e5ece9] active:scale-95">بەراوردی تەواو</button>
+              <button type="button" onClick={() => onNavigate?.('plans')} className="rounded-full bg-white px-4 py-2 text-xs font-bold text-[#4b13a5] shadow-sm ring-1 ring-[#e8e5ec] active:scale-95">بەراوردی تەواو</button>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               {plans.map(p => { const Icon = p.icon; return (
-                <div key={p.id} className="rounded-[24px] border border-[#e5ece9] bg-white p-5">
+                <div key={p.id} className="rounded-[24px] border border-[#e8e5ec] bg-white p-5">
                   <span className="grid h-11 w-11 place-items-center rounded-2xl" style={{ background: p.price > 0 ? p.color.accent : TEAL_SOFT, color: p.price > 0 ? getContrastColor(p.color.accent) : TEAL_DEEP }}><Icon className="h-5 w-5" /></span>
                   <h3 className="mt-3 text-[15px] font-bold">{p.name}</h3>
                   <div className="mt-1 text-[22px] font-bold" dir="ltr" style={{ textAlign: 'right' }}>{p.price === 0 ? 'بێ بەرامبەر' : `${p.price.toLocaleString()} IQD`}</div>
@@ -176,7 +176,7 @@ export const HowItWorksPage = ({ onBack, onStartTour, onNavigate }) => {
         {/* faq */}
         <section>
           <h2 className="mb-4 text-lg font-bold">پرسیارە باوەکان</h2>
-          <div className="divide-y divide-[#eef3f1] overflow-hidden rounded-[24px] border border-[#e5ece9] bg-white">
+          <div className="divide-y divide-[#f0eef3] overflow-hidden rounded-[24px] border border-[#e8e5ec] bg-white">
             {FAQ.map(([q, a], i) => (
               <div key={q}>
                 <button type="button" onClick={() => setOpenFaq(openFaq === i ? -1 : i)} className="flex w-full items-center justify-between gap-3 p-4 text-right text-[14px] font-bold sm:p-5" aria-expanded={openFaq === i}>{q}<ChevronDown className={`h-4 w-4 shrink-0 text-[#9aaaa4] transition ${openFaq === i ? 'rotate-180' : ''}`} /></button>
@@ -188,7 +188,7 @@ export const HowItWorksPage = ({ onBack, onStartTour, onNavigate }) => {
 
         <section className="flex flex-col items-start justify-between gap-4 rounded-[28px] p-6 text-white sm:flex-row sm:items-center" style={{ background: GRAD }}>
           <div><h2 className="text-lg font-bold">هێشتا پرسیارت هەیە؟</h2><p className="mt-1 text-[13px] text-white/75">نامەیەکمان بۆ بنێرە، یارمەتیت دەدەین.</p></div>
-          <button type="button" onClick={() => onNavigate?.('contact')} className="flex items-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-[#0d5c50] active:scale-95"><Mail className="h-4 w-4" />پەیوەندیمان پێوە بکە</button>
+          <button type="button" onClick={() => onNavigate?.('contact')} className="flex items-center gap-2 rounded-full bg-white px-6 py-3.5 text-sm font-bold text-[#4b13a5] active:scale-95"><Mail className="h-4 w-4" />پەیوەندیمان پێوە بکە</button>
         </section>
       </div>
     </div>

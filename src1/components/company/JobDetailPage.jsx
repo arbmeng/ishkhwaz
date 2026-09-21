@@ -13,11 +13,11 @@ import {
 
 // Shared light theme — same tokens as Dashboard, UserProfilePage, HowItWorksPage.
 const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
-const TEAL = '#12796b';
-const TEAL_SOFT = '#e7f4f1';
-const BG = '#f4f7f6';
-const BORDER = '#e8eeec';
-const TXT = '#111d1a';
+const TEAL = '#641bd9';
+const TEAL_SOFT = '#ece7f4';
+const BG = '#f5f4f7';
+const BORDER = '#eae8ee';
+const TXT = '#16111d';
 const MUTED = '#7b8e88';
 
 const WORKPLACE_LABELS = { onSite: 'لەسەر شوێن', remote: 'کاتی ئازاد', hybrid: 'تێکەڵ' };
@@ -116,7 +116,7 @@ export const JobDetailPage = ({ jobId, onBack }) => {
 
         {/* Hero */}
         <div className="rounded-3xl bg-white border overflow-hidden" style={{ borderColor: BORDER }}>
-          <div className="relative h-32 sm:h-44" style={{ background: `linear-gradient(135deg, ${TEAL}, #0d5c50)` }}>
+          <div className="relative h-32 sm:h-44" style={{ background: `linear-gradient(135deg, ${TEAL}, #4b13a5)` }}>
             <HeroControls onBack={back} actions={[{ icon: copied ? Check : Share2, label: 'هاوبەشکردن', onClick: handleShare, active: copied }]} />
             {job.company_cover && (
               <img src={job.company_cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -144,7 +144,7 @@ export const JobDetailPage = ({ jobId, onBack }) => {
                 <Edit className="w-4 h-4" /> دەستکاریکردنی ئەم هەلە
               </button>
               <button onClick={handleShare}
-                className="hidden lg:flex py-3 px-4 rounded-2xl bg-white border text-xs font-black items-center gap-2 hover:bg-[#f0f7f5]" style={{ borderColor: BORDER }}>
+                className="hidden lg:flex py-3 px-4 rounded-2xl bg-white border text-xs font-black items-center gap-2 hover:bg-[#f3f0f7]" style={{ borderColor: BORDER }}>
                 {copied ? <Check className="w-4 h-4" style={{ color: TEAL }} /> : <Copy className="w-4 h-4" />} {copied ? 'کۆپیکرا' : 'کۆپی / هاوبەشکردن'}
               </button>
               <button onClick={() => { soundService.playTick?.(); setConfirmDelete(true); }}
@@ -186,7 +186,7 @@ export const JobDetailPage = ({ jobId, onBack }) => {
             <h2 className="text-sm font-black flex items-center gap-2"><Tag className="w-4 h-4" style={{ color: TEAL }} /> بەهرە پێویستەکان</h2>
             <div className="flex flex-wrap gap-2">
               {skills.map((sk, i) => (
-                <span key={i} className="px-3.5 py-1.5 rounded-xl text-xs font-bold border" style={{ background: TEAL_SOFT, color: TEAL, borderColor: '#cfe8e2' }}>{sk}</span>
+                <span key={i} className="px-3.5 py-1.5 rounded-xl text-xs font-bold border" style={{ background: TEAL_SOFT, color: TEAL, borderColor: '#d8cee9' }}>{sk}</span>
               ))}
             </div>
           </section>

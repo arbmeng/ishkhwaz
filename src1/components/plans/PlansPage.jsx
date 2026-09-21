@@ -7,12 +7,12 @@ import { getPlanIcon, getPlanColor, getContrastColor, hexToRgba, tintToward, for
 import { Check, X, Loader2, CheckCircle2, Zap, ShieldCheck, Sparkles, Crown, Rocket, TrendingUp, BadgePercent } from 'lucide-react';
 
 const NK = "'IBM Plex Sans Arabic','Noto Kufi Arabic','Vazirmatn',system-ui,sans-serif";
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
-const TEAL_SOFT = '#e7f4f1';
-const GRAD = 'linear-gradient(155deg,#12897a 0%,#0d6a5d 48%,#083f37 100%)';
-const INK = '#0b1211';
-const BORDER = '#e5ece9';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
+const TEAL_SOFT = '#ece7f4';
+const GRAD = 'linear-gradient(155deg,#7229e8 0%,#5513bf 48%,#1d0740 100%)';
+const INK = '#0e0b12';
+const BORDER = '#e8e5ec';
 const MUTED = '#7b8e88';
 
 // Plan feature texts are typed with the numbers inside them ("3 CVs", "10 CVs", "unlimited CVs"...), so the same
@@ -148,17 +148,17 @@ export const PlansPage = ({ onBack }) => {
 
     const shell = premium
       ? { background: INK, color: '#fff' }
-      : { background: '#fff', color: '#111d1a' };
+      : { background: '#fff', color: '#16111d' };
     const sub = premium ? 'rgba(255,255,255,.55)' : MUTED;
     const line = premium ? 'rgba(255,255,255,.1)' : BORDER;
 
     return (
       <div className="group relative flex" style={{ padding: premium ? 2 : 0, borderRadius: 30, background: premium ? `linear-gradient(135deg, ${accent}, ${hexToRgba(accent, .15)} 45%, ${accent})` : 'transparent', boxShadow: premium ? `0 22px 60px ${hexToRgba(accent, .28)}` : undefined }}>
-        <div className="relative flex w-full flex-col overflow-hidden transition-all duration-300 group-hover:-translate-y-1" style={{ ...shell, borderRadius: 28, border: premium ? 'none' : `1px solid ${BORDER}`, boxShadow: premium ? 'none' : '0 6px 26px rgba(13,60,52,.05)' }}>
+        <div className="relative flex w-full flex-col overflow-hidden transition-all duration-300 group-hover:-translate-y-1" style={{ ...shell, borderRadius: 28, border: premium ? 'none' : `1px solid ${BORDER}`, boxShadow: premium ? 'none' : '0 6px 26px rgba(31,12,61,.05)' }}>
           {/* accent strip / glow */}
           {premium
             ? <div className="pointer-events-none absolute -top-16 left-1/2 h-40 w-64 -translate-x-1/2 rounded-full blur-3xl" style={{ background: hexToRgba(accent, .28) }} />
-            : <div className="h-1.5 w-full" style={{ background: plan.price > 0 ? `linear-gradient(90deg, ${accent}, ${hexToRgba(accent, .35)})` : '#e5ece9' }} />}
+            : <div className="h-1.5 w-full" style={{ background: plan.price > 0 ? `linear-gradient(90deg, ${accent}, ${hexToRgba(accent, .35)})` : '#e8e5ec' }} />}
 
           <div className="relative flex flex-1 flex-col p-6">
             {/* ribbons */}
@@ -186,12 +186,12 @@ export const PlansPage = ({ onBack }) => {
 
             {/* real numbers */}
             <div className="mt-5 grid grid-cols-2 gap-2.5">
-              <div className="rounded-2xl p-3" style={{ background: premium ? 'rgba(255,255,255,.07)' : '#f6f9f8' }}>
+              <div className="rounded-2xl p-3" style={{ background: premium ? 'rgba(255,255,255,.07)' : '#f7f6f9' }}>
                 <Zap className="h-4 w-4" style={{ color: premium ? tintToward(accent, .35) : TEAL }} />
                 <div className="mt-2 text-[22px] font-bold leading-none">{formatCredits(plan.credits)}</div>
                 <div className="mt-1 text-[10px] font-medium" style={{ color: sub }}>کرێدیت{prev && plan.credits > prev.credits && prev.credits <= 200 && plan.credits <= 200 ? ` (+${plan.credits - prev.credits})` : ''}</div>
               </div>
-              <div className="rounded-2xl p-3" style={{ background: premium ? 'rgba(255,255,255,.07)' : '#f6f9f8' }}>
+              <div className="rounded-2xl p-3" style={{ background: premium ? 'rgba(255,255,255,.07)' : '#f7f6f9' }}>
                 <Rocket className="h-4 w-4" style={{ color: premium ? tintToward(accent, .35) : TEAL }} />
                 <div className="mt-2 text-[22px] font-bold leading-none">{plan.boostDays > 0 ? plan.boostDays : '—'}</div>
                 <div className="mt-1 text-[10px] font-medium" style={{ color: sub }}>ڕۆژی بەرزکردنەوە</div>
@@ -215,7 +215,7 @@ export const PlansPage = ({ onBack }) => {
               ))}
               {missing.map((f, i) => (
                 <div key={`m${i}`} className="flex items-start gap-2.5 opacity-60">
-                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full" style={{ background: premium ? 'rgba(255,255,255,.08)' : '#f0f3f2' }}><X className="h-3 w-3" /></span>
+                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full" style={{ background: premium ? 'rgba(255,255,255,.08)' : '#f1f0f3' }}><X className="h-3 w-3" /></span>
                   <span className="text-[12px] font-medium leading-6 line-through decoration-1">{f.label}</span>
                 </div>
               ))}
@@ -224,9 +224,9 @@ export const PlansPage = ({ onBack }) => {
             {/* action */}
             <div className="mt-6">
               {plan.price === 0 ? (
-                isCurrent ? <div className="w-full rounded-2xl py-3.5 text-center text-xs font-bold" style={{ background: premium ? 'rgba(255,255,255,.08)' : '#f4f7f6', color: sub }}>پلانی ئێستا</div> : null
+                isCurrent ? <div className="w-full rounded-2xl py-3.5 text-center text-xs font-bold" style={{ background: premium ? 'rgba(255,255,255,.08)' : '#f5f4f7', color: sub }}>پلانی ئێستا</div> : null
               ) : isCurrent ? (
-                <div className="flex w-full items-center justify-center gap-1.5 rounded-2xl py-3.5 text-xs font-bold" style={{ border: `1px solid ${premium ? hexToRgba(accent, .4) : '#beece2'}`, background: premium ? hexToRgba(accent, .12) : TEAL_SOFT, color: premium ? tintToward(accent, .4) : TEAL_DEEP }}><CheckCircle2 className="h-4 w-4" />پلانی چالاکە</div>
+                <div className="flex w-full items-center justify-center gap-1.5 rounded-2xl py-3.5 text-xs font-bold" style={{ border: `1px solid ${premium ? hexToRgba(accent, .4) : '#cfbded'}`, background: premium ? hexToRgba(accent, .12) : TEAL_SOFT, color: premium ? tintToward(accent, .4) : TEAL_DEEP }}><CheckCircle2 className="h-4 w-4" />پلانی چالاکە</div>
               ) : pending ? (
                 <div className="flex w-full items-center justify-center gap-1.5 rounded-2xl py-3.5 text-xs font-bold" style={{ background: premium ? 'rgba(255,255,255,.08)' : TEAL_SOFT, color: premium ? '#fff' : TEAL_DEEP }}><Loader2 className="h-3.5 w-3.5 animate-spin" />چاوەڕوانی پشکنین...</div>
               ) : (
@@ -245,15 +245,15 @@ export const PlansPage = ({ onBack }) => {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen pb-28 text-[#111d1a]" style={{ background: '#f4f7f6', fontFamily: NK }}>
+    <div dir="rtl" className="min-h-screen pb-28 text-[#16111d]" style={{ background: '#f5f4f7', fontFamily: NK }}>
 
       <PageHeader title="پلانەکان و بەرزکردنەوە" subtitle="کڕینێکی یەکجارە، بێ تێچووی شاراوەی مانگانە" onBack={onBack} />
 
       <div className="relative mx-auto max-w-6xl space-y-10 px-4 pt-6 sm:px-6 lg:px-8">
         {/* current plan */}
-            <div className="rounded-[26px] p-4 text-white shadow-[0_14px_34px_rgba(8,63,55,.2)] sm:p-5" style={{ background: GRAD }}>
+            <div className="rounded-[26px] p-4 text-white shadow-[0_14px_34px_rgba(29,7,64,.2)] sm:p-5" style={{ background: GRAD }}>
               <div className="flex items-center gap-3">
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-[#0d5c50]"><CurrentIcon className="h-6 w-6" /></span>
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-[#4b13a5]"><CurrentIcon className="h-6 w-6" /></span>
                 <div className="min-w-0 flex-1">
                   <div className="text-[11px] font-medium text-white/65">پلانی ئێستات</div>
                   <div className="truncate text-[17px] font-bold">{currentTier?.name_ku || 'بنەڕەتی'}</div>
@@ -295,8 +295,8 @@ export const PlansPage = ({ onBack }) => {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] border-collapse text-right">
                 <thead>
-                  <tr className="border-y" style={{ borderColor: BORDER, background: '#fafcfb' }}>
-                    <th className="sticky right-0 bg-[#fafcfb] px-5 py-4 text-xs font-bold text-[#7b8e88]">پلان</th>
+                  <tr className="border-y" style={{ borderColor: BORDER, background: '#fbfafc' }}>
+                    <th className="sticky right-0 bg-[#fbfafc] px-5 py-4 text-xs font-bold text-[#7b8e88]">پلان</th>
                     {PLANS.map(p => { const I = p.icon; const cur = (user?.plan || 'free') === p.id; return (
                       <th key={p.id} className="px-3 py-4 text-center" style={cur ? { background: TEAL_SOFT } : undefined}>
                         <span className="mx-auto grid h-9 w-9 place-items-center rounded-xl" style={{ background: p.price > 0 ? p.color.accent : TEAL_SOFT, color: p.price > 0 ? getContrastColor(p.color.accent) : TEAL_DEEP }}><I className="h-4 w-4" /></span>
@@ -306,32 +306,32 @@ export const PlansPage = ({ onBack }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b" style={{ borderColor: '#f0f4f2' }}>
+                  <tr className="border-b" style={{ borderColor: '#f2f0f4' }}>
                     <td className="sticky right-0 bg-white px-5 py-4 text-xs font-bold">پێشکەشکردنی کارنامە<span className="block text-[10px] font-medium" style={{ color: MUTED }}>بۆ خاوەنکارەکان</span></td>
                     {PLANS.map(p => (
-                      <td key={p.id} className="px-3 py-4 text-center" style={(user?.plan || 'free') === p.id ? { background: '#f3faf8' } : undefined}>
+                      <td key={p.id} className="px-3 py-4 text-center" style={(user?.plan || 'free') === p.id ? { background: '#f6f3fa' } : undefined}>
                         <div className="text-sm font-bold" style={{ color: TEAL_DEEP }}>{formatCredits(p.credits)}</div>
-                        <div className="mx-auto mt-1.5 h-1.5 w-16 overflow-hidden rounded-full bg-[#e8eeec]"><div className="h-full rounded-full" style={{ width: `${p.credits > 200 ? 100 : Math.round((p.credits / maxCredits) * 100)}%`, background: TEAL }} /></div>
+                        <div className="mx-auto mt-1.5 h-1.5 w-16 overflow-hidden rounded-full bg-[#eae8ee]"><div className="h-full rounded-full" style={{ width: `${p.credits > 200 ? 100 : Math.round((p.credits / maxCredits) * 100)}%`, background: TEAL }} /></div>
                       </td>
                     ))}
                   </tr>
-                  <tr className="border-b" style={{ borderColor: '#f0f4f2' }}>
+                  <tr className="border-b" style={{ borderColor: '#f2f0f4' }}>
                     <td className="sticky right-0 bg-white px-5 py-4 text-xs font-bold">بەرزکردنەوەی پڕۆفایل</td>
                     {PLANS.map(p => (
-                      <td key={p.id} className="px-3 py-4 text-center" style={(user?.plan || 'free') === p.id ? { background: '#f3faf8' } : undefined}>
+                      <td key={p.id} className="px-3 py-4 text-center" style={(user?.plan || 'free') === p.id ? { background: '#f6f3fa' } : undefined}>
                         <div className="text-sm font-bold">{p.boostDays > 0 ? `${p.boostDays} ڕۆژ` : '—'}</div>
-                        <div className="mx-auto mt-1.5 h-1.5 w-16 overflow-hidden rounded-full bg-[#e8eeec]"><div className="h-full rounded-full" style={{ width: `${Math.round((p.boostDays / maxBoost) * 100)}%`, background: '#f5a524' }} /></div>
+                        <div className="mx-auto mt-1.5 h-1.5 w-16 overflow-hidden rounded-full bg-[#eae8ee]"><div className="h-full rounded-full" style={{ width: `${Math.round((p.boostDays / maxBoost) * 100)}%`, background: '#f5a524' }} /></div>
                       </td>
                     ))}
                   </tr>
                   {FEATURE_ROWS.map((row) => (
-                    <tr key={row.key} className="border-b transition hover:bg-[#fafcfb]" style={{ borderColor: '#f0f4f2' }}>
+                    <tr key={row.key} className="border-b transition hover:bg-[#fbfafc]" style={{ borderColor: '#f2f0f4' }}>
                       <td className="sticky right-0 bg-white px-5 py-3.5 text-xs font-medium leading-6">{row.title}</td>
                       {PLANS.map(p => {
                         const c = row.cells[p.id];
                         const ok = !!c?.ok;
                         return (
-                          <td key={p.id} className="px-3 py-3.5 text-center" style={(user?.plan || 'free') === p.id ? { background: '#f3faf8' } : undefined}>
+                          <td key={p.id} className="px-3 py-3.5 text-center" style={(user?.plan || 'free') === p.id ? { background: '#f6f3fa' } : undefined}>
                             {ok && c.val ? (
                               <span className="inline-flex flex-col items-center gap-0.5">
                                 {c.val === 'Pro' || c.val === 'VIP'
@@ -341,7 +341,7 @@ export const PlansPage = ({ onBack }) => {
                               </span>
                             ) : (
                               <span className="inline-flex flex-col items-center gap-0.5">
-                                <span className="inline-grid h-6 w-6 place-items-center rounded-full" style={ok ? { background: TEAL_SOFT, color: TEAL_DEEP } : { background: '#f1f4f3', color: '#c3cdc9' }}>{ok ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <X className="h-3.5 w-3.5" />}</span>
+                                <span className="inline-grid h-6 w-6 place-items-center rounded-full" style={ok ? { background: TEAL_SOFT, color: TEAL_DEEP } : { background: '#f2f1f4', color: '#c3cdc9' }}>{ok ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <X className="h-3.5 w-3.5" />}</span>
                                 {ok && c.extra && <span className="rounded-full bg-[#fff3d6] px-2 py-0.5 text-[9px] font-bold text-[#9a6a00]">+ {/AI/.test(c.extra) ? 'AI' : c.extra}</span>}
                               </span>
                             )}

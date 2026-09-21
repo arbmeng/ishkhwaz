@@ -85,7 +85,7 @@ export const AccountBlockedModal = () => {
       style={{
         opacity: closing ? 0 : 1,
         transition: 'opacity 160ms ease',
-        background: 'rgba(3,7,6,.78)',
+        background: 'rgba(5,3,7,.78)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
       }}
@@ -198,8 +198,8 @@ export const AccountBlockedModal = () => {
                 onClick={handleCreateNewAccount}
                 className="w-full min-h-14 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all duration-200 hover:-translate-y-0.5 active:scale-[.98]"
                 style={{
-                  background: 'linear-gradient(135deg,#34d399,#16a34a)',
-                  color: '#06120d',
+                  background: 'linear-gradient(135deg,#a47be5,#16a34a)',
+                  color: '#0b0612',
                   boxShadow: '0 12px 30px rgba(34,197,94,.18)',
                 }}
               >

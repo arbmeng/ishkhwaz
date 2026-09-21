@@ -44,9 +44,9 @@ import {
 } from 'lucide-react';
 
 // Brand teal — matches the logo mark and the rest of the light auth screens.
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
-const TEAL_SOFT = '#e7f4f1';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
+const TEAL_SOFT = '#ece7f4';
 
 export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrationComplete, isCompletingProfile = false }) => {
   const { register, login, user, token, updateUserProfile } = useAuth();
@@ -418,9 +418,9 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
     if (res?.success) addToast({ title: 'نێردرایەوە', message: 'کۆدێکی نوێ بۆ ئیمەیڵەکەت نێردرا.', type: 'success' });
   };
 
-  const inputCls = "w-full rounded-2xl bg-white/85 border border-slate-200/90 focus:border-[#12796b] focus:bg-white focus:shadow-[0_0_0_4px_rgba(18,121,107,.08),0_8px_24px_rgba(15,23,42,.04)] outline-none transition-all text-xs text-slate-900 placeholder:text-slate-400";
+  const inputCls = "w-full rounded-2xl bg-white/85 border border-slate-200/90 focus:border-[#641bd9] focus:bg-white focus:shadow-[0_0_0_4px_rgba(100,27,217,.08),0_8px_24px_rgba(15,23,42,.04)] outline-none transition-all text-xs text-slate-900 placeholder:text-slate-400";
   const labelCls = "text-xs font-bold text-slate-700 block mb-1.5";
-  const primaryBtnCls = "group relative w-full py-4 rounded-2xl text-white font-black text-sm active:scale-[0.985] hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-60 disabled:pointer-events-none shadow-[0_12px_28px_rgba(18,121,107,.16)]";
+  const primaryBtnCls = "group relative w-full py-4 rounded-2xl text-white font-black text-sm active:scale-[0.985] hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-60 disabled:pointer-events-none shadow-[0_12px_28px_rgba(100,27,217,.16)]";
   const primaryBtnStyle = { background: `linear-gradient(135deg, ${TEAL} 0%, ${TEAL_DEEP} 100%)`, boxShadow: `0 12px 28px ${TEAL}2b, inset 0 1px 0 rgba(255,255,255,.16)` };
   const chipActiveCls = (active) => `border transition-all ${active ? 'text-white' : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300'}`;
   const chipActiveStyle = (active) => active ? { background: TEAL, borderColor: TEAL } : undefined;
@@ -437,7 +437,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
   };
 
   return (
-    <div dir="rtl" className={`min-h-[100dvh] font-vazirmatn flex flex-col justify-between px-3 py-3 sm:px-6 sm:py-5 select-none relative overflow-x-hidden premium-register-shell ${AUTH_PAD_LG}`} style={{ background: 'linear-gradient(180deg,#f4f8f7 0%,#f9fbfa 100%)', color: '#111' }}>
+    <div dir="rtl" className={`min-h-[100dvh] font-vazirmatn flex flex-col justify-between px-3 py-3 sm:px-6 sm:py-5 select-none relative overflow-x-hidden premium-register-shell ${AUTH_PAD_LG}`} style={{ background: 'linear-gradient(180deg,#f6f4f8 0%,#faf9fb 100%)', color: '#111' }}>
 
       {/* Premium background atmosphere */}
       <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden z-0">
@@ -451,7 +451,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
 
       {step <= TOTAL_STEPS && (
         <header
-          className="max-w-[600px] mx-auto w-full flex items-center gap-3 pb-3 sticky top-0 z-20 bg-[#f6f9f8]/90 backdrop-blur-xl pt-1"
+          className="max-w-[600px] mx-auto w-full flex items-center gap-3 pb-3 sticky top-0 z-20 bg-[#f7f6f9]/90 backdrop-blur-xl pt-1"
           style={{ paddingTop: 'max(1.5rem, calc(env(safe-area-inset-top) + 1rem))' }}
         >
           <button
@@ -466,7 +466,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
               <div
                 key={i}
                 className="h-1.5 flex-1 rounded-full transition-all duration-500 shadow-inner"
-                style={{ background: i < step ? TEAL : '#e2e8e5' }}
+                style={{ background: i < step ? TEAL : '#e4e2e8' }}
               />
             ))}
           </div>
@@ -505,7 +505,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
                     className="relative p-4 rounded-3xl transition-all cursor-pointer border-2"
                     style={active
                       ? { background: TEAL_SOFT, borderColor: TEAL }
-                      : { background: '#fff', borderColor: '#e5e9e7' }
+                      : { background: '#fff', borderColor: '#e7e5e9' }
                     }
                   >
                     {active && (
@@ -520,7 +520,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
                       </div>
                       <div
                         className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
-                        style={active ? { background: TEAL, color: '#fff' } : { background: '#f1f4f3', color: '#8b938d' }}
+                        style={active ? { background: TEAL, color: '#fff' } : { background: '#f2f1f4', color: '#8b938d' }}
                       >
                         <Icon className="w-5 h-5" />
                       </div>
@@ -542,9 +542,9 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="flex-1 h-px" style={{ background: '#e2e8e5' }} />
+              <div className="flex-1 h-px" style={{ background: '#e4e2e8' }} />
               <span className="text-[11px] font-bold" style={{ color: '#9aa1a0' }}>یان</span>
-              <div className="flex-1 h-px" style={{ background: '#e2e8e5' }} />
+              <div className="flex-1 h-px" style={{ background: '#e4e2e8' }} />
             </div>
 
             <button
@@ -552,7 +552,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
               onClick={handleGoogleSignup}
               disabled={isGoogleSubmitting}
               className="w-full flex items-center justify-center gap-2.5 rounded-full bg-white border font-bold text-sm py-3.5 transition-all active:scale-[0.97] disabled:opacity-60"
-              style={{ borderColor: '#d7e0dd', color: '#111' }}
+              style={{ borderColor: '#dad7e0', color: '#111' }}
             >
               <GoogleIcon />
               {isGoogleSubmitting ? 'خەریکی تۆمارکردنە...' : 'تۆمارکردن بە گووگڵ'}
@@ -901,7 +901,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
                   placeholder="باسێک لە ئەزموون، ئامراز و حەزەکانت بنووسە..."
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  className="w-full rounded-3xl bg-white/85 border border-slate-200/90 focus:border-[#12796b] focus:bg-white focus:shadow-[0_0_0_4px_rgba(18,121,107,.08),0_8px_24px_rgba(15,23,42,.04)] outline-none p-4 text-xs text-slate-900 placeholder:text-slate-400 font-medium transition-all"
+                  className="w-full rounded-3xl bg-white/85 border border-slate-200/90 focus:border-[#641bd9] focus:bg-white focus:shadow-[0_0_0_4px_rgba(100,27,217,.08),0_8px_24px_rgba(15,23,42,.04)] outline-none p-4 text-xs text-slate-900 placeholder:text-slate-400 font-medium transition-all"
                 />
               </div>
 
@@ -1238,9 +1238,9 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
       <style>{`
         .premium-register-shell{isolation:isolate}
         .reg-orb{position:absolute;border-radius:9999px;filter:blur(4px)}
-        .reg-orb-a{width:460px;height:460px;right:-230px;top:-210px;background:radial-gradient(circle,rgba(18,121,107,.15),transparent 67%);animation:regFloat 12s ease-in-out infinite}
-        .reg-orb-b{width:380px;height:380px;left:-220px;bottom:-200px;background:radial-gradient(circle,rgba(18,121,107,.08),transparent 67%);animation:regFloat 15s ease-in-out infinite reverse}
-        .reg-grid{position:absolute;inset:0;opacity:.22;background-image:linear-gradient(rgba(18,121,107,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(18,121,107,.045) 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(to bottom,black,transparent 78%)}
+        .reg-orb-a{width:460px;height:460px;right:-230px;top:-210px;background:radial-gradient(circle,rgba(100,27,217,.15),transparent 67%);animation:regFloat 12s ease-in-out infinite}
+        .reg-orb-b{width:380px;height:380px;left:-220px;bottom:-200px;background:radial-gradient(circle,rgba(100,27,217,.08),transparent 67%);animation:regFloat 15s ease-in-out infinite reverse}
+        .reg-grid{position:absolute;inset:0;opacity:.22;background-image:linear-gradient(rgba(100,27,217,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(100,27,217,.045) 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(to bottom,black,transparent 78%)}
         @keyframes regFloat{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(14px,20px,0)}}
         @media (max-width:1279px){.reg-orb-a{width:330px;height:330px}.reg-grid{background-size:36px 36px}}
         @media (prefers-reduced-motion:reduce){.reg-orb{animation:none!important}}

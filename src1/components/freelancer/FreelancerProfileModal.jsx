@@ -15,13 +15,13 @@ import {
   Sparkles, ChevronLeft, CheckCircle2, Award, UserRound, X, Flame, Zap, ShieldCheck
 } from 'lucide-react';
 
-const TEAL = '#12796b';
-const TEAL_DEEP = '#0d5c50';
-const TEAL_SOFT = '#e8f3f1';
-const PAGE = '#f7f8f7';
+const TEAL = '#641bd9';
+const TEAL_DEEP = '#4b13a5';
+const TEAL_SOFT = '#ece8f3';
+const PAGE = '#f7f7f8';
 
 const NO_COVER_BG =
-  'linear-gradient(135deg, #edf7f5 0%, #f5f8f7 48%, #eef3f1 100%)';
+  'linear-gradient(135deg, #f1edf7 0%, #f6f5f8 48%, #f0eef3 100%)';
 
 const parseJsonArray = (val) => {
   if (Array.isArray(val)) return val;
@@ -544,7 +544,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
           style={{
             background: isVip
               ? 'linear-gradient(90deg, #ff3d00, #ff7a00, #ffc04d, #ff5a00, #e23b00)'
-              : 'linear-gradient(90deg, #0f766e, #159a89, #8bd5ca)'
+              : 'linear-gradient(90deg, #5f16d4, #8749eb, #a789d7)'
           }}
         />
 
@@ -586,7 +586,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
               style={{
                 background: isVip
                   ? 'linear-gradient(180deg, rgba(16,5,1,.08) 0%, rgba(22,8,2,.20) 38%, rgba(12,5,2,.88) 100%)'
-                  : 'linear-gradient(180deg, rgba(7,24,21,.10) 0%, rgba(7,24,21,.05) 30%, rgba(7,24,21,.66) 100%)'
+                  : 'linear-gradient(180deg, rgba(13,7,24,.10) 0%, rgba(13,7,24,.05) 30%, rgba(13,7,24,.66) 100%)'
               }}
             />
 
@@ -647,7 +647,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                     style={{
                       background: isVip
                         ? 'linear-gradient(135deg, rgba(39,10,1,.94), rgba(176,57,0,.94))'
-                        : 'rgba(15,118,110,.92)',
+                        : 'rgba(95,22,212,.92)',
                       border: isVip ? '1px solid rgba(255,166,74,.45)' : undefined
                     }}
                   >
@@ -678,7 +678,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                         style={{
                           background: isVip
                             ? 'linear-gradient(135deg,#ff3d00,#ff9f1c,#ffd166)'
-                            : 'linear-gradient(135deg,#0f766e,#7ccfc3)',
+                            : 'linear-gradient(135deg,#5f16d4,#9b7ad1)',
                           opacity: isVip ? .88 : .70
                         }}
                       />
@@ -733,7 +733,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                           style={{
                             background: isVip
                               ? 'linear-gradient(135deg,#3a0d00,#d94a00,#ff8a00)'
-                              : '#0f766e',
+                              : '#5f16d4',
                             border: isVip ? '1px solid rgba(255,180,90,.45)' : undefined
                           }}
                         >
@@ -850,7 +850,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                         boxShadow: '0 12px 42px rgba(255,106,0,.10)'
                       }
                       : hasPaidPlan
-                        ? { borderColor: '#b9dcd6' }
+                        ? { borderColor: '#c6b8dd' }
                         : undefined
                   }
                 >
@@ -915,7 +915,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                           {index < experienceList.length - 1 && (
                             <span
                               className="absolute right-[5px] top-5 bottom-[-28px] w-px"
-                              style={{ background: '#dce7e3' }}
+                              style={{ background: '#e0dce7' }}
                             />
                           )}
 
@@ -987,7 +987,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                             className="text-right rounded-2xl border p-3.5 transition-all hover:-translate-y-0.5 active:scale-[.99]"
                             style={{
                               background: isSelected ? `${TEAL}08` : '#fff',
-                              borderColor: isSelected ? `${TEAL}45` : '#e7e9e8'
+                              borderColor: isSelected ? `${TEAL}45` : '#e8e7e9'
                             }}
                           >
                             <div className="flex items-center gap-3">
@@ -1085,7 +1085,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                 <div
                   className="rounded-[28px] bg-white border p-5 shadow-[0_12px_45px_rgba(20,30,25,.07)]"
                   style={{
-                    borderColor: isVip ? '#ffc58f' : hasPaidPlan ? '#cfe4e0' : '#e4e8e6',
+                    borderColor: isVip ? '#ffc58f' : hasPaidPlan ? '#d7cee5' : '#e6e4e8',
                     boxShadow: isVip
                       ? '0 18px 55px rgba(255,106,0,.10)'
                       : undefined
