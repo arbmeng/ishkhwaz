@@ -112,15 +112,24 @@ export const AppTour = ({ open, user, activeTab, onNavigate, onClose }) => {
     setSettled(!step?.target);
     // wait for the page to render the target, jump it into view (no smooth scroll, so the spotlight never chases it), then reveal
     let tries = 0;
-    const reveal = () => { if (cancelled) return; measure(); setSettled(true); };
+    const settle = (n = 0, last = null) => {
+      if (cancelled) return;
+      const el = visibleEl(step?.target);
+      const r = el ? el.getBoundingClientRect() : null;
+      const same = r && last && Math.abs(r.top - last.top) < 1 && Math.abs(r.left - last.left) < 1 && Math.abs(r.height - last.height) < 1;
+      if (same || n >= 14) { measure(); setSettled(true); return; }
+      setTimeout(() => settle(n + 1, r), 110);
+    };
     const find = () => {
       if (cancelled) return;
       const el = visibleEl(step?.target);
       if (el) {
-        el.scrollIntoView({ block: 'center', behavior: 'auto' });
-        setTimeout(reveal, 160);
+        const r = el.getBoundingClientRect();
+        // put the target around 40% down the screen (below any sticky header), jumping instantly
+        window.scrollBy({ top: r.top + r.height / 2 - window.innerHeight * 0.4, behavior: 'auto' });
+        setTimeout(() => settle(), 120);
       } else if (step?.target && tries++ < 25) setTimeout(find, 120);
-      else reveal();
+      else { measure(); setSettled(true); }
     };
     const t = setTimeout(find, step?.tab && step.tab !== activeTab ? 250 : 0);
     return () => { cancelled = true; clearTimeout(t); };
@@ -170,7 +179,7 @@ export const AppTour = ({ open, user, activeTab, onNavigate, onClose }) => {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[10050]" dir="rtl" style={{ fontFamily: NK }} role="dialog" aria-modal="true" aria-label="ڕێبەری ئەپ">
+    <div className="fixed inset-0 z-[10050]" dir="rtl" style={{ fontFamily: NK, touchAction: 'none' }} role="dialog" aria-modal="true" aria-label="ڕێبەری ئەپ">
       <style>{'@keyframes tourPulse{0%,100%{box-shadow:0 0 0 9999px rgba(11,6,20,.74),0 0 0 3px rgba(157,116,224,.95)}50%{box-shadow:0 0 0 9999px rgba(11,6,20,.74),0 0 0 9px rgba(157,116,224,.25)}}@keyframes tourCard{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){[data-tour-ui]{animation:none!important;transition:none!important}}'}</style>
 
       {/* click shield (a click outside does nothing; use the buttons) */}
@@ -184,7 +193,7 @@ export const AppTour = ({ open, user, activeTab, onNavigate, onClose }) => {
         <button type="button" onClick={() => finish(false)} aria-label="داخستن" className="absolute left-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-[#f4f3f6] text-[#60706c] active:scale-95"><X className="h-4 w-4" /></button>
         <div className="mb-3 flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-xl text-white" style={{ background: `linear-gradient(135deg, ${TEAL}, #4b13a5)` }}>{step.done ? <PartyPopper className="h-[18px] w-[18px]" /> : <Sparkles className="h-[18px] w-[18px]" />}</span>
-          <span className="text-[11px] font-bold text-[#7b8e88]">{i + 1} / {steps.length}</span>
+          <span dir="ltr" className="text-[11px] font-bold text-[#7b8e88]">{i + 1} / {steps.length}</span>
         </div>
         <h3 className="text-[17px] font-bold text-[#16111d]">{step.title}</h3>
         <p className="mt-1.5 text-[13px] font-medium leading-7 text-[#4a5b55]">{step.text}</p>
