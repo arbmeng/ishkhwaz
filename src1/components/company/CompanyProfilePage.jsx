@@ -459,9 +459,12 @@ export const CompanyProfilePage = ({
 
     .company-hero {
       background:
-        radial-gradient(500px 240px at 10% 0%, rgba(147,104,218,.22), transparent 70%),
-        radial-gradient(500px 280px at 90% 100%, rgba(100,27,217,.18), transparent 70%),
-        linear-gradient(135deg, #130a22 0%, #1a0c31 48%, #0f0a17 100%);
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
+        radial-gradient(500px 240px at 10% 0%, rgba(147,104,218,.32), transparent 70%),
+        radial-gradient(500px 280px at 90% 100%, rgba(100,27,217,.28), transparent 70%),
+        linear-gradient(135deg, #1d0c3a 0%, #2a1058 48%, #140a26 100%);
+      background-size: 30px 30px, 30px 30px, auto, auto, auto;
     }
 
     .company-glass {
@@ -470,13 +473,6 @@ export const CompanyProfilePage = ({
       box-shadow: 0 18px 55px rgba(31,15,56,.08);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-    }
-
-    .company-noise {
-      background-image:
-        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
-      background-size: 30px 30px;
     }
 
     @media (min-width: 1024px) {
