@@ -283,21 +283,33 @@ export const UserProfilePage = ({ onNavigate }) => {
   const isVIP = !!userPlanTier && Number(userPlanTier.price) > 0;
   const planAccent = userPlanTier ? (getPlanColor(userPlanTier.color).gradient || getPlanColor(userPlanTier.color).accent) : TEAL;
 
-  const completion = useMemo(() => {
-    let s = 0;
-    if (displayAvatar) s += 20;
-    if ((bio || user?.bio || '').length > 10) s += 20;
-    if (isEmployer) {
-      if (companyName || user?.company_name) s += 20;
-      if (industry || user?.industry) s += 20;
-      if (phone || user?.phone) s += 20;
-    } else {
-      if (skills.length > 0 || parseJsonArray(user?.skills).length > 0) s += 20;
-      if (govId || user?.governorate) s += 20;
-      if ((phone || user?.phone) || (profession || user?.profession)) s += 20;
-    }
-    return Math.min(Math.max(s, 20), 100);
-  }, [displayAvatar, bio, skills, govId, phone, profession, user, isEmployer, companyName, industry]);
+  // Real completion: every item is a piece of saved profile data, weighted, and the missing ones are listed.
+  const completionItems = useMemo(() => {
+    const hasSocial = Object.values(social || {}).some(v => String(v || '').trim());
+    const loc = !!(govId && distId);
+    const common = [
+      { label: 'وێنە', w: isEmployer ? 15 : 15, done: !!displayAvatar },
+      { label: 'دەربارە (bio)', w: isEmployer ? 15 : 10, done: (bio || '').trim().length > 10 },
+      { label: 'شوێن (قەزا)', w: 10, done: loc },
+      { label: 'تۆڕە کۆمەڵایەتییەکان', w: isEmployer ? 15 : 10, done: hasSocial },
+      { label: 'ئیمەیڵی پشتڕاستکراو', w: 5, done: !!Number(user?.email_verified) },
+    ];
+    const extra = isEmployer ? [
+      { label: 'ناوی کۆمپانیا', w: 10, done: !!(companyName || '').trim() },
+      { label: 'بواری کار', w: 10, done: !!(industry || '').trim() },
+      { label: 'ژمارەی تەلەفۆن', w: 10, done: !!(phone || '').trim() },
+      { label: 'قەبارە و جۆری کۆمپانیا', w: 10, done: !!(user?.company_size && user?.company_type) },
+    ] : [
+      { label: 'پیشە', w: 5, done: !!(profession || '').trim() && profession !== 'کارخواز' },
+      { label: 'شارەزایی', w: 15, done: skills.length > 0 },
+      { label: 'ئەزموونی کار', w: 15, done: experiences.length > 0 },
+      { label: 'زمانەکان', w: 5, done: languages.length > 0 },
+      { label: 'خوێندن', w: 10, done: education.length > 0 },
+    ];
+    return [...common, ...extra];
+  }, [displayAvatar, bio, skills, experiences, languages, education, social, govId, distId, phone, profession, user, isEmployer, companyName, industry]);
+  const completion = Math.min(100, completionItems.reduce((n, i) => n + (i.done ? i.w : 0), 0));
+  const completionMissing = completionItems.filter(i => !i.done).map(i => i.label);
 
   const profileViews = Number(user?.profile_views) || 0;
   const applCount = applications.length;
@@ -632,9 +644,9 @@ export const UserProfilePage = ({ onNavigate }) => {
         <div className="ap-progress-card">
           <div className="ap-progress-top"><span>تەواوی پڕۆفایل</span><strong>{completion}%</strong></div>
           <div className="ap-bar"><i style={{ width: `${completion}%` }} /></div>
-          {completion < 90 && (
+          {completionMissing.length > 0 && (
             <div className="ap-progress-foot">
-              <small>زانیارییە کەمەکان تەواو بکە بۆ پڕۆفایلێکی بەهێزتر.</small>
+              <small>کەمە: {completionMissing.slice(0, 4).join('، ')}{completionMissing.length > 4 ? ` و ${completionMissing.length - 4} ی تر` : ''}</small>
               <button type="button" onClick={() => { soundService.playTick?.(); setShowEdit(true); }}>تەواوکردن</button>
             </div>
           )}
