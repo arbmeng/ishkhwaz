@@ -253,7 +253,12 @@ export const apiService = {
         ...field('skills'),
         ...field('favorite_categories'),
         ...field('saved_jobs'),
-        ...field('experience'),
+        ...field('profession'),
+        ...field('social_links'),
+        ...field('languages'),
+        ...field('education'),
+        ...(profileData.experience !== undefined ? { experience: profileData.experience }
+          : profileData.experiences !== undefined ? { experience: profileData.experiences } : {}),
         // Only present when actually changing — e.g. a fresh social sign-up
         // choosing freelancer vs employer while completing their profile.
         ...field('role'),

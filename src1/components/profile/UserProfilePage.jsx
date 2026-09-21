@@ -217,7 +217,7 @@ export const UserProfilePage = ({ onNavigate }) => {
     setSubId(user.subDistrictId || user.subDistrict || '');
     const sk = parseJsonArray(user.skills);
     if (sk.length) setSkills(sk);
-    const ex = parseJsonArray(user.experiences || user.work_history);
+    const ex = parseJsonArray(user.experience || user.experiences || user.work_history);
     if (ex.length) setExperiences(ex);
     setSocial(parseSocial(user.social_links));
     setLanguages(parseJsonArray(user.languages));
@@ -1468,6 +1468,7 @@ export const UserProfilePage = ({ onNavigate }) => {
         .ap-hdr{display:contents}.ap-hdr>div{margin-left:-14px;margin-right:-14px;margin-bottom:16px;margin-top:calc(-12px - env(safe-area-inset-top))!important}@media(min-width:640px){.ap-hdr>div{margin-left:-20px;margin-right:-20px;margin-bottom:20px;margin-top:calc(-20px - env(safe-area-inset-top))!important}}@media(min-width:1024px){.ap-hdr>div{margin-left:-32px;margin-right:-32px;margin-bottom:28px;margin-top:-20px!important}}
         .ap-page{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding-bottom:120px}
         .ap-page .ap-modal-foot{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;border:1px solid var(--line);border-radius:26px;margin:0;box-shadow:0 12px 34px rgba(31,12,61,.12)}
+        body:has(.ap-mobile-edit) nav.fixed.bottom-0{display:none!important}
         .ap-page.ap-mobile-edit{position:fixed;inset:0;z-index:100;max-width:none;margin:0;padding:0;display:flex;flex-direction:column;background:#f6f3fb}
         .ap-mobile-edit .ap-hdr>div{position:relative!important;margin:0!important;flex:none}
         .ap-mobile-edit .ap-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:16px 12px}
