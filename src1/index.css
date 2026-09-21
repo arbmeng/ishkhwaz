@@ -111,7 +111,7 @@
       radial-gradient(at 100% 100%, rgba(161,108,246, 0.1) 0px, transparent 45%);
     color: #0F172A;
     font-family: 'Vazirmatn', 'Inter', system-ui, -apple-system, sans-serif;
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 }
 

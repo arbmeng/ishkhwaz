@@ -111,11 +111,15 @@ export const BottomNavbar = ({ activeTab, setActiveTab }) => {
   );
 
   return createPortal(
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t-2 border-[#641bd9]/30 px-3 flex items-center justify-around shadow-[0_-5px_25px_rgba(0,0,0,0.06)] select-none md:hidden"
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-[#641bd9]/30 px-3 flex items-center justify-around shadow-[0_-5px_25px_rgba(0,0,0,0.06)] select-none md:hidden"
       style={{
         paddingTop: '10px',
         paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
-        transform: hidden ? 'translateY(110%)' : 'translateY(0)',
+        transform: hidden ? 'translate3d(0,110%,0)' : 'translate3d(0,0,0)',
+        willChange: 'transform',
+        WebkitBackfaceVisibility: 'hidden',
+        backfaceVisibility: 'hidden',
+        bottom: 0,
         transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
       }}>
       {navItem('home',   Home,   'ماڵەوە')}

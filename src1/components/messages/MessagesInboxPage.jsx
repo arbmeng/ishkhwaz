@@ -42,6 +42,9 @@ const counterpartFor = (thread, currentUserId) => {
   };
 };
 
+// Karnama AI + app-guide rows are hidden for now; flip to true to bring them back.
+const SHOW_PINNED_ASSISTANTS = false;
+
 export const MessagesInboxPage = ({ onNavigate, onEditResumeStyle }) => {
   const { user, token } = useAuth();
   const { addToast } = useStore();
@@ -137,6 +140,7 @@ export const MessagesInboxPage = ({ onNavigate, onEditResumeStyle }) => {
 
       <div className="max-w-2xl mx-auto px-4 pt-5 sm:pt-6 space-y-4">
 
+        {SHOW_PINNED_ASSISTANTS && (<>
         {/* ── Pinned: Karnama AI (VIP-only conversational CV builder) ── */}
         <button
           type="button"
@@ -186,6 +190,7 @@ export const MessagesInboxPage = ({ onNavigate, onEditResumeStyle }) => {
             </div>
           </div>
         </button>
+        </>)}
 
         {/* ── Real Conversation List Card ──────────────────────── */}
         <section

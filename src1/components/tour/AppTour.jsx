@@ -11,25 +11,61 @@ export const TOUR_DONE_KEY = 'ishkhwaz_tour_done';
 // actually visible gets the spotlight. `tab` is opened first when the step lives on another page.
 const nav = (id) => [`[data-tour="nav-${id}"]`, `[data-tour="hdr-${id}"]`];
 
-const buildSteps = (user) => {
-  const employer = user?.role === 'employer' || user?.role === 'owner' || user?.role === 'admin';
-  const steps = [
-    { title: 'بەخێربێیت بۆ ئیش خواز 👋', text: 'با بە کورتی پیشانت بدەین چۆن ئەپەکە بەکاربهێنیت. لەگەڵ هەر هەنگاوێک شوێنی ڕاستەقینەی دوگمەکان دیاری دەکەین.' },
-    { tab: 'home', target: nav('home'), title: 'ماڵەوە', text: employer ? 'لێرەدا کارخوازانی گونجاو دەبینیت و بەپێی پیشە و شار دەیانگەڕێیت.' : 'لێرەدا هەلی کارە نوێیەکان و پێشنیارە تایبەتەکان بۆ تۆ دەبینیت. فلتەری بوار و شار بەکاربهێنە.' },
-    { tab: 'search', target: nav('search'), title: 'گەڕان', text: employer ? 'کارخوازانی Pro و VIP بگەڕێ، پڕۆفایلیان ببینە و داواکاری بۆیان بنێرە.' : 'کۆمپانیاکان، کارەکان و کارخوازان لە یەک شوێن. بەپێی شار و بوار فلتەر بکە و کارە دڵخوازەکان پاشەکەوت بکە.' },
-    employer
-      ? { tab: 'my_company_dashboard', target: [...nav('my_company_dashboard'), '[data-tour="dash-post"]'], title: 'داشبۆرد', text: 'لێرە کار بڵاودەکەیتەوە، داواکارییەکان پەسەند یان ڕەت دەکەیت و شیکاری بینین و داواکاری دەبینیت.' }
-      : { tab: 'my_applications', target: nav('my_applications'), title: 'داواکارییەکانم', text: 'دۆخی هەموو سیڤییەکانت لێرە دەبینیت: لە پشکنین، لای کۆمپانیا، پەسەندکراو یان ڕەتکراو.' },
-    { tab: 'messages', target: nav('messages'), title: 'پەیامەکان', text: 'ڕاستەوخۆ لەگەڵ کۆمپانیا یان کارخواز گفتوگۆ بکە. ژمارەی سووری سەر ئایکۆنەکە پەیامی نەخوێندراوە.' },
-    { tab: 'profile', target: nav('profile'), title: 'پڕۆفایل', text: 'هەموو زانیارییەکانت، کارنامە و ڕێکخستنەکان لێرەن.' },
-    { tab: 'profile', target: ['[data-tour="profile-edit"]'], title: 'پڕۆفایلەکەت تەواو بکە', text: 'وێنە، شارەزایی، زمان، خوێندن و تۆڕە کۆمەڵایەتییەکانت زیاد بکە. پڕۆفایلێکی تەواو زۆر زیاتر دەبینرێت.' },
-  ];
-  if (canSeePlans(user)) {
-    steps.push({ tab: 'profile', target: ['[data-tour="profile-plans"]', '[data-tour="hdr-plans"]'], title: 'پلانەکان', text: 'کرێدیتی زیاتر بۆ ناردنی سیڤی و بەرزکردنەوەی پڕۆفایل. پلانەکان کڕینێکی یەکجارەن.' });
+const buildSteps = (employer, showPlans) => {
+  const S = [];
+  S.push({ title: 'بەخێربێیت بۆ ئیش خواز 👋', text: employer
+    ? 'ئەم ڕێبەرە هەموو بەشەکانی ئەپ بە ڕێکی پیشان دەدات: چۆن کار بڵاودەکەیتەوە، کارخواز دەدۆزیتەوە و داواکارییەکان بەڕێوە دەبەیت. نزیکەی دوو خولەک دەخایەنێت.'
+    : 'ئەم ڕێبەرە هەموو بەشەکانی ئەپ بە ڕێکی پیشان دەدات: چۆن کار دەدۆزیتەوە، سیڤی دەنێریت و پڕۆفایلەکەت بەهێز دەکەیت. نزیکەی دوو خولەک دەخایەنێت.',
+    tips: ['لەگەڵ هەر هەنگاوێک شوێنی ڕاستەقینەی دوگمەکان دیاری دەکرێت', 'دەتوانیت هەر کاتێک بیپەڕێنیت'] });
+
+  S.push({ tab: 'home', target: nav('home'), title: '١. ماڵەوە', text: employer
+    ? 'یەکەم لاپەڕە: کارخوازانی گونجاو و ئامارەکانت لێرە دەردەکەون.'
+    : 'یەکەم لاپەڕە: هەلی کارە نوێیەکان و پێشنیارە تایبەتەکان بۆ تۆ.',
+    tips: employer
+      ? ['بەپێی پیشە و شار کارخواز بگەڕێ', 'کارخوازانی VIP و Pro لە سەرەوە دەردەکەون', 'کرتە لە کارتی کارخواز بکە بۆ بینینی زانیاری تەواو']
+      : ['بە بوار (پارچەیی، تەواو، فریلانس...) فلتەر بکە', 'دڵی سەر هەر کارێک = پاشەکەوتکردن بۆ دواتر', 'کرتە لە کارتەکە بکە بۆ بینینی وردەکاری و ناردنی سیڤی'] });
+  S.push({ tab: 'search', target: nav('search'), title: '٢. گەڕان', text: employer
+    ? 'لێرە کارخواز، کۆمپانیا و کارەکان بگەڕێ.'
+    : 'کۆمپانیاکان، هەلی کار و کارخوازان لە یەک شوێن.',
+    tips: ['سێ تابی سەرەوە: کۆمپانیاکان / هەلی کار / کارخوازان', 'دوگمەی فلتەر بۆ شار و بوار', 'کاتێک دەچیتە خوارەوە سەرەوەی لاپەڕە بچووک دەبێتەوە بەڵام دەمێنێتەوە', 'نیشانەی Boost = پڕۆفایلی بەرزکراوە'] });
+  if (employer) {
+    S.push({ tab: 'my_company_dashboard', target: nav('my_company_dashboard'), title: '٣. داشبۆردی کۆمپانیا', text: 'ناوەندی کارەکانتە: کارەکانت، داواکارییە هاتووەکان و ئامارەکان.',
+      tips: ['هەر کارێک بڵاوکراوەتەوە دۆخەکەی دەبینیت (چاوەڕوان / چالاک / داخراو)', 'داواکاری کارخوازان پەسەند یان ڕەت بکە', 'ئامار: بینین و داواکاری بۆ هەر کارێک'] });
+    S.push({ tab: 'my_company_dashboard', target: ['[data-tour="dash-post"]'], title: 'بڵاوکردنەوەی کار', text: 'لێرەوە هەلی کاری نوێ دادەنێیت. فۆرمەکە هەر بەشێک بە جیا دەپرسێت.',
+      tips: ['ناونیشان، بوار، شوێن و مووچە', 'ئەرک، مەرج و ئامانجەکان بە بەشی جیاواز', 'دوای پشکنین لە ئەپدا دەردەکەوێت'] });
+  } else {
+    S.push({ tab: 'my_applications', target: nav('my_applications'), title: '٣. داواکارییەکانم', text: 'دۆخی هەموو ئەو سیڤییانەی ناردووتە.',
+      tips: ['ناردراو: ئەوانەی خۆت ناردووتە', 'ئۆفەرە وەرگیراوەکان: کۆمپانیا بانگهێشتی کردوویت', 'دۆخ: چاوەڕوان / پەسەندکراو / ڕەتکراو'] });
   }
-  steps.push({ tab: 'profile', target: ['[data-tour="profile-contact"]'], title: 'یارمەتی', text: 'هەر کێشەیەک هەبوو، لێرەوە نامە بۆمان بنێرە.' });
-  steps.push({ title: 'ئامادەیت! 🎉', text: 'ئێستا دەتوانیت دەستپێبکەیت. هەر کاتێک ویستت، لە «چۆنیەتی کارکردن» ئەم ڕێبەرە دووبارە بکەرەوە.', done: true });
-  return steps;
+  S.push({ tab: 'messages', target: nav('messages'), title: '٤. پەیامەکان', text: employer ? 'ڕاستەوخۆ لەگەڵ کارخوازەکان گفتوگۆ بکە.' : 'ڕاستەوخۆ لەگەڵ کۆمپانیاکان گفتوگۆ بکە.',
+    tips: ['ژمارەی سووری سەر ئایکۆن = پەیامی نەخوێندراو', 'ئاگادارکردنەوەکانیش لە زەنگەکەی سەرەوە دەبینیت'] });
+  S.push({ tab: 'profile', target: nav('profile'), title: '٥. پڕۆفایل', text: 'هەموو زانیارییەکانت و ڕێکخستنەکان لێرەن. با بەشەکانی بە ڕێکی ببینین.',
+    tips: ['سەرەوە: ڕێژەی تەواوبوونی پڕۆفایل و ئامارەکانت', 'لێرە کارنامە، پاشەکەوتکراوەکان و پلانەکان دەبینیت'] });
+
+  S.push({ tab: 'profile', target: ['[data-tour="profile-edit"]'], title: employer ? 'دەستکاری کۆمپانیا' : 'دەستکاری پڕۆفایل', text: 'هەموو زانیارییەکانت لێرە دەگۆڕیت و لە بنکەدراوە پاشەکەوت دەکرێن.',
+    tips: employer
+      ? ['لۆگۆ و وێنەی کۆمپانیا', 'ناو، بوار، قەبارە و جۆری کۆمپانیا', 'شوێنی ڕاستەقینە (شار، قەزا، ناحیە)', 'تۆڕە کۆمەڵایەتییەکان: ماڵپەڕ، WhatsApp، Instagram...']
+      : ['وێنە و پیشە و دەربارەی خۆت', 'شارەزاییەکان (Skills) و ئەزموونی کار', 'زمانەکان و خوێندن', 'تۆڕە کۆمەڵایەتییەکان: WhatsApp، Instagram، LinkedIn...', 'ڕێژەی تەواوبوون بە زانیاری ڕاستەقینە حساب دەکرێت'] });
+  if (!employer) {
+    S.push({ tab: 'profile', target: ['[data-tour="profile-cv"]'], title: 'کارنامە (CV)', text: 'کارنامەی پیشەیی دروست بکە، دیزاین هەڵبژێرە و بە PDF دایبگرە.',
+      tips: ['چەندین دیزاینی ئامادە', 'کۆمپانیاکان دەتوانن کارنامەی گشتیت ببینن'] });
+    S.push({ tab: 'profile', target: ['[data-tour="profile-apps"]'], title: 'داواکارییەکانم', text: 'کورتەڕێگا بۆ دۆخی سیڤییەکانت، لەگەڵ ژمارەی داواکارییەکان.' });
+    S.push({ tab: 'profile', target: ['[data-tour="profile-saved"]'], title: 'کارە پاشەکەوتکراوەکان', text: 'ئەو کارانەی بە دڵ کردووە لێرە کۆدەبنەوە؛ دواتر دەتوانیت سیڤییان بۆ بنێریت.' });
+  } else {
+    S.push({ tab: 'profile', target: ['[data-tour="profile-dash"]'], title: 'داشبۆردی کۆمپانیا', text: 'کورتەڕێگا بۆ کارەکان و داواکارییەکانت، لەگەڵ ژمارەی کارەکان.' });
+  }
+  S.push({ tab: 'profile', target: ['[data-tour="profile-viewers"]'], title: 'بینەرانی پڕۆفایل', text: employer ? 'دەزانیت کێ پڕۆفایلی کۆمپانیاکەتی بینیوە.' : 'دەزانیت کام کۆمپانیا پڕۆفایلەکەتی بینیوە؛ ئەمە نیشانەی بەرچاوکەوتنە.' });
+  if (showPlans) {
+    S.push({ tab: 'profile', target: ['[data-tour="profile-plans"]', '[data-tour="hdr-plans"]'], title: 'پلانەکان', text: 'پلانی Pro و VIP کاریگەری زیاتر دەدەن.',
+      tips: employer ? ['کرێدیتی زیاتر بۆ بڵاوکردنەوەی کار', 'پێشخستنی کارەکانت'] : ['VIP: لە سەرەوەی لیستی گەڕان دەردەکەویت', 'Boost: بۆ ماوەیەک بەرزت دەکاتەوە', 'پلانەکان کڕینێکی یەکجارەن، نەک مانگانە'] });
+  }
+  S.push({ tab: 'profile', target: ['[data-tour="profile-how"]'], title: 'چۆنیەتی کارکردن', text: 'ڕێنمایی نووسراو و ئەم ڕێبەرە زیندووە هەر کاتێک ویستت لێرە دووبارە دەکەیتەوە.' });
+  S.push({ tab: 'profile', target: ['[data-tour="profile-contact"]'], title: 'یارمەتی و پەیوەندی', text: 'هەر کێشە یان پێشنیارێکت هەبوو، لێرەوە نامەمان بۆ بنێرە.' });
+  S.push({ title: 'ئامادەیت! 🎉', text: employer
+    ? 'ئێستا دەتوانیت یەکەم کارت بڵاوبکەیتەوە و کارخوازی گونجاو بدۆزیتەوە.'
+    : 'ئێستا دەتوانیت پڕۆفایلەکەت تەواو بکەیت و یەکەم سیڤیت بنێریت.',
+    tips: ['ڕێبەرەکە هەر کاتێک لە «چۆنیەتی کارکردن» دووبارە دەکرێتەوە'], done: true });
+  return S;
 };
 
 const visibleEl = (selectors = []) => {
@@ -42,9 +78,12 @@ const visibleEl = (selectors = []) => {
 };
 
 export const AppTour = ({ open, user, activeTab, onNavigate, onClose }) => {
-  const steps = React.useMemo(() => buildSteps(user), [user]);
+  const employer = user?.role === 'employer' || user?.role === 'owner' || user?.role === 'admin';
+  const showPlans = canSeePlans(user);
+  const steps = React.useMemo(() => buildSteps(employer, showPlans), [employer, showPlans]);
   const [i, setI] = useState(0);
   const [rect, setRect] = useState(null);
+  const [settled, setSettled] = useState(false);
   const [vp, setVp] = useState({ w: window.innerWidth, h: window.innerHeight });
   const trackRef = useRef(null);
   const step = steps[i] || steps[0];
@@ -70,17 +109,18 @@ export const AppTour = ({ open, user, activeTab, onNavigate, onClose }) => {
     let cancelled = false;
     if (step?.tab && step.tab !== activeTab) onNavigate?.(step.tab);
     setRect(null);
-    // wait for the page to render the target, then scroll it into view
+    setSettled(!step?.target);
+    // wait for the page to render the target, jump it into view (no smooth scroll, so the spotlight never chases it), then reveal
     let tries = 0;
+    const reveal = () => { if (cancelled) return; measure(); setSettled(true); };
     const find = () => {
       if (cancelled) return;
       const el = visibleEl(step?.target);
       if (el) {
-        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        setTimeout(measure, 350);
-        measure();
+        el.scrollIntoView({ block: 'center', behavior: 'auto' });
+        setTimeout(reveal, 160);
       } else if (step?.target && tries++ < 25) setTimeout(find, 120);
-      else measure();
+      else reveal();
     };
     const t = setTimeout(find, step?.tab && step.tab !== activeTab ? 250 : 0);
     return () => { cancelled = true; clearTimeout(t); };
@@ -121,10 +161,10 @@ export const AppTour = ({ open, user, activeTab, onNavigate, onClose }) => {
 
   // card placement: below the spotlight if there is room, otherwise above; centred when there is no target
   const cardW = Math.min(340, vp.w - 24);
-  let cardStyle = { width: cardW, left: Math.max(12, (vp.w - cardW) / 2), top: Math.max(12, vp.h / 2 - 130) };
+  let cardStyle = { width: cardW, left: Math.max(12, (vp.w - cardW) / 2), top: Math.max(12, vp.h / 2 - (step.tips?.length ? 210 : 130)) };
   if (spot) {
     const below = spot.top + spot.height + 16;
-    const roomBelow = vp.h - below > 210;
+    const roomBelow = vp.h - below > (step.tips?.length ? 380 : 210);
     const left = Math.min(Math.max(12, spot.left + spot.width / 2 - cardW / 2), vp.w - cardW - 12);
     cardStyle = roomBelow ? { width: cardW, left, top: below } : { width: cardW, left, bottom: Math.max(12, vp.h - spot.top + 16) };
   }
@@ -134,13 +174,13 @@ export const AppTour = ({ open, user, activeTab, onNavigate, onClose }) => {
       <style>{'@keyframes tourPulse{0%,100%{box-shadow:0 0 0 9999px rgba(11,6,20,.74),0 0 0 3px rgba(157,116,224,.95)}50%{box-shadow:0 0 0 9999px rgba(11,6,20,.74),0 0 0 9px rgba(157,116,224,.25)}}@keyframes tourCard{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}@media (prefers-reduced-motion:reduce){[data-tour-ui]{animation:none!important;transition:none!important}}'}</style>
 
       {/* click shield (a click outside does nothing; use the buttons) */}
-      <div className="absolute inset-0" style={spot ? undefined : { background: 'rgba(11,6,20,.74)' }} />
+      <div className="absolute inset-0" style={spot && settled ? undefined : { background: 'rgba(11,6,20,.74)' }} />
 
-      {spot && (
-        <div data-tour-ui className="pointer-events-none absolute rounded-[20px]" style={{ top: spot.top, left: spot.left, width: spot.width, height: spot.height, animation: 'tourPulse 1.8s ease-in-out infinite', transition: 'top .3s ease, left .3s ease, width .3s ease, height .3s ease' }} />
+      {spot && settled && (
+        <div data-tour-ui className="pointer-events-none absolute rounded-[20px]" style={{ top: spot.top, left: spot.left, width: spot.width, height: spot.height, animation: 'tourPulse 1.8s ease-in-out infinite', transition: 'none' }} />
       )}
 
-      <div data-tour-ui key={i} className="absolute rounded-[24px] bg-white p-5 shadow-[0_30px_80px_rgba(0,0,0,.45)]" style={{ ...cardStyle, animation: 'tourCard .28s ease both' }}>
+      <div data-tour-ui key={i} className="absolute rounded-[24px] bg-white p-5 shadow-[0_30px_80px_rgba(0,0,0,.45)]" style={{ ...cardStyle, visibility: settled ? 'visible' : 'hidden', animation: 'tourCard .28s ease both' }}>
         <button type="button" onClick={() => finish(false)} aria-label="داخستن" className="absolute left-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-[#f4f3f6] text-[#60706c] active:scale-95"><X className="h-4 w-4" /></button>
         <div className="mb-3 flex items-center gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-xl text-white" style={{ background: `linear-gradient(135deg, ${TEAL}, #4b13a5)` }}>{step.done ? <PartyPopper className="h-[18px] w-[18px]" /> : <Sparkles className="h-[18px] w-[18px]" />}</span>
@@ -148,6 +188,13 @@ export const AppTour = ({ open, user, activeTab, onNavigate, onClose }) => {
         </div>
         <h3 className="text-[17px] font-bold text-[#16111d]">{step.title}</h3>
         <p className="mt-1.5 text-[13px] font-medium leading-7 text-[#4a5b55]">{step.text}</p>
+        {step.tips?.length > 0 && (
+          <ul className="mt-2.5 space-y-1.5 rounded-2xl bg-[#f6f3fb] px-3.5 py-3">
+            {step.tips.map((t, k) => (
+              <li key={k} className="flex items-start gap-2 text-[12px] font-medium leading-6 text-[#3d3350]"><span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: TEAL }} />{t}</li>
+            ))}
+          </ul>
+        )}
 
         <div className="mt-4 flex items-center gap-1">
           {steps.map((_, k) => <span key={k} className="h-1.5 rounded-full transition-all" style={{ width: k === i ? 18 : 6, background: k <= i ? TEAL : '#e2dfe8' }} />)}
