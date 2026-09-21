@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, Suspense } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { SocialLinks, parseSocial } from '../ui/SocialLinks';
 import { StickyProfileBar } from '../layout/StickyProfileBar';
 import { kurdistanGovernorates } from '../../data/kurdistanLocations';
@@ -9,8 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import { SendOfferModal } from '../requests/SendOfferModal';
 import { StarRatingDisplay } from '../ui/StarRating';
-import { exportNodeToPdf, safeFilename } from '../../services/karnamaPdf';
-import { getTemplate } from '../../cvTemplates/registry';
+import { CvViewerModal } from '../ui/CvViewerModal';
 import {
   ArrowLeft, Send, Share2, BadgeCheck, Phone, Mail, ExternalLink,
   Rocket, Crown, MapPin, BriefcaseBusiness, Star, FileText, Loader2,
@@ -92,34 +91,6 @@ const GOV_LABELS = {
   halabja: 'هەڵەبجە'
 };
 
-const HiddenResumeExportNode = ({ resume, innerRef }) => {
-  const template = getTemplate(resume.template_id);
-  const Comp = template.component;
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: -9999,
-        pointerEvents: 'none'
-      }}
-      aria-hidden="true"
-    >
-      <div ref={innerRef}>
-        <Suspense fallback={null}>
-          <Comp
-            resume={{
-              ...resume.resume_data,
-              accentColor: template.accentColorDefault
-            }}
-          />
-        </Suspense>
-      </div>
-    </div>
-  );
-};
-
 const Section = ({ eyebrow, title, icon: Icon, children, className = '' }) => (
   <section className={`mt-7 ${className}`}>
     <div className="flex items-end justify-between gap-3 mb-3.5">
@@ -178,53 +149,27 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
   const [publicResume, setPublicResume] = useState(null);
   const [isExportingCv, setIsExportingCv] = useState(false);
   const [selectedCv, setSelectedCv] = useState(null);
-  const cvExportRef = useRef(null);
 
+  // The CV is hosted by Karnama: open its page inside a viewer (it has its own "Download PDF").
+  const [cvView, setCvView] = useState(null);
   const handleViewCv = async (cv = null) => {
     soundService.playTick?.();
     setIsExportingCv(true);
-
     try {
-      let resume = cv || selectedCv || publicResume;
-
-      // New API shape: getPublicResume can return a selected resume,
-      // while the profile can also provide public_resumes directly.
+      let resume = cv && cv.embed_url ? cv : null;
       if (!resume) {
-        const resumeId = cv?.id || freelancer.public_resume_id;
-        const res = await apiService.getPublicResume(
-          freelancer.id,
-          resumeId ? { resumeId } : undefined
-        );
-
+        const res = await apiService.getPublicResume(freelancer.id);
         if (!res?.success) {
-          addToast?.({
-            title: 'CV نییە',
-            message: 'ئەم کارخوازە CV ی گشتی دانەناوە.',
-            type: 'info'
-          });
+          addToast?.({ title: 'CV نییە', message: 'ئەم کارخوازە CV ی گشتی دانەناوە.', type: 'info' });
           return;
         }
-
         resume = res.resume;
         setPublicResume(resume);
       }
-
       setSelectedCv(resume);
-
-      await new Promise((resolve) => setTimeout(resolve, 80));
-
-      if (!cvExportRef.current) throw new Error('no node');
-
-      await exportNodeToPdf(
-        cvExportRef.current,
-        `${safeFilename(resume.title || `${name}-CV`)}.pdf`
-      );
+      setCvView(resume);
     } catch {
-      addToast?.({
-        title: 'سەرنەکەوت',
-        message: 'کردنەوەی CV سەرکەوتوو نەبوو، دووبارە هەوڵبدەرەوە.',
-        type: 'error'
-      });
+      addToast?.({ title: 'سەرنەکەوت', message: 'کردنەوەی CV سەرکەوتوو نەبوو، دووبارە هەوڵبدەرەوە.', type: 'error' });
     } finally {
       setIsExportingCv(false);
     }
@@ -1233,12 +1178,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
         />
       )}
 
-      {(selectedCv || publicResume) && (
-        <HiddenResumeExportNode
-          resume={selectedCv || publicResume}
-          innerRef={cvExportRef}
-        />
-      )}
+      <CvViewerModal open={!!cvView} title={cvView?.title || 'CV'} embedUrl={cvView?.embed_url} viewUrl={cvView?.view_url} onClose={() => setCvView(null)} />
     </>,
     document.body
   );

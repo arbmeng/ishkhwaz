@@ -1,44 +1,43 @@
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '../layout/PageHeader';
+import { CvViewerModal } from '../ui/CvViewerModal';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { apiService } from '../../services/api';
 import { soundService } from '../../services/soundService';
-import { exportNodeToPdf, safeFilename } from '../../services/karnamaPdf';
-import { getTemplate } from '../../cvTemplates/registry';
-import { ArrowLeft, Plus, Download, Trash2, FileText, Loader2, Send, Palette, Globe } from 'lucide-react';
+import { Plus, Trash2, FileText, Loader2, Send, Pencil, Globe, Eye, ExternalLink } from 'lucide-react';
 
 const TEAL = '#641bd9';
 const TEAL_DEEP = '#4b13a5';
 const TEAL_SOFT = '#ece7f4';
-const A4_W = 794;
 
-// Offscreen full-size render of one saved resume, used purely to screenshot
-// into a real PDF — same technique as the template picker's own export.
-const HiddenExportNode = ({ resume, innerRef }) => {
-  const template = getTemplate(resume.template_id);
-  const Comp = template.component;
+// The real CV, shrunk into a card — loaded only when it scrolls into view.
+const Thumb = ({ src }) => {
+  const ref = useRef(null);
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !('IntersectionObserver' in window)) { setOn(true); return undefined; }
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setOn(true); io.disconnect(); } }, { rootMargin: '150px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   return (
-    <div style={{ position: 'fixed', top: 0, left: -9999, pointerEvents: 'none' }} aria-hidden="true">
-      <div ref={innerRef}>
-        <Suspense fallback={null}>
-          <Comp resume={{ ...resume.resume_data, accentColor: template.accentColorDefault }} />
-        </Suspense>
-      </div>
+    <div ref={ref} className="relative h-[132px] w-[94px] shrink-0 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
+      {on && src ? <iframe src={src} title="cv" loading="lazy" tabIndex={-1} className="pointer-events-none absolute left-0 top-0 border-0" style={{ width: 794, height: 1123, transform: 'scale(.118)', transformOrigin: '0 0' }} /> : <FileText className="m-auto mt-12 h-6 w-6 text-stone-300" />}
     </div>
   );
 };
 
-export const ResumesPage = ({ onBack, onCreateNew, onEditStyle }) => {
+export const ResumesPage = ({ onBack, onCreateNew, onEdit }) => {
   const { token, user } = useAuth();
   const { addToast, planTiers = [] } = useStore();
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [downloadingId, setDownloadingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [publicResumeId, setPublicResumeId] = useState(user?.public_resume_id || null);
   const [settingPublicId, setSettingPublicId] = useState(null);
-  const exportRef = useRef(null);
+  const [viewing, setViewing] = useState(null);
 
   const userTier = planTiers.find(t => t.id === user?.plan);
   const maxCvs = userTier ? Number(userTier.max_cvs ?? 1) : 1;
@@ -50,10 +49,10 @@ export const ResumesPage = ({ onBack, onCreateNew, onEditStyle }) => {
     if (res?.success) setResumes(res.resumes || []);
     setLoading(false);
   };
-
   useEffect(() => { if (token) load(); }, [token]);
 
   const handleDelete = async (id) => {
+    if (!window.confirm('ئەم سیڤیە بسڕدرێتەوە؟ لینکەکەشی کار ناکات.')) return;
     soundService.playTick?.();
     setDeletingId(id);
     const res = await apiService.deleteResume(id, token);
@@ -62,15 +61,10 @@ export const ResumesPage = ({ onBack, onCreateNew, onEditStyle }) => {
       setResumes(prev => prev.filter(r => r.id !== id));
       if (publicResumeId === id) setPublicResumeId(null);
       addToast?.({ title: 'سڕایەوە', message: 'سیڤیەکە سڕایەوە.', type: 'info' });
-    } else {
-      addToast?.({ title: 'سەرنەکەوت', message: res?.message || 'سڕینەوە سەرکەوتوو نەبوو.', type: 'error' });
-    }
+    } else addToast?.({ title: 'سەرنەکەوت', message: res?.message || 'سڕینەوە سەرکەوتوو نەبوو.', type: 'error' });
   };
 
-  // Toggles whether this resume is the ONE publicly viewable on the
-  // freelancer's own profile (FreelancerProfileModal's "بینینی CV" button) —
-  // picking a new one automatically un-picks whichever was public before,
-  // since only one can be public at a time.
+  // Only ONE CV is public on the freelancer's own profile (companies see it there); picking another un-picks the old one.
   const handleTogglePublic = async (id) => {
     soundService.playTick?.();
     const nextId = publicResumeId === id ? null : id;
@@ -79,131 +73,77 @@ export const ResumesPage = ({ onBack, onCreateNew, onEditStyle }) => {
     setSettingPublicId(null);
     if (res?.success) {
       setPublicResumeId(nextId);
-      addToast?.({
-        title: nextId ? 'کرایە گشتی ✓' : 'گشتی نەما',
-        message: nextId ? 'ئێستا کۆمپانیاکان دەتوانن ئەم CV یە ببینن لە پرۆفایلەکەت.' : 'ئیتر هیچ CV یەک لە پرۆفایلەکەت دیار نییە.',
-        type: 'success',
-      });
-    } else {
-      addToast?.({ title: 'سەرنەکەوت', message: res?.message || 'کێشەیەک ڕوویدا.', type: 'error' });
-    }
+      addToast?.({ title: nextId ? 'کرایە گشتی ✓' : 'گشتی نەما', message: nextId ? 'ئێستا کۆمپانیاکان دەتوانن ئەم CV یە ببینن لە پرۆفایلەکەت.' : 'ئیتر هیچ CV یەک لە پرۆفایلەکەت نابینرێت.', type: 'success' });
+    } else addToast?.({ title: 'سەرنەکەوت', message: res?.message || 'کێشەیەک ڕوویدا.', type: 'error' });
   };
 
-  const handleDownload = async (resume) => {
-    soundService.playTick?.();
-    setDownloadingId(resume.id);
-    // Let the hidden export node actually mount with this resume's data first.
-    await new Promise(r => setTimeout(r, 50));
-    try {
-      if (!exportRef.current) throw new Error('no node');
-      await exportNodeToPdf(exportRef.current, `${safeFilename(resume.title)}.pdf`);
-      addToast?.({ title: 'داگیرا ✓', message: 'سیڤیەکەت بە سەرکەوتوویی داگیرا.', type: 'success' });
-    } catch (e) {
-      addToast?.({ title: 'سەرنەکەوت', message: 'دروستکردنی PDF سەرکەوتوو نەبوو، دووبارە هەوڵبدەرەوە.', type: 'error' });
-    }
-    setDownloadingId(null);
-  };
-
-  const downloadingResume = resumes.find(r => r.id === downloadingId);
+  const fmt = (d) => { try { return new Date(String(d).replace(' ', 'T')).toLocaleDateString('en-GB'); } catch { return ''; } };
 
   return (
     <div dir="rtl" className="min-h-screen font-vazirmatn" style={{ background: '#f5f4f7', paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
       <PageHeader title={`سیڤیەکانم · ${resumes.length} / ${maxCvs > 0 ? maxCvs : '∞'}`} onBack={() => { soundService.playTick?.(); onBack?.(); }} />
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 space-y-4">
-
-        <button
-          type="button"
+      <div className="mx-auto max-w-3xl space-y-4 px-4 pt-5 sm:px-6">
+        <button type="button"
           onClick={() => {
             soundService.playTick?.();
-            if (atLimit) {
-              addToast?.({ title: 'گەیشتیت بە سنووری پلانەکەت', message: `پلانەکەت ڕێگە بە ${maxCvs} سیڤی دەدات. سیڤیەکی کۆن بسڕەوە یان پلانەکەت بەرزبکەرەوە.`, type: 'warning' });
-              return;
-            }
+            if (atLimit) { addToast?.({ title: 'گەیشتیت بە سنووری پلانەکەت', message: `پلانەکەت ڕێگە بە ${maxCvs} سیڤی دەدات. سیڤیەکی کۆن بسڕەوە یان پلانەکەت بەرزبکەرەوە.`, type: 'warning' }); return; }
             onCreateNew?.();
           }}
-          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-black text-white active:scale-[0.98] transition"
-          style={{ background: atLimit ? '#a8b0ac' : `linear-gradient(135deg,${TEAL},${TEAL_DEEP})` }}
-        >
-          <Plus className="w-4 h-4" />سیڤیەکی نوێ دروست بکە
+          className="flex w-full items-center justify-center gap-2 rounded-2xl py-4 text-sm font-black text-white transition active:scale-[0.98]"
+          style={{ background: atLimit ? '#a8b0ac' : `linear-gradient(135deg,${TEAL},${TEAL_DEEP})` }}>
+          <Plus className="h-4 w-4" />سیڤیەکی نوێ دروست بکە
         </button>
 
         {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-stone-300" /></div>
+          <div className="flex justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-stone-300" /></div>
         ) : resumes.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-stone-200 py-16 text-center space-y-2">
-            <FileText className="w-8 h-8 text-stone-300 mx-auto" />
+          <div className="space-y-2 rounded-3xl border border-stone-200 bg-white py-16 text-center">
+            <FileText className="mx-auto h-8 w-8 text-stone-300" />
             <p className="text-sm font-bold text-stone-400">هێشتا هیچ سیڤیەکت دروست نەکردووە.</p>
-            <p className="text-xs text-stone-400">دەتوانیت چەند سیڤیەکی جیاواز دروست بکەیت — یەکێک بۆ هەر بواری کارێک — و کاتی ناردنی داواکاری هەڵیبژێریت.</p>
+            <p className="px-6 text-xs text-stone-400">زانیارییەکانت لە پرۆفایلەکەتەوە خۆکارانە دێنە ناو سیڤیەکە و دەتوانیت بیانگۆڕیت.</p>
           </div>
         ) : (
           <div className="space-y-3">
             {resumes.map(r => {
-              const template = getTemplate(r.template_id);
               const isPublic = publicResumeId === r.id;
               return (
-                <div key={r.id} className={`bg-white rounded-3xl border p-4 space-y-3 ${isPublic ? 'border-[#641bd9]' : 'border-stone-200'}`}>
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: TEAL_SOFT }}>
-                    <FileText className="w-5 h-5" style={{ color: TEAL_DEEP }} />
+                <div key={r.id} className={`space-y-3 rounded-3xl border bg-white p-4 ${isPublic ? 'border-[#641bd9]' : 'border-stone-200'}`}>
+                  <div className="flex items-start gap-3.5">
+                    <button type="button" onClick={() => { soundService.playTick?.(); setViewing(r); }} aria-label="بینین"><Thumb src={r.embed_url} /></button>
+                    <div className="min-w-0 flex-1 pt-1">
+                      <h3 className="truncate text-sm font-black text-stone-900">{r.title}</h3>
+                      <p className="mt-0.5 text-[11px] font-bold text-stone-400">{r.template_id} · {fmt(r.updated_at)}</p>
+                      {isPublic && <span className="mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-black" style={{ background: TEAL_SOFT, color: TEAL_DEEP }}>گشتی · لە پرۆفایلەکەت</span>}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button onClick={() => { soundService.playTick?.(); setViewing(r); }} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-black text-white" style={{ background: TEAL }}><Eye className="h-3.5 w-3.5" />بینین / PDF</button>
+                        <button onClick={() => { soundService.playTick?.(); onEdit?.(r.id); }} className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-[11px] font-black text-stone-600"><Pencil className="h-3.5 w-3.5" />دەستکاری</button>
+                        <a href={r.view_url} target="_blank" rel="noopener noreferrer" className="grid h-9 w-9 place-items-center rounded-xl border border-stone-200 bg-stone-50 text-stone-600" aria-label="کردنەوە"><ExternalLink className="h-3.5 w-3.5" /></a>
+                        <button onClick={() => handleDelete(r.id)} disabled={deletingId === r.id} className="grid h-9 w-9 place-items-center rounded-xl border border-rose-100 bg-rose-50 text-rose-500 disabled:opacity-50" aria-label="سڕینەوە">
+                          {deletingId === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-black text-stone-900 truncate">{r.title}</h3>
-                    <p className="text-[11px] text-stone-400 font-bold truncate">{template.name}</p>
-                  </div>
-                  {onEditStyle && (
-                    <button
-                      onClick={() => { soundService.playTick?.(); onEditStyle(r.id); }}
-                      className="w-10 h-10 rounded-xl bg-stone-50 border border-stone-200 flex items-center justify-center text-stone-600 active:scale-95 transition shrink-0"
-                      aria-label="گۆڕینی شێواز"
-                    >
-                      <Palette className="w-4 h-4" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDownload(r)}
-                    disabled={downloadingId === r.id}
-                    className="w-10 h-10 rounded-xl bg-stone-50 border border-stone-200 flex items-center justify-center text-stone-600 active:scale-95 transition shrink-0 disabled:opacity-50"
-                    aria-label="داگرتن"
-                  >
-                    {downloadingId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  <button onClick={() => handleTogglePublic(r.id)} disabled={settingPublicId === r.id}
+                    className={`flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-bold transition active:scale-95 disabled:opacity-50 ${isPublic ? 'text-white' : 'border border-stone-200 bg-stone-50 text-stone-500'}`}
+                    style={isPublic ? { background: TEAL } : {}}>
+                    {settingPublicId === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}
+                    {isPublic ? 'دیارە لەسەر پرۆفایل — کرتە بکە بۆ شاردنەوە' : 'وەک CV ی پرۆفایل دایبنێ'}
                   </button>
-                  <button
-                    onClick={() => handleDelete(r.id)}
-                    disabled={deletingId === r.id}
-                    className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 active:scale-95 transition shrink-0 disabled:opacity-50"
-                    aria-label="سڕینەوە"
-                  >
-                    {deletingId === r.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => handleTogglePublic(r.id)}
-                  disabled={settingPublicId === r.id}
-                  className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition active:scale-95 disabled:opacity-50 ${
-                    isPublic ? 'text-white' : 'bg-stone-50 border border-stone-200 text-stone-500'
-                  }`}
-                  style={isPublic ? { background: TEAL } : {}}
-                >
-                  {settingPublicId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Globe className="w-3.5 h-3.5" />}
-                  {isPublic ? 'دیارە لەسەر پڕۆفایل — کرتە بکە بۆ شاردنەوە' : 'وەک CV ی پرۆفایل دایبنێ'}
-                </button>
                 </div>
               );
             })}
           </div>
         )}
 
-        <div className="flex items-start gap-2.5 p-3.5 rounded-2xl" style={{ background: TEAL_SOFT }}>
-          <Send className="w-4 h-4 shrink-0 mt-0.5" style={{ color: TEAL_DEEP }} />
-          <p className="text-[11px] font-bold leading-relaxed" style={{ color: TEAL_DEEP }}>
-            کاتێک داواکاری بۆ هەلی کارێک دەنێریت، دەتوانیت هەڵبژێریت کام لەم سیڤیانە بنێریت — گونجاوترینیان بۆ ئەو کارە.
-          </p>
+        <div className="flex items-start gap-2.5 rounded-2xl p-3.5" style={{ background: TEAL_SOFT }}>
+          <Send className="mt-0.5 h-4 w-4 shrink-0" style={{ color: TEAL_DEEP }} />
+          <p className="text-[11px] font-bold leading-relaxed" style={{ color: TEAL_DEEP }}>کاتێک داواکاری بۆ هەلی کارێک دەنێریت، دەتوانیت هەڵبژێریت کام لەم سیڤیانە بنێریت.</p>
         </div>
       </div>
 
-      {downloadingResume && <HiddenExportNode resume={downloadingResume} innerRef={exportRef} />}
+      <CvViewerModal open={!!viewing} title={viewing?.title} embedUrl={viewing?.embed_url} viewUrl={viewing?.view_url} onClose={() => setViewing(null)} />
     </div>
   );
 };

@@ -20,7 +20,7 @@ import { AuthModal } from './components/auth/AuthModal';
 import { AccountBlockedModal } from './components/auth/AccountBlockedModal';
 import { PostJobPage } from './components/employer/PostJobPage';
 import { KarnamaCVPage } from './components/freelancer/KarnamaCVPage';
-import { KarnamaTemplatePicker } from './components/freelancer/KarnamaTemplatePicker';
+import { CvStylePage } from './components/freelancer/CvStylePage';
 import { ResumesPage } from './components/freelancer/ResumesPage';
 import { InstallPage } from './components/pwa/InstallPage';
 import { ToastSystem } from './components/ui/ToastSystem';
@@ -64,7 +64,8 @@ function MainAppContent() {
   // id in the latter case, so this is the only extra state it needs.
   const startResumeStyleEdit = (resumeId) => {
     setEditingResumeId(resumeId);
-    setActiveTab('karnama_templates');
+    setPendingKarnamaResume(null);
+    setActiveTab('karnama_cv');
   };
   const [showSidebarDrawer, setShowSidebarDrawer] = useState(false);
   // The brief branded splash plays on every cold open (like a native app) —
@@ -459,22 +460,20 @@ function MainAppContent() {
     if (activeTab === 'karnama_cv') {
       return (
         <KarnamaCVPage
-          onBack={() => setActiveTab('resumes')}
-          onProceed={(resume) => { setPendingKarnamaResume(resume); setActiveTab('karnama_templates'); }}
+          key={editingResumeId || 'new'}
+          resumeId={editingResumeId}
+          onBack={() => { setEditingResumeId(null); setActiveTab('resumes'); }}
+          onProceed={(draft) => { setPendingKarnamaResume(draft); setActiveTab('karnama_templates'); }}
         />
       );
     }
 
-    if (activeTab === 'karnama_templates' && (pendingKarnamaResume || editingResumeId)) {
+    if (activeTab === 'karnama_templates' && pendingKarnamaResume) {
       return (
-        <KarnamaTemplatePicker
-          baseResume={pendingKarnamaResume}
-          resumeId={editingResumeId}
-          onBack={() => {
-            const wasEditing = !!editingResumeId;
-            setEditingResumeId(null);
-            setActiveTab(wasEditing ? 'resumes' : 'karnama_cv');
-          }}
+        <CvStylePage
+          draft={pendingKarnamaResume}
+          resume={pendingKarnamaResume.resume || null}
+          onBack={() => setActiveTab('karnama_cv')}
           onDone={() => { setPendingKarnamaResume(null); setEditingResumeId(null); setActiveTab('resumes'); }}
         />
       );
@@ -484,8 +483,8 @@ function MainAppContent() {
       return (
         <ResumesPage
           onBack={() => setActiveTab('profile')}
-          onCreateNew={() => setActiveTab('karnama_cv')}
-          onEditStyle={startResumeStyleEdit}
+          onCreateNew={() => { setEditingResumeId(null); setPendingKarnamaResume(null); setActiveTab('karnama_cv'); }}
+          onEdit={startResumeStyleEdit}
         />
       );
     }

@@ -12,7 +12,8 @@ const WORKPLACES = [['onSite', 'لەسەر شوێن'], ['remote', 'دوورکا�
 const QUICK = ['سڵاو، پڕۆفایلەکەت بە دڵمان بوو و دەمانەوێت پێکەوە کار بکەین.', 'ئەم هەلە بۆ تۆ گونجاوە، دەتوانین ئەمڕۆ قسە بکەین؟', 'چاوەڕێی وەڵامەکەتین، زۆر سوپاس.'];
 
 const salaryText = (j) => {
-  const a = Number(j.salary_min) || 0, b = Number(j.salary_max) || 0;
+  let a = Number(j.salary_min) || 0, b = Number(j.salary_max) || 0;
+  if (a && b && a > b) [a, b] = [b, a];
   if (!a && !b) return 'وەک گفتوگۆ';
   return a && b && a !== b ? `${a.toLocaleString()} - ${b.toLocaleString()} IQD` : `${(b || a).toLocaleString()} IQD`;
 };

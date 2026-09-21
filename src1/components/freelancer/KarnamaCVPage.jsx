@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import { soundService } from '../../services/soundService';
 import { readFileAsDataUri } from '../../utils/file';
+import { parseSocial } from '../ui/SocialLinks';
+import { kurdistanGovernorates } from '../../data/kurdistanLocations';
 import {
   ChevronLeft, ChevronRight, Sparkles, Plus, Trash2, Loader2, Wand2, X, Search, Upload, Lightbulb,
   User, Briefcase, GraduationCap, Layers, Languages, Award, FolderGit2, Users2, CheckCircle2,
@@ -32,6 +34,46 @@ const SKILL_SUGGESTIONS = ['React', 'Node.js', 'Figma', 'Photoshop', 'Excel', '�
 const LANGUAGE_LEVELS = ['سەرەتایی', 'مامناوەند', 'باش', 'زگماکی'];
 
 const DRAFT_KEY = 'ishkhwaz_karnama_cv_draft';
+
+const asList = (v) => { if (Array.isArray(v)) return v; try { const p = JSON.parse(v || '[]'); return Array.isArray(p) ? p : []; } catch { return []; } };
+
+// Everything the account settings already know, turned into CV fields the person can then change.
+const prefillFromProfile = (user) => {
+  const social = parseSocial(user?.social_links);
+  const gov = kurdistanGovernorates.find(g => g.id === user?.governorate || g.name_ku === user?.governorate);
+  const dist = gov?.districts?.find(d => d.id === user?.district || d.name_ku === user?.district);
+  return {
+    personal: {
+      ...emptyPersonal(user),
+      city: [dist?.name_ku, gov?.name_ku].filter(Boolean).join('، ') || (typeof user?.governorate === 'string' ? user.governorate : ''),
+      website: social.website || '',
+      linkedin: social.linkedin || '',
+    },
+    experience: asList(user?.experience).map(e => ({ ...emptyExperience(), role: e.title || '', description: [e.period, e.description].filter(Boolean).join(' — ') })),
+    education: asList(user?.education).filter(e => e && (e.title || e.place)).map(e => ({ ...emptyEducation(), degree: e.title || '', institution: e.place || '', description: e.period || '' })),
+    skills: asList(user?.skills).filter(Boolean).map(n => ({ ...emptySkill(), name: String(n), level: 4 })),
+    languages: asList(user?.languages).filter(Boolean).map(n => ({ ...emptyLanguage(), name: String(n), level: 'باش' })),
+  };
+};
+
+// The photo must be small for the CV service: shrink the profile picture to a 360px JPEG.
+const shrinkPhoto = (src) => new Promise((resolve) => {
+  if (!src) return resolve('');
+  if (/^https:\/\//i.test(src)) return resolve(src);
+  const img = new Image();
+  img.onload = () => {
+    const S = 360, r = Math.min(1, S / Math.max(img.width, img.height));
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(img.width * r); cv.height = Math.round(img.height * r);
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    let q = 0.82, out = cv.toDataURL('image/jpeg', q);
+    while (out.length > 200000 && q > 0.4) { q -= 0.1; out = cv.toDataURL('image/jpeg', q); }
+    resolve(out.length <= 250000 ? out : '');
+  };
+  img.onerror = () => resolve('');
+  img.src = src;
+});
+const withIds = (arr) => (Array.isArray(arr) ? arr : []).map(x => ({ id: newId(), ...x }));
 
 const inputCls = "w-full py-3 px-3.5 bg-white border border-stone-200 rounded-xl text-sm font-bold text-stone-900 focus:outline-none transition-all";
 const labelCls = "block text-xs font-black text-stone-700 mb-1.5";
@@ -121,8 +163,11 @@ function AIWriteButton({ kind, input, onResult, label = 'نووسینی خۆکا
   );
 }
 
-export const KarnamaCVPage = ({ onBack, onProceed }) => {
-  const { user } = useAuth();
+export const KarnamaCVPage = ({ onBack, onProceed, resumeId = null }) => {
+  const { user, token } = useAuth();
+  const [editing, setEditing] = useState(null);
+  const [fromProfile, setFromProfile] = useState(false);
+  const [busyProceed, setBusyProceed] = useState(false);
   const [step, setStep] = useState(0);
   const [restored, setRestored] = useState(false);
   const [personal, setPersonal] = useState(() => emptyPersonal(user));
@@ -141,26 +186,40 @@ export const KarnamaCVPage = ({ onBack, onProceed }) => {
   // thing that gets lost to an accidental back-swipe or a dropped connection.
   // Restores once on mount only; every change after that re-saves silently.
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (raw) {
-        const d = JSON.parse(raw);
-        if (d.personal) setPersonal(prev => ({ ...prev, ...d.personal }));
-        if (Array.isArray(d.experience)) setExperience(d.experience);
-        if (Array.isArray(d.education)) setEducation(d.education);
-        if (Array.isArray(d.skills)) setSkills(d.skills);
-        if (Array.isArray(d.languages)) setLanguages(d.languages);
-        if (Array.isArray(d.certifications)) setCertifications(d.certifications);
-        if (Array.isArray(d.projects)) setProjects(d.projects);
-        if (Array.isArray(d.references)) setReferences(d.references);
+    let cancelled = false;
+    const apply = (d) => {
+      setPersonal(prev => ({ ...prev, ...(d.personal || {}) }));
+      setExperience(d.experience || []); setEducation(d.education || []); setSkills(d.skills || []);
+      setLanguages(d.languages || []); setCertifications(d.certifications || []); setProjects(d.projects || []); setReferences(d.references || []);
+    };
+    (async () => {
+      if (resumeId && token) {
+        const res = await apiService.getResumes(token);
+        const row = (res?.resumes || []).find(r => r.id === resumeId);
+        if (row && !cancelled) {
+          setEditing(row);
+          const d = row.resume_data || {}, sec = d.sections || {};
+          apply({ personal: { ...emptyPersonal(user), ...(d.personalInfo || {}) }, experience: withIds(sec.experience), education: withIds(sec.education), skills: withIds(sec.skills), languages: withIds(sec.languages), certifications: withIds(sec.certifications), projects: withIds(sec.projects), references: withIds(sec.references) });
+          setRestored(true);
+          return;
+        }
       }
-    } catch { /* ignore a corrupt draft */ }
-    setRestored(true);
+      let draft = null;
+      try { const raw = localStorage.getItem(DRAFT_KEY); if (raw) draft = JSON.parse(raw); } catch { /* ignore a corrupt draft */ }
+      if (draft && (draft.personal || draft.experience)) {
+        apply({ personal: draft.personal, experience: draft.experience, education: draft.education, skills: draft.skills, languages: draft.languages, certifications: draft.certifications, projects: draft.projects, references: draft.references });
+      } else if (user) {
+        apply(prefillFromProfile(user));
+        setFromProfile(true);
+      }
+      if (!cancelled) setRestored(true);
+    })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!restored) return; // don't overwrite a not-yet-loaded draft with empty state
+    if (!restored || resumeId) return; // don't overwrite a not-yet-loaded draft; edits are saved on the server
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ personal, experience, education, skills, languages, certifications, projects, references }));
     } catch { /* storage full/unavailable — fail silent, nothing user-facing depends on this */ }
@@ -199,28 +258,29 @@ export const KarnamaCVPage = ({ onBack, onProceed }) => {
     }
   };
 
-  // Hands the assembled CV data straight to the in-app template picker — no
-  // network call and no Karnama redirect here; the picker itself is what
-  // saves to Karnama (in the background) once a design is actually chosen.
-  const handleSubmit = () => {
+  // Turns what was typed into the Karnama CV shape and hands it to the style step, which creates/updates the hosted CV.
+  const handleSubmit = async () => {
     if (!canSubmit) { setStep(0); setError('تکایە ناوی تەواوت بنووسە.'); return; }
     soundService.playTick?.();
     setError('');
-
-    const resume = {
-      name: `${personal.fullName.trim()} - CV`,
-      language: 'ku',
-      direction: 'rtl',
-      fontFamily: 'arabic',
-      density: 'comfortable',
-      personalInfo: personal,
-      sections: { experience, education, skills, languages, certifications, projects, references },
-      sectionOrder: ['experience', 'education', 'skills', 'languages', 'certifications', 'projects', 'references'],
-      visibleSections: { experience: true, education: true, skills: true, languages: true, certifications: true, projects: true, references: true },
+    setBusyProceed(true);
+    const photo = await shrinkPhoto(personal.photo);
+    const strip = ({ id, fileUrl, fileName, link, ...rest }) => rest;
+    const data = {
+      personalInfo: { ...personal, photo },
+      sections: {
+        experience: experience.map(strip),
+        education: education.map(strip),
+        skills: skills.map(strip),
+        languages: languages.map(strip),
+        certifications: certifications.map(strip),
+        projects: projects.map(p => ({ name: p.name, description: [p.description, p.link].filter(Boolean).join(' — ') })),
+        references: references.map(strip),
+      },
     };
-
     try { localStorage.removeItem(DRAFT_KEY); } catch { /* fine either way */ }
-    onProceed?.(resume);
+    setBusyProceed(false);
+    onProceed?.({ data, title: editing?.title || personal.jobTitle || personal.fullName, resume: editing });
   };
 
   const current = STEPS[step];
@@ -251,7 +311,7 @@ export const KarnamaCVPage = ({ onBack, onProceed }) => {
           <div className="relative overflow-hidden rounded-3xl p-5 flex items-center gap-3" style={{ background: TEAL_SOFT }}>
             <Sparkles className="w-5 h-5 shrink-0" style={{ color: TEAL_DEEP }} />
             <p className="text-xs font-bold leading-relaxed" style={{ color: TEAL_DEEP }}>
-              زانیارییەکانت لێرەدا بنووسە، دواتر چەند دیزاینێکی پیشەیی پێشکەشت دەکرێت — یەکێکیان هەڵبژێرە و داونلۆدی بکە بە PDF.
+              {editing ? 'زانیارییەکانی سیڤیەکە دەستکاری بکە؛ دواتر شێواز و ڕەنگەکەشی دەتوانیت بگۆڕیت.' : fromProfile ? 'زانیارییەکانت خۆکارانە لە ڕێکخستنەکانی پڕۆفایلەکەتەوە هێنراون. هەرچی دەتەوێت بیگۆڕە، و بەشە نەبووەکان (بروانامە، پڕۆژە، کەسی متمانەپێکراو) زیاد بکە تا باشترین سیڤیت دروست ببێت.' : 'زانیارییەکانت لێرەدا بنووسە، دواتر شێواز و ڕەنگی سیڤیەکە هەڵدەبژێریت و بە PDF دایدەگریت.'}
             </p>
           </div>
         )}
@@ -561,7 +621,7 @@ export const KarnamaCVPage = ({ onBack, onProceed }) => {
             <button type="button" onClick={handleSubmit} disabled={!canSubmit}
               className="flex-1 py-3.5 rounded-2xl text-sm font-black text-white active:scale-95 transition flex items-center justify-center gap-2 disabled:opacity-60"
               style={{ background: `linear-gradient(135deg,${TEAL},${TEAL_DEEP})` }}>
-              <CheckCircle2 className="w-4 h-4" />هەڵبژاردنی دیزاین
+              {busyProceed ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}هەڵبژاردنی شێواز و ڕەنگ
             </button>
           )}
         </div>

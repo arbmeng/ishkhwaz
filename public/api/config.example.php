@@ -50,3 +50,6 @@ define('SMTP_PORT', 587);
 define('SMTP_USER', 'your-gmail-address@gmail.com');
 define('SMTP_APP_PASSWORD', 'replace-with-a-gmail-app-password');
 define('SMTP_FROM_NAME', 'Your App Name');
+
+// ---- Karnama Partner API (hosted CVs) ----
+define('KARNAMA_TOKEN', 'kmk_live_replace-with-your-merchant-token');

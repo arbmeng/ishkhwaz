@@ -851,19 +851,10 @@ export const apiService = {
     }
   },
 
-  // Persists a CV (data + chosen template/accent color, from the in-app
-  // template picker) into Karnama's storage in the background — the backend
-  // auto-provisions (or reuses) a linked Karnama account server-to-server.
-  // The user never leaves Ishkhwaz or sees Karnama; this call only exists so
-  // the premium-template-slot limits (tied to the Ishkhwaz plan) are tracked
-  // centrally and the CV can be re-opened/edited from Karnama later.
-  async createKarnamaResume(resume, token) {
+  // Karnama's CV templates (free + premium), fetched through our server.
+  async getKarnamaTemplates(token) {
     try {
-      const res = await fetch(`${API_BASE_URL}/karnama/create-resume`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ resume }),
-      });
+      const res = await fetch(`${API_BASE_URL}/karnama/templates`, { headers: { 'Authorization': `Bearer ${token}` } });
       const data = await res.json();
       if (!res.ok) return { success: false, message: data.message };
       return data;
@@ -1053,21 +1044,6 @@ export const apiService = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ kind, input }),
-      });
-      const data = await res.json();
-      if (!res.ok) return { success: false, message: data.message };
-      return data;
-    } catch (e) {
-      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
-    }
-  },
-
-  // How many premium ("pro-*") CV designs this user may use, and how many
-  // they've already used — drives which designs are locked in the picker.
-  async getKarnamaStatus(token) {
-    try {
-      const res = await fetch(`${API_BASE_URL}/karnama/status`, {
-        headers: { 'Authorization': `Bearer ${token}` },
       });
       const data = await res.json();
       if (!res.ok) return { success: false, message: data.message };

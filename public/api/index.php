@@ -1736,6 +1736,13 @@ foreach ([
     // Why an offer / application was turned down (shown to the other side).
     "ALTER TABLE invitations ADD COLUMN response_note VARCHAR(500) NULL",
     "ALTER TABLE applications ADD COLUMN company_note VARCHAR(500) NULL",
+    // CVs are now hosted by the Karnama Partner API; the row keeps the link + the data the user typed.
+    "ALTER TABLE resumes ADD COLUMN karnama_id VARCHAR(64) NULL",
+    "ALTER TABLE resumes ADD COLUMN view_url TEXT NULL",
+    "ALTER TABLE resumes ADD COLUMN embed_url TEXT NULL",
+    "ALTER TABLE resumes ADD COLUMN accent_color VARCHAR(20) NULL",
+    "ALTER TABLE resumes ADD COLUMN language VARCHAR(5) NULL",
+    "ALTER TABLE resumes ADD COLUMN expires_at VARCHAR(32) NULL",
     // Emailed 6-digit reset code (stored only as an HMAC, 10 min life, max 5 wrong tries) —
     // see /auth/forgot-password and /auth/verify-reset-otp.
     "ALTER TABLE users ADD COLUMN password_reset_otp_hash VARCHAR(64) NULL",
@@ -1961,6 +1968,17 @@ $defaultSettings = [
     'plan_vip_credits'     => '30',
     'plan_vip_boost_days'  => '30',
 ];
+// One-time cleanup: the CVs built with Ishkhwaz's own (removed) local templates are deleted.
+try {
+    $purged = $pdo->prepare("SELECT value FROM settings WHERE `key` = 'karnama_legacy_cvs_purged'");
+    $purged->execute();
+    if (!$purged->fetchColumn()) {
+        $pdo->exec("DELETE FROM resumes WHERE karnama_id IS NULL");
+        $pdo->exec("UPDATE users SET public_resume_id = NULL WHERE public_resume_id IS NOT NULL AND public_resume_id NOT IN (SELECT id FROM resumes)");
+        $pdo->prepare("INSERT IGNORE INTO settings (`key`, value, updated_at) VALUES ('karnama_legacy_cvs_purged', '1', ?)")->execute([date('Y-m-d H:i:s')]);
+    }
+} catch (Throwable $e) { /* retried on the next request */ }
+
 // Insert only whichever keys don't already exist — so adding a new setting to
 // this list later always seeds it, instead of only working on a brand-new table.
 $insSet = $pdo->prepare('INSERT IGNORE INTO settings (`key`, value, updated_at) VALUES (?, ?, ?)');
@@ -2009,6 +2027,7 @@ function integrationSecretDefs(): array {
         ['key' => 'pusher_key',                'label' => 'Pusher Key',                  'category' => 'pusher',  'default_const' => 'PUSHER_KEY',                'masked' => false, 'editable' => true],
         ['key' => 'pusher_secret',             'label' => 'Pusher Secret',               'category' => 'pusher',  'default_const' => 'PUSHER_SECRET',             'masked' => true,  'editable' => true],
         ['key' => 'pusher_cluster',            'label' => 'Pusher Cluster',              'category' => 'pusher',  'default_const' => 'PUSHER_CLUSTER',            'masked' => false, 'editable' => true],
+        ['key' => 'karnama_token',             'label' => 'Karnama Partner API Token',   'category' => 'karnama', 'default_const' => 'KARNAMA_TOKEN',            'masked' => true,  'editable' => true],
         ['key' => 'openai_api_key',            'label' => 'OpenAI API Key',              'category' => 'openai',  'default_const' => 'OPENAI_API_KEY',            'masked' => true,  'editable' => true],
         ['key' => 'smtp_host',                 'label' => 'SMTP Host',                   'category' => 'smtp',    'default_const' => 'SMTP_HOST',                 'masked' => false, 'editable' => true],
         ['key' => 'smtp_port',                 'label' => 'SMTP Port',                   'category' => 'smtp',    'default_const' => 'SMTP_PORT',                 'masked' => false, 'editable' => true],
@@ -5246,7 +5265,7 @@ if (preg_match('#/admin/plans/delete$#', $uri) && $method === 'POST') {
 // ================================================================
 if (preg_match('#/resumes$#', $uri) && $method === 'GET') {
     $authUser = requireAuth($pdo);
-    $stmt = $pdo->prepare('SELECT id, title, template_id, resume_data, created_at, updated_at FROM resumes WHERE user_id = ? ORDER BY updated_at DESC');
+    $stmt = $pdo->prepare('SELECT id, title, template_id, resume_data, karnama_id, view_url, embed_url, accent_color, language, created_at, updated_at FROM resumes WHERE user_id = ? AND karnama_id IS NOT NULL ORDER BY updated_at DESC');
     $stmt->execute([$authUser['id']]);
     $rows = $stmt->fetchAll();
     foreach ($rows as &$r) { $r['resume_data'] = json_decode($r['resume_data'], true); }
@@ -5254,76 +5273,106 @@ if (preg_match('#/resumes$#', $uri) && $method === 'GET') {
     exit(0);
 }
 
-// Resumes: Create  POST /resumes  { title, template_id, resume_data }
-// Enforces the real per-plan resume limit (plan_tiers.max_cvs, 0 = unlimited)
-// server-side — never trust a client-side count.
+// Resumes: Create  POST /resumes  { title, template_id, accent_color, language, data }
+// Enforces the real per-plan resume limit (plan_tiers.max_cvs, 0 = unlimited) and the
+// "premium templates need a paid plan" rule server-side — never trust the client.
 if (preg_match('#/resumes$#', $uri) && $method === 'POST') {
     $authUser = requireAuth($pdo);
     $input = safeJson();
-    $title = sanitize($input['title'] ?? '', 150);
+    $data = is_array($input['data'] ?? null) ? $input['data'] : null;
+    if (!$data) jsonErr(400, 'زانیاری سیڤی پێویستە.');
     $templateId = sanitize($input['template_id'] ?? '', 60);
-    $resumeData = $input['resume_data'] ?? null;
-    if (empty($title) || empty($templateId) || !is_array($resumeData)) {
-        jsonErr(400, 'ناونیشان، شێواز و زانیاری سیڤی پێویستن.');
-    }
+    $accent = preg_match('/^#[0-9a-fA-F]{6}$/', (string)($input['accent_color'] ?? '')) ? $input['accent_color'] : '';
+    $lang = in_array($input['language'] ?? '', ['ku', 'ar', 'en'], true) ? $input['language'] : 'ku';
 
-    $maxCvs = 1;
+    $planPrice = 0; $maxCvs = 1;
     if (!empty($authUser['plan'])) {
-        $planStmt = $pdo->prepare('SELECT max_cvs FROM plan_tiers WHERE id = ?');
+        $planStmt = $pdo->prepare('SELECT max_cvs, price FROM plan_tiers WHERE id = ?');
         $planStmt->execute([$authUser['plan']]);
-        $planRow = $planStmt->fetch();
-        if ($planRow) $maxCvs = (int)$planRow['max_cvs'];
+        if ($planRow = $planStmt->fetch()) { $maxCvs = (int)$planRow['max_cvs']; $planPrice = (int)$planRow['price']; }
     }
-    if ($maxCvs > 0) {
-        $countStmt = $pdo->prepare('SELECT COUNT(*) c FROM resumes WHERE user_id = ?');
+    $isStaff = in_array($authUser['role'] ?? '', ['admin', 'owner'], true);
+    if ($templateId !== '') {
+        $tpl = null;
+        foreach (karnamaTemplates() as $t) if (($t['id'] ?? '') === $templateId) { $tpl = $t; break; }
+        if (!$tpl) jsonErr(422, 'ئەم شێوازە بوونی نییە.');
+        if (($tpl['tier'] ?? 'free') !== 'free' && $planPrice <= 0 && !$isStaff) jsonErr(403, 'ئەم شێوازە تایبەتە بە پلانی Pro و VIP.');
+    }
+    if ($maxCvs > 0 && !$isStaff) {
+        $countStmt = $pdo->prepare('SELECT COUNT(*) c FROM resumes WHERE user_id = ? AND karnama_id IS NOT NULL');
         $countStmt->execute([$authUser['id']]);
-        $current = (int)$countStmt->fetch()['c'];
-        if ($current >= $maxCvs) {
+        if ((int)$countStmt->fetch()['c'] >= $maxCvs) {
             jsonErr(403, "پلانەکەت ڕێگە بە {$maxCvs} سیڤی دەدات. تکایە سیڤیەکی کۆن بسڕەوە یان پلانەکەت بەرزبکەرەوە.");
         }
     }
-
-    $id = 'res_' . time() . rand(10, 99);
-    $now = date('Y-m-d H:i:s');
-    $pdo->prepare('INSERT INTO resumes (id, user_id, title, template_id, resume_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-        ->execute([$id, $authUser['id'], $title, $templateId, json_encode($resumeData, JSON_UNESCAPED_UNICODE), $now, $now]);
-
-    echo json_encode(['success' => true, 'id' => $id]);
+    $title = sanitize($input['title'] ?? '', 150);
+    if ($title === '') $title = sanitize($data['personalInfo']['jobTitle'] ?? '', 150) ?: 'CV';
+    $row = karnamaCreateAndStore($pdo, $authUser, $title, $templateId, $accent, $lang, $data);
+    echo json_encode(['success' => true, 'id' => $row['id'], 'resume' => $row]);
     exit(0);
 }
 
-// Resumes: Update  POST /resumes/update  { id, title?, template_id?, resume_data? }
+// Resumes: Update  POST /resumes/update  { id, title?, template_id?, accent_color?, language?, data? }
+// The Karnama link stays the same; only the content / look changes.
 if (preg_match('#/resumes/update$#', $uri) && $method === 'POST') {
     $authUser = requireAuth($pdo);
     $input = safeJson();
     $id = sanitize($input['id'] ?? '', 40);
     if (empty($id)) jsonErr(400, 'Resume ID required.');
+    $ex = $pdo->prepare('SELECT * FROM resumes WHERE id = ? AND user_id = ?');
+    $ex->execute([$id, $authUser['id']]);
+    $ex = $ex->fetch();
+    if (!$ex || empty($ex['karnama_id'])) jsonErr(404, 'سیڤیەکە نەدۆزرایەوە.');
 
-    $existing = $pdo->prepare('SELECT * FROM resumes WHERE id = ? AND user_id = ?');
-    $existing->execute([$id, $authUser['id']]);
-    $existing = $existing->fetch();
-    if (!$existing) jsonErr(404, 'سیڤیەکە نەدۆزرایەوە.');
-
-    $title = isset($input['title']) ? sanitize($input['title'], 150) : $existing['title'];
-    $templateId = isset($input['template_id']) ? sanitize($input['template_id'], 60) : $existing['template_id'];
-    $resumeData = is_array($input['resume_data'] ?? null) ? json_encode($input['resume_data'], JSON_UNESCAPED_UNICODE) : $existing['resume_data'];
-
-    $pdo->prepare('UPDATE resumes SET title = ?, template_id = ?, resume_data = ?, updated_at = ? WHERE id = ?')
-        ->execute([$title, $templateId, $resumeData, date('Y-m-d H:i:s'), $id]);
-
+    $body = [];
+    $templateId = $ex['template_id'];
+    if (!empty($input['template_id'])) {
+        $templateId = sanitize($input['template_id'], 60);
+        $tpl = null;
+        foreach (karnamaTemplates() as $t) if (($t['id'] ?? '') === $templateId) { $tpl = $t; break; }
+        if (!$tpl) jsonErr(422, 'ئەم شێوازە بوونی نییە.');
+        if (($tpl['tier'] ?? 'free') !== 'free' && !in_array($authUser['role'] ?? '', ['admin', 'owner'], true)) {
+            $pp = 0;
+            if (!empty($authUser['plan'])) { $q = $pdo->prepare('SELECT price FROM plan_tiers WHERE id = ?'); $q->execute([$authUser['plan']]); $pp = (int)$q->fetchColumn(); }
+            if ($pp <= 0) jsonErr(403, 'ئەم شێوازە تایبەتە بە پلانی Pro و VIP.');
+        }
+        $body['templateId'] = $templateId;
+    }
+    $accent = $ex['accent_color'];
+    if (preg_match('/^#[0-9a-fA-F]{6}$/', (string)($input['accent_color'] ?? ''))) { $accent = $input['accent_color']; $body['accentColor'] = $accent; }
+    $lang = $ex['language'] ?: 'ku';
+    if (in_array($input['language'] ?? '', ['ku', 'ar', 'en'], true)) { $lang = $input['language']; $body['language'] = $lang; }
+    $dataJson = $ex['resume_data'];
+    if (is_array($input['data'] ?? null)) {
+        $clean = karnamaCleanCvData($input['data']);
+        if (empty($clean['personalInfo']['fullName'])) jsonErr(400, 'ناوی تەواو پێویستە.');
+        $body['data'] = $clean;
+        $dataJson = json_encode($clean, JSON_UNESCAPED_UNICODE);
+    }
+    if ($body) {
+        [$st, $res] = karnamaCall('PUT', '/resumes/' . rawurlencode($ex['karnama_id']), $body);
+        if ($st !== 200) jsonErr($st === 429 ? 429 : 502, $res['error']['message'] ?? 'نوێکردنەوەی سیڤی سەرکەوتوو نەبوو.');
+        $urls = $res['resume']['urls'] ?? [];
+    }
+    $title = !empty($input['title']) ? sanitize($input['title'], 150) : $ex['title'];
+    $pdo->prepare('UPDATE resumes SET title = ?, template_id = ?, resume_data = ?, accent_color = ?, language = ?, view_url = ?, embed_url = ?, updated_at = ? WHERE id = ?')
+        ->execute([$title, $templateId, $dataJson, $accent, $lang, $urls['view'] ?? $ex['view_url'], $urls['embed'] ?? $ex['embed_url'], date('Y-m-d H:i:s'), $id]);
     echo json_encode(['success' => true]);
     exit(0);
 }
 
-// Resumes: Delete  POST /resumes/delete  { id }
+// Resumes: Delete  POST /resumes/delete  { id }  — also removes it (and invalidates its links) on Karnama.
 if (preg_match('#/resumes/delete$#', $uri) && $method === 'POST') {
     $authUser = requireAuth($pdo);
     $input = safeJson();
     $id = sanitize($input['id'] ?? '', 40);
     if (empty($id)) jsonErr(400, 'Resume ID required.');
+    $ex = $pdo->prepare('SELECT karnama_id FROM resumes WHERE id = ? AND user_id = ?');
+    $ex->execute([$id, $authUser['id']]);
+    $ex = $ex->fetch();
+    if ($ex && !empty($ex['karnama_id'])) karnamaCall('DELETE', '/resumes/' . rawurlencode($ex['karnama_id']));
     $pdo->prepare('DELETE FROM resumes WHERE id = ? AND user_id = ?')->execute([$id, $authUser['id']]);
-    // If the deleted resume was the public one, that link is now dangling —
-    // clear it so a stale id doesn't linger in users.public_resume_id.
+    // If the deleted resume was the public one, that link is now dangling — clear it.
     $pdo->prepare('UPDATE users SET public_resume_id = NULL WHERE id = ? AND public_resume_id = ?')->execute([$authUser['id'], $id]);
     echo json_encode(['success' => true]);
     exit(0);
@@ -5360,11 +5409,10 @@ if (preg_match('#/resumes/public$#', $uri) && $method === 'GET') {
     $u = $u->fetch();
     if (!$u || empty($u['public_resume_id'])) jsonErr(404, 'ئەم بەکارهێنەرە هیچ CV ی گشتی نییە.');
 
-    $stmt = $pdo->prepare('SELECT id, title, template_id, resume_data FROM resumes WHERE id = ? AND user_id = ?');
+    $stmt = $pdo->prepare('SELECT id, title, template_id, view_url, embed_url FROM resumes WHERE id = ? AND user_id = ? AND karnama_id IS NOT NULL');
     $stmt->execute([$u['public_resume_id'], $userId]);
     $resume = $stmt->fetch();
     if (!$resume) jsonErr(404, 'ئەم بەکارهێنەرە هیچ CV ی گشتی نییە.');
-    $resume['resume_data'] = json_decode($resume['resume_data'], true);
 
     echo json_encode(['success' => true, 'resume' => $resume]);
     exit(0);
@@ -5654,11 +5702,9 @@ if (preg_match('#/ai-cv/build$#', $uri) && $method === 'POST') {
     $data['language'] = 'ku';
     $data['direction'] = 'rtl';
 
-    $id = 'res_' . time() . rand(10, 99);
-    $now = date('Y-m-d H:i:s');
     $title = sanitize($data['personalInfo']['jobTitle'] ?: 'سیڤی دروستکراو بە Karnama AI', 150);
-    $pdo->prepare('INSERT INTO resumes (id, user_id, title, template_id, resume_data, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-        ->execute([$id, $authUser['id'], $title, 'free-clean-ats', json_encode($data, JSON_UNESCAPED_UNICODE), $now, $now]);
+    $saved = karnamaCreateAndStore($pdo, $authUser, $title, 'free-clean-ats', '', 'ku', $data);
+    $id = $saved['id'];
 
     // Clear the conversation so the next time this user opens Karnama AI it
     // starts a clean new interview rather than continuing a "finished" one.
@@ -5759,126 +5805,112 @@ if (preg_match('#/app-guide/messages$#', $uri) && $method === 'POST') {
     exit(0);
 }
 
-// Server-to-server helper shared by the two Karnama endpoints below —
-// bootstraps (or reuses) a Karnama account already linked to this Ish-khwaz
-// user and returns a real Karnama session token for it. Never exposed to
-// the browser directly; only this backend ever sees the OAuth client secret.
-function karnamaBootstrapToken(array $authUser, string $rawToken): string {
-    $karnamaSecret = OAUTH_CLIENTS['karnama']['secret'];
-    $ch = curl_init(KARNAMA_API_BASE . '/account/ishkhwaz-bootstrap');
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode([
-            'ishkhwazUserId' => $authUser['id'],
-            'ishkhwazName'   => $authUser['name'],
-            'ishkhwazPhone'  => $authUser['phone'],
-            'ishkhwazToken'  => $rawToken,
-        ], JSON_UNESCAPED_UNICODE),
-        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $karnamaSecret, 'Content-Type: application/json'],
+// ================================================================
+// Karnama Partner API — hosted, printable CVs.
+// The merchant token lives in config.php (KARNAMA_TOKEN) or the owner-editable
+// app_secrets table, is only ever used here on the server, and never reaches a browser.
+// ================================================================
+function karnamaPartnerBase(): string { return rtrim(KARNAMA_API_BASE, '/') . '/partner/v1'; }
+function karnamaToken(): string { return getSecret('karnama_token', defined('KARNAMA_TOKEN') ? KARNAMA_TOKEN : ''); }
+
+// Returns [http status, decoded body]. Status 0 = could not reach Karnama / no token.
+function karnamaCall(string $method, string $path, ?array $body = null): array {
+    $token = karnamaToken();
+    if ($token === '') return [0, ['success' => false, 'error' => ['message' => 'Karnama token is not configured.']]];
+    $ch = curl_init(karnamaPartnerBase() . $path);
+    $opts = [
+        CURLOPT_CUSTOMREQUEST => $method,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 10,
-    ]);
+        CURLOPT_TIMEOUT => 20,
+        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token, 'Content-Type: application/json', 'Accept: application/json'],
+    ];
+    if ($body !== null) $opts[CURLOPT_POSTFIELDS] = json_encode($body, JSON_UNESCAPED_UNICODE);
+    curl_setopt_array($ch, $opts);
     $raw = curl_exec($ch);
-    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    $boot = ($raw !== false) ? json_decode($raw, true) : null;
-    if ($status < 200 || $status >= 300 || empty($boot['success']) || empty($boot['token'])) {
-        jsonErr(502, 'ناتوانرێت پەیوەندی بە ڕاژەکاری سیڤی بکرێت. تکایە دواتر هەوڵبدەرەوە.');
-    }
-    return $boot['token'];
+    $data = $raw !== false ? json_decode($raw, true) : null;
+    return [$status, is_array($data) ? $data : ['success' => false]];
 }
 
-// ================================================================
-// Karnama integration: build a CV from Ish-khwaz's own "Make CV" page, with
-// the whole design-picking experience staying on Ish-khwaz itself.
-// POST /karnama/create-resume  { resume: {...schema-shaped CV data, incl.
-//   templateId/accentColor as chosen in Ish-khwaz's own template picker} }
-// Auto-provisions (or reuses) a Karnama account already linked to this
-// Ish-khwaz user and saves the resume there via Karnama's own real /resumes
-// endpoint — reusing its existing validation, premium-template gating, and
-// storage — purely so the plan-based CV limits stay enforced centrally and
-// the CV can be re-opened from Karnama later. No redirect, no separate
-// Karnama login screen; the actual template rendering and PDF export happen
-// entirely in Ish-khwaz's own UI.
-// ================================================================
-if (preg_match('#/karnama/create-resume$#', $uri) && $method === 'POST') {
-    $authUser = requireAuth($pdo);
-    $headers = getallheaders();
-    $rawToken = str_replace('Bearer ', '', $headers['Authorization'] ?? $headers['authorization'] ?? '');
-
-    $input = safeJson();
-    $resume = $input['resume'] ?? null;
-    if (!is_array($resume)) jsonErr(400, 'زانیاری سیڤی پێویستە.');
-
-    $karnamaToken = karnamaBootstrapToken($authUser, $rawToken);
-
-    // Deterministic, not random — one per Ishkhwaz user, always. A random id
-    // here meant every resubmit (retry after an error, double-tap, etc.)
-    // created a BRAND NEW resume on Karnama instead of updating the same
-    // one, silently eating into Karnama's own separate "N total resumes"
-    // plan cap until it was exhausted and every further attempt failed with
-    // an unrelated "upgrade your plan" error.
-    if (empty($resume['id'])) {
-        $resume['id'] = 'ishk_cv_' . $authUser['id'];
+// All templates Karnama offers (cached 10 minutes so listing them never slows a page down).
+function karnamaTemplates(): array {
+    $cache = sys_get_temp_dir() . '/ishkhwaz_karnama_templates.json';
+    if (is_file($cache) && time() - filemtime($cache) < 600) {
+        $c = json_decode((string)@file_get_contents($cache), true);
+        if (is_array($c) && $c) return $c;
     }
-    if (empty($resume['templateId'])) {
-        $resume['templateId'] = 'free-modern-minimal';
-    }
-    $ch = curl_init(KARNAMA_API_BASE . '/resumes');
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode(['resume' => $resume], JSON_UNESCAPED_UNICODE),
-        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $karnamaToken, 'Content-Type: application/json'],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 10,
-    ]);
-    $raw2 = curl_exec($ch);
-    $status2 = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    $saveRes = ($raw2 !== false) ? json_decode($raw2, true) : null;
-    if ($status2 < 200 || $status2 >= 300 || empty($saveRes['success'])) {
-        // Surface Karnama's own message (e.g. the premium-slot-limit text)
-        // through so the picker can show a real, specific error.
-        jsonErr($status2 >= 400 && $status2 < 500 ? $status2 : 502, $saveRes['message'] ?? 'سیڤیەکە پاشەکەوت نەکرا.');
-    }
-
-    echo json_encode(['success' => true, 'resumeId' => $resume['id']]);
-    exit(0);
+    [$st, $d] = karnamaCall('GET', '/templates');
+    $list = ($st === 200 && !empty($d['templates']) && is_array($d['templates'])) ? $d['templates'] : [];
+    if ($list) @file_put_contents($cache, json_encode($list, JSON_UNESCAPED_UNICODE));
+    elseif (is_file($cache)) { $c = json_decode((string)@file_get_contents($cache), true); if (is_array($c)) return $c; }
+    return $list;
 }
 
-// ================================================================
-// Karnama integration: premium CV design-slot status.
-// GET /karnama/status
-// Tells Ish-khwaz's own template picker how many premium ("pro-*") designs
-// this user may use and how many they've already used, so it can grey out
-// designs beyond that limit before the user picks one and hits a save error.
-// ================================================================
-if (preg_match('#/karnama/status$#', $uri) && $method === 'GET') {
-    $authUser = requireAuth($pdo);
-    $headers = getallheaders();
-    $rawToken = str_replace('Bearer ', '', $headers['Authorization'] ?? $headers['authorization'] ?? '');
-
-    $karnamaToken = karnamaBootstrapToken($authUser, $rawToken);
-
-    $ch = curl_init(KARNAMA_API_BASE . '/account/ishkhwaz-status');
-    curl_setopt_array($ch, [
-        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $karnamaToken],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 10,
-    ]);
-    $raw = curl_exec($ch);
-    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    $data = ($raw !== false) ? json_decode($raw, true) : null;
-    if ($status < 200 || $status >= 300 || empty($data['success'])) {
-        jsonErr(502, 'ناتوانرێت دۆخی سیڤی وەربگیرێت.');
+// Whitelists + trims everything we send to Karnama (they strip HTML too, this keeps our own rows tidy).
+function karnamaCleanCvData(array $d): array {
+    $t = fn($v, int $n) => is_scalar($v) ? mb_substr(trim(strip_tags((string)$v)), 0, $n) : '';
+    $pi = is_array($d['personalInfo'] ?? null) ? $d['personalInfo'] : [];
+    $out = ['personalInfo' => [], 'sections' => []];
+    foreach (['fullName' => 150, 'jobTitle' => 150, 'email' => 150, 'phone' => 40, 'address' => 200, 'city' => 100, 'country' => 100, 'website' => 200, 'linkedin' => 200, 'summary' => 2500] as $k => $n) {
+        $v = $t($pi[$k] ?? '', $n);
+        if ($v !== '') $out['personalInfo'][$k] = $v;
     }
+    $photo = is_string($pi['photo'] ?? null) ? trim($pi['photo']) : '';
+    if (preg_match('#^https://#i', $photo) && strlen($photo) <= 600) $out['personalInfo']['photo'] = $photo;
+    elseif (preg_match('#^data:image/(png|jpe?g|webp);base64,#i', $photo) && strlen($photo) <= 300000) $out['personalInfo']['photo'] = $photo;
 
-    echo json_encode([
-        'success' => true,
-        'premiumCvLimit' => $data['premiumCvLimit'] ?? 1,
-        'premiumCvUsed' => $data['premiumCvUsed'] ?? 0,
-    ]);
+    $secIn = is_array($d['sections'] ?? null) ? $d['sections'] : [];
+    $spec = [
+        'experience'     => ['company' => 150, 'role' => 150, 'startDate' => 10, 'endDate' => 10, 'location' => 100, 'description' => 1500],
+        'education'      => ['institution' => 150, 'degree' => 150, 'field' => 150, 'startDate' => 10, 'endDate' => 10, 'description' => 800],
+        'skills'         => ['name' => 80],
+        'languages'      => ['name' => 60, 'level' => 60],
+        'certifications' => ['name' => 150, 'issuer' => 150, 'date' => 20],
+        'projects'       => ['name' => 150, 'description' => 800],
+        'references'     => ['name' => 150, 'relation' => 100, 'phone' => 40, 'email' => 150],
+    ];
+    foreach ($spec as $sec => $fields) {
+        $rows = [];
+        foreach (array_slice(is_array($secIn[$sec] ?? null) ? $secIn[$sec] : [], 0, 40) as $item) {
+            if (!is_array($item)) continue;
+            $row = [];
+            foreach ($fields as $k => $n) { $v = $t($item[$k] ?? '', $n); if ($v !== '') $row[$k] = $v; }
+            if ($sec === 'experience') { $row['current'] = !empty($item['current']); }
+            if ($sec === 'skills') { $row['level'] = max(1, min(5, (int)($item['level'] ?? 4))); }
+            $main = ['experience' => 'role', 'education' => 'institution', 'skills' => 'name', 'languages' => 'name', 'certifications' => 'name', 'projects' => 'name', 'references' => 'name'][$sec];
+            if (($row[$main] ?? '') === '' && !($sec === 'experience' && ($row['company'] ?? '') !== '') && !($sec === 'education' && ($row['degree'] ?? '') !== '')) continue;
+            $rows[] = $row;
+        }
+        if ($rows) $out['sections'][$sec] = $rows;
+    }
+    return $out;
+}
+
+// Creates the hosted CV on Karnama and stores the row. Ends the request with a JSON error on failure.
+function karnamaCreateAndStore(PDO $pdo, array $user, string $title, string $templateId, string $accent, string $lang, array $data): array {
+    $clean = karnamaCleanCvData($data);
+    if (empty($clean['personalInfo']['fullName'])) jsonErr(400, 'ناوی تەواو پێویستە.');
+    $id = 'res_' . time() . rand(10, 99);
+    $body = ['language' => $lang, 'externalRef' => 'ishkhwaz-' . $id, 'ttlDays' => 365, 'data' => $clean];
+    if ($templateId !== '') $body['templateId'] = $templateId;
+    if ($accent !== '') $body['accentColor'] = $accent;
+    [$st, $res] = karnamaCall('POST', '/resumes', $body);
+    if ($st !== 201 && $st !== 200) jsonErr($st === 429 ? 429 : 502, $res['error']['message'] ?? 'سیڤیەکە دروست نەکرا، دووبارە هەوڵبدەرەوە.');
+    $r = $res['resume'] ?? [];
+    if (empty($r['id'])) jsonErr(502, 'وەڵامی Karnama تەواو نییە.');
+    $now = date('Y-m-d H:i:s');
+    $pdo->prepare('INSERT INTO resumes (id, user_id, title, template_id, resume_data, created_at, updated_at, karnama_id, view_url, embed_url, accent_color, language, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        ->execute([$id, $user['id'], mb_substr($title, 0, 150), $r['templateId'] ?? $templateId, json_encode($clean, JSON_UNESCAPED_UNICODE), $now, $now, $r['id'], $r['urls']['view'] ?? '', $r['urls']['embed'] ?? '', $r['accentColor'] ?? $accent, $r['language'] ?? $lang, $r['expiresAt'] ?? null]);
+    return ['id' => $id, 'title' => $title, 'template_id' => $r['templateId'] ?? $templateId, 'view_url' => $r['urls']['view'] ?? '', 'embed_url' => $r['urls']['embed'] ?? '', 'accent_color' => $r['accentColor'] ?? $accent, 'language' => $r['language'] ?? $lang, 'resume_data' => $clean];
+}
+
+// Templates the CV builder can offer (free ones for everyone, premium ones need a paid plan — the app shows the lock).
+if (preg_match('#/karnama/templates$#', $uri) && $method === 'GET') {
+    requireAuth($pdo);
+    $list = karnamaTemplates();
+    if (!$list) jsonErr(502, 'ناتوانرێت شێوازەکانی سیڤی بهێنرێن.');
+    echo json_encode(['success' => true, 'templates' => $list]);
     exit(0);
 }
 
