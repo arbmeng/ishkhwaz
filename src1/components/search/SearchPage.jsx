@@ -65,7 +65,7 @@ export const SearchPage = ({ initialTab = 'companies', onNavigate }) => {
       if (!map[name]) {
         const id = job.company_id || job.employer_id || job.user_id;
         const real = companies.find(c => String(c.id) === String(id));
-        map[name] = { id, name, logo: real?.company_logo || job.company_logo || job.companyLogo || '', cover: real?.company_cover || job.company_cover || '', governorateId: real?.governorate || job.governorate_id || 'sulaymaniyah', industry: real?.industry || liveCategories.find(c => c.id === job.category)?.name_ku || '', description: real?.bio || '', phone: job.company_phone || '', email: job.company_email || '', regNumber: real?.company_reg || job.company_reg || '', member_since: real?.created_at || null, verified: Boolean(real ? Number(real.verified) === 1 : job.company_verified), jobs: [] };
+        map[name] = { id, name, logo: real?.company_logo || job.company_logo || job.companyLogo || '', cover: real?.company_cover || job.company_cover || '', social_links: real?.social_links || null, governorateId: real?.governorate || job.governorate_id || 'sulaymaniyah', industry: real?.industry || liveCategories.find(c => c.id === job.category)?.name_ku || '', description: real?.bio || '', phone: job.company_phone || '', email: job.company_email || '', regNumber: real?.company_reg || job.company_reg || '', member_since: real?.created_at || null, verified: Boolean(real ? Number(real.verified) === 1 : job.company_verified), jobs: [] };
       }
       map[name].jobs.push(job);
     });

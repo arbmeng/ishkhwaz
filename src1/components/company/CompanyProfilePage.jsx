@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { PageHeader } from '../layout/PageHeader';
+import { SocialLinks } from '../ui/SocialLinks';
 import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { apiService } from '../../services/api';
@@ -672,6 +673,7 @@ export const CompanyProfilePage = ({
                     </p>
                   </div>
                 )}
+                <SocialLinks links={company.social_links} className="pt-4" />
 
                 <div className="mt-1">
                   {displayPhone && (

@@ -61,6 +61,14 @@ const SingleToast = ({ toast, onClose }) => {
         <div className="flex-1 pr-1">
           <h4 className="font-semibold text-sm leading-tight text-white mb-1">{toast.title}</h4>
           <p className="text-xs opacity-90 text-slate-200 leading-relaxed">{toast.message}</p>
+          {toast.action && (
+            <button
+              onClick={() => { toast.action.onClick?.(); onClose(); }}
+              className="mt-3 rounded-full bg-white px-4 py-2 text-xs font-bold text-[#0d5c50] shadow active:scale-95"
+            >
+              {toast.action.label}
+            </button>
+          )}
         </div>
         <button
           onClick={onClose}

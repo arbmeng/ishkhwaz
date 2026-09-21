@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, Suspense } from 'react';
+import { SocialLinks } from '../ui/SocialLinks';
 import { createPortal } from 'react-dom';
 import { soundService } from '../../services/soundService';
 import { useStore } from '../../context/StoreContext';
@@ -314,7 +315,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
   const roleLabel =
     profession || favCategories[0]?.name_ku || 'کارخواز';
 
-  const profileUrl = `${window.location.origin}/search/freelancers/${freelancer.id || ''}`;
+  const profileUrl = `${window.location.origin}/share/freelancer/${encodeURIComponent(freelancer.id || '')}`;
 
   const handleShare = () => {
     soundService.playTick?.();
@@ -564,6 +565,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                         {govDisplay}
                       </span>
                     </div>
+                    <SocialLinks links={freelancer.social_links} size="sm" onDark className="mt-3" />
                   </div>
                 </div>
               </div>

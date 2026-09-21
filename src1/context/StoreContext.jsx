@@ -44,12 +44,13 @@ export const StoreProvider = ({ children }) => {
     setSavedJobIds(parseJsonArray(user?.saved_jobs));
   }, [user?.id]);
 
-  const addToast = ({ title, message, type = 'info' }) => {
-    const id = 'toast_' + Date.now();
-    setToasts(prev => [...prev, { id, title, message, type }]);
+  // `action: { label, onClick }` adds a button to the toast (e.g. "Log in"); `duration` (ms) keeps it up longer.
+  const addToast = ({ title, message, type = 'info', action, duration }) => {
+    const id = 'toast_' + Date.now() + Math.random().toString(36).slice(2, 6);
+    setToasts(prev => [...prev, { id, title, message, type, action, duration }]);
     setTimeout(() => {
       removeToast(id);
-    }, 4000);
+    }, duration || 4000);
   };
 
   const removeToast = (id) => {

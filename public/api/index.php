@@ -1642,6 +1642,10 @@ foreach ([
     // by any live code path; that field only ever mattered per-application,
     // via applications.cv_url/resume_id). NULL means "no public CV set".
     "ALTER TABLE users ADD COLUMN public_resume_id VARCHAR(40) NULL",
+    // Profile extras: social links (JSON object), spoken languages (JSON array), education (JSON array).
+    "ALTER TABLE users ADD COLUMN social_links TEXT NULL",
+    "ALTER TABLE users ADD COLUMN languages TEXT NULL",
+    "ALTER TABLE users ADD COLUMN education TEXT NULL",
     "ALTER TABLE jobs ADD COLUMN sector VARCHAR(20) NULL",
     // Emailed 6-digit reset code (stored only as an HMAC, 10 min life, max 5 wrong tries) —
     // see /auth/forgot-password and /auth/verify-reset-otp.
@@ -2857,6 +2861,9 @@ if (preg_match('#/auth/me$#', $uri) && $method === 'GET') {
             'favorite_categories' => $authUser['favorite_categories'] ?? '[]',
             'saved_jobs'     => $authUser['saved_jobs'] ?? '[]',
             'experience'     => $authUser['experience'] ?? '[]',
+            'social_links'   => $authUser['social_links'] ?? null,
+            'languages'      => $authUser['languages'] ?? null,
+            'education'      => $authUser['education'] ?? null,
             'skills'         => $authUser['skills'] ?? '[]',
             'status'         => $authUser['status'] ?? 'active',
             'wallet_balance' => (int)$authUser['wallet_balance'],
@@ -2936,19 +2943,49 @@ if (preg_match('#/auth/me$#', $uri) && $method === 'POST') {
     if (is_array($hiringPrefs)) $hiringPrefs = json_encode($hiringPrefs, JSON_UNESCAPED_UNICODE);
     if (!is_string($hiringPrefs)) $hiringPrefs = $authUser['hiring_preferences'] ?? '{}';
 
+    // Social links: whitelisted keys only, plain text, at most 200 chars each; a website gets https:// if missing.
+    $socialLinks = $authUser['social_links'] ?? null;
+    if (is_array($input['social_links'] ?? null)) {
+        $clean = [];
+        foreach (['website', 'whatsapp', 'instagram', 'facebook', 'telegram', 'tiktok', 'linkedin', 'twitter', 'youtube', 'github', 'behance'] as $k) {
+            $v = trim(sanitize((string)($input['social_links'][$k] ?? ''), 200));
+            if ($v === '') continue;
+            if (in_array($k, ['website', 'facebook', 'linkedin', 'youtube', 'github', 'behance'], true) && !preg_match('#^https?://#i', $v) && strpos($v, '.') !== false) $v = 'https://' . $v;
+            $clean[$k] = $v;
+        }
+        $socialLinks = json_encode($clean, JSON_UNESCAPED_UNICODE);
+    }
+    $languages = $authUser['languages'] ?? null;
+    if (is_array($input['languages'] ?? null)) {
+        $languages = json_encode(array_slice(array_values(array_filter(array_map(fn($x) => sanitize((string)$x, 40), $input['languages']))), 0, 10), JSON_UNESCAPED_UNICODE);
+    }
+    $education = $authUser['education'] ?? null;
+    if (is_array($input['education'] ?? null)) {
+        $edu = [];
+        foreach (array_slice($input['education'], 0, 10) as $row) {
+            if (!is_array($row)) continue;
+            $t = sanitize((string)($row['title'] ?? ''), 150);
+            if ($t === '') continue;
+            $edu[] = ['title' => $t, 'place' => sanitize((string)($row['place'] ?? ''), 150), 'period' => sanitize((string)($row['period'] ?? ''), 40)];
+        }
+        $education = json_encode($edu, JSON_UNESCAPED_UNICODE);
+    }
+
     $pdo->prepare('
         UPDATE users SET
             name = ?, profession = ?, email = ?, governorate = ?, district = ?, sub_district = ?,
             bio = ?, avatar = ?, cover = ?, gender = ?, skills = ?,
             favorite_categories = ?, saved_jobs = ?, experience = ?, role = ?,
             company_name = ?, company_reg = ?, company_phone = ?, company_email = ?, industry = ?,
-            company_size = ?, company_type = ?, hiring_preferences = ?, company_logo = ?, company_cover = ?
+            company_size = ?, company_type = ?, hiring_preferences = ?, company_logo = ?, company_cover = ?,
+            social_links = ?, languages = ?, education = ?
         WHERE id = ?
     ')->execute([
         $name, $profession, $email, $governorate, $district, $subDistrict, $bio, $avatar, $cover, $gender, $skills,
         $favCats, $savedJobs, $experience, $role,
         $companyName, $companyReg, $companyPhone, $companyEmail, $industry,
         $companySize, $companyType, $hiringPrefs, $companyLogo, $companyCover,
+        $socialLinks, $languages, $education,
         $authUser['id'],
     ]);
 
@@ -2971,7 +3008,7 @@ if (preg_match('#/auth/me$#', $uri) && $method === 'POST') {
         }
     }
 
-    $updated = $pdo->prepare('SELECT id, name, profession, phone, email, role, gender, governorate, district, sub_district, bio, avatar, cover, status, wallet_balance, skills, favorite_categories, saved_jobs, experience, company_name, company_reg, company_phone, company_email, industry, company_size, company_type, hiring_preferences, company_logo, company_cover, created_at FROM users WHERE id = ?');
+    $updated = $pdo->prepare('SELECT id, name, profession, phone, email, role, gender, governorate, district, sub_district, bio, avatar, cover, status, wallet_balance, skills, favorite_categories, saved_jobs, experience, company_name, company_reg, company_phone, company_email, industry, company_size, company_type, hiring_preferences, company_logo, company_cover, social_links, languages, education, created_at FROM users WHERE id = ?');
     $updated->execute([$authUser['id']]);
 
     logActivity($pdo, $authUser['id'], 'profile_updated');
@@ -3049,6 +3086,8 @@ function renderSharePreview(string $title, string $description, string $image, s
     header('Content-Type: text/html; charset=utf-8');
     echo '<!DOCTYPE html><html><head><meta charset="utf-8">'
         . '<meta property="og:type" content="website">'
+        . '<meta property="og:site_name" content="ئیش خواز">'
+        . '<meta property="og:locale" content="ckb_IQ">'
         . '<meta property="og:title" content="' . $esc($title) . '">'
         . '<meta property="og:description" content="' . $esc($description) . '">'
         . '<meta property="og:image" content="' . $esc($image) . '">'
@@ -3064,16 +3103,46 @@ function renderSharePreview(string $title, string $description, string $image, s
 $origin = (($_SERVER['HTTPS'] ?? '') !== '' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'ishkhwaz.zeraworld.com');
 $defaultShareImage = $origin . '/icon-512x512-v2.png';
 
-// Logos/covers are stored as inline base64 data: URIs (no real image
-// hosting in this app), which og:image cannot use at all — crawlers need
-// a real fetchable HTTP(S) URL, so a data: URI here means "no usable image."
-function realImageUrlOrFallback(?string $img, string $fallback): string {
-    if ($img && stripos($img, 'data:') !== 0) return $img;
-    return $fallback;
+// Logos/covers/avatars are stored as inline base64 data: URIs (no real image hosting in this app), which
+// og:image cannot use at all - crawlers need a real fetchable HTTP(S) URL. So a data: URI is served back
+// as a real image from /share/img/... and that URL goes into og:image instead.
+function shareImageUrl(string $origin, string $type, string $id, string $field, ?string $val, string $fallback): string {
+    if (!$val) return $fallback;
+    if (stripos($val, 'data:') !== 0) return $val;
+    return $origin . '/share/img/' . $type . '/' . rawurlencode($id) . '/' . $field . '.jpg';
+}
+
+if (preg_match('#/share/img/(user|job)/([^/]+)/(avatar|logo|cover)(?:\.\w+)?$#', $uri, $m) && $method === 'GET') {
+    [$_, $imgType, $imgId, $imgField] = $m;
+    $imgId = urldecode($imgId);
+    $val = null;
+    if ($imgType === 'job') {
+        $st = $pdo->prepare('SELECT company_logo AS v FROM jobs WHERE id = ?');
+    } elseif ($imgField === 'avatar') {
+        $st = $pdo->prepare('SELECT avatar AS v FROM users WHERE id = ?');
+    } elseif ($imgField === 'logo') {
+        $st = $pdo->prepare('SELECT company_logo AS v FROM users WHERE id = ?');
+    } else {
+        $st = $pdo->prepare("SELECT COALESCE(NULLIF(company_cover, ''), NULLIF(cover, ''), NULLIF(company_logo, ''), NULLIF(avatar, '')) AS v FROM users WHERE id = ?");
+    }
+    $st->execute([$imgId]);
+    $row = $st->fetch();
+    $val = $row['v'] ?? null;
+    if ($val && preg_match('#^data:image/(png|jpe?g|webp|gif);base64,(.+)$#is', $val, $mm)) {
+        $bin = base64_decode($mm[2], true);
+        if ($bin !== false) {
+            header('Content-Type: image/' . (strtolower($mm[1]) === 'jpg' ? 'jpeg' : strtolower($mm[1])));
+            header('Cache-Control: public, max-age=3600');
+            echo $bin;
+            exit(0);
+        }
+    }
+    header('Location: ' . $defaultShareImage, true, 302);
+    exit(0);
 }
 
 if (preg_match('#/share/job/([^/]+)$#', $uri, $m) && $method === 'GET') {
-    $jobId = $m[1];
+    $jobId = urldecode($m[1]);
     $stmt = $pdo->prepare('SELECT title_ku, description, company_name, company_logo FROM jobs WHERE id = ?');
     $stmt->execute([$jobId]);
     $job = $stmt->fetch();
@@ -3081,8 +3150,8 @@ if (preg_match('#/share/job/([^/]+)$#', $uri, $m) && $method === 'GET') {
 
     $title = ($job['title_ku'] ?: 'هەلی کار') . ' — ' . ($job['company_name'] ?: 'ئیش خواز');
     $desc = mb_substr($job['description'] ?: 'بینینی وردەکاری ئەم هەلی کارە لە ئیش خواز.', 0, 200);
-    $image = realImageUrlOrFallback($job['company_logo'], $defaultShareImage);
-    $humanUrl = $origin . '/search?company=' . urlencode($job['company_name'] ?: '') . '&job=' . urlencode($jobId);
+    $image = shareImageUrl($origin, 'job', $jobId, 'logo', $job['company_logo'], $defaultShareImage);
+    $humanUrl = $origin . '/app/search?company=' . urlencode($job['company_name'] ?: '') . '&job=' . urlencode($jobId);
 
     if (isLinkPreviewCrawler()) {
         renderSharePreview($title, $desc, $image, $humanUrl);
@@ -3093,16 +3162,39 @@ if (preg_match('#/share/job/([^/]+)$#', $uri, $m) && $method === 'GET') {
 }
 
 if (preg_match('#/share/company/([^/]+)$#', $uri, $m) && $method === 'GET') {
-    $companyId = $m[1];
-    $stmt = $pdo->prepare("SELECT company_name, company_logo, company_cover, industry FROM users WHERE id = ? AND role = 'employer'");
+    $companyId = urldecode($m[1]);
+    $stmt = $pdo->prepare("SELECT id, company_name, company_logo, company_cover, industry, bio FROM users WHERE id = ? AND role = 'employer'");
     $stmt->execute([$companyId]);
     $company = $stmt->fetch();
     if (!$company) { http_response_code(404); echo 'Company not found'; exit(0); }
 
     $title = $company['company_name'] ?: 'کۆمپانیا لە ئیش خواز';
-    $desc = $company['industry'] ? "کۆمپانیایەک لە بواری {$company['industry']} — بینینی هەلی کارەکانیان لە ئیش خواز." : 'بینینی پرۆفایل و هەلی کارەکانی ئەم کۆمپانیایە لە ئیش خواز.';
-    $image = realImageUrlOrFallback($company['company_cover'] ?: $company['company_logo'], $defaultShareImage);
-    $humanUrl = $origin . '/search?company=' . urlencode($company['company_name'] ?: '');
+    $desc = $company['bio'] ? mb_substr($company['bio'], 0, 200)
+        : ($company['industry'] ? "کۆمپانیایەک لە بواری {$company['industry']} — بینینی هەلی کارەکانیان لە ئیش خواز." : 'بینینی پرۆفایل و هەلی کارەکانی ئەم کۆمپانیایە لە ئیش خواز.');
+    $image = shareImageUrl($origin, 'user', $companyId, 'cover', ($company['company_cover'] ?: $company['company_logo']) ?: null, $defaultShareImage);
+    $humanUrl = $origin . '/app/search?company=' . urlencode($company['company_name'] ?: '');
+
+    if (isLinkPreviewCrawler()) {
+        renderSharePreview($title, $desc, $image, $humanUrl);
+    } else {
+        header('Location: ' . $humanUrl, true, 302);
+    }
+    exit(0);
+}
+
+if (preg_match('#/share/freelancer/([^/]+)$#', $uri, $m) && $method === 'GET') {
+    $fid = urldecode($m[1]);
+    $stmt = $pdo->prepare("SELECT name, profession, bio, avatar, skills, governorate FROM users WHERE id = ? AND role = 'freelancer' AND status = 'active'");
+    $stmt->execute([$fid]);
+    $f = $stmt->fetch();
+    if (!$f) { http_response_code(404); echo 'Profile not found'; exit(0); }
+
+    $skills = json_decode($f['skills'] ?? '[]', true);
+    $skillText = is_array($skills) && $skills ? implode('، ', array_slice($skills, 0, 6)) : '';
+    $title = ($f['name'] ?: 'کارخواز') . ' — ' . ($f['profession'] ?: 'کارخواز لە ئیش خواز');
+    $desc = mb_substr($f['bio'] ?: ($skillText ? 'شارەزایی: ' . $skillText : 'بینینی پرۆفایل و کارنامەی ئەم کارخوازە لە ئیش خواز.'), 0, 200);
+    $image = shareImageUrl($origin, 'user', $fid, 'avatar', $f['avatar'] ?: null, $defaultShareImage);
+    $humanUrl = $origin . '/app/search/freelancers/' . rawurlencode($fid);
 
     if (isLinkPreviewCrawler()) {
         renderSharePreview($title, $desc, $image, $humanUrl);
@@ -3392,7 +3484,7 @@ if (preg_match('#/jobs/boost$#', $uri) && $method === 'POST') {
 if (preg_match('#/freelancers$#', $uri) && $method === 'GET') {
     // Only expose safe public fields — never expose phone/email raw
     $stmt = $pdo->query("
-        SELECT id, name, profession, role, gender, governorate, district, sub_district, skills, bio, avatar, cover, status, profile_views, plan, plan_boost_until, created_at, experience, favorite_categories, verified, public_resume_id
+        SELECT id, name, profession, role, gender, governorate, district, sub_district, skills, bio, avatar, cover, status, profile_views, plan, plan_boost_until, created_at, experience, favorite_categories, verified, public_resume_id, social_links, languages, education
         FROM users WHERE role = 'freelancer' AND status = 'active'
         ORDER BY (plan_boost_until IS NOT NULL AND plan_boost_until > NOW()) DESC, created_at DESC
     ");
@@ -3411,7 +3503,7 @@ if (preg_match('#/companies$#', $uri) && $method === 'GET') {
     $stmt = $pdo->query("
         SELECT id, name, company_name, industry, bio, company_logo, company_cover,
                governorate, company_reg, company_size, company_type, verified,
-               profile_views, plan, created_at
+               profile_views, plan, created_at, social_links
         FROM users WHERE role = 'employer' AND status = 'active'
         ORDER BY created_at DESC
     ");

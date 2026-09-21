@@ -11,6 +11,7 @@ import { pushService } from '../../services/pushService';
 import { AboutModal } from '../layout/AboutModal';
 import { PlanBadge } from '../ui/PlanBadge';
 import { PageHeader } from '../layout/PageHeader';
+import { SocialLinks, SOCIAL_FIELDS, parseSocial } from '../ui/SocialLinks';
 import { canSeePlans } from '../../config/features';
 import {
   MessageCircle, Settings, Share2, Camera, FileText, Eye, CheckCircle2, Save, Pencil, ChevronRight,
@@ -185,6 +186,15 @@ export const UserProfilePage = ({ onNavigate }) => {
   const [expDesc, setExpDesc] = useState('');
   const [expLink, setExpLink] = useState('');
 
+  /* ── social links + extra details ── */
+  const [social, setSocial] = useState({});
+  const [languages, setLanguages] = useState([]);
+  const [langInput, setLangInput] = useState('');
+  const [education, setEducation] = useState([]);
+  const [eduTitle, setEduTitle] = useState('');
+  const [eduPlace, setEduPlace] = useState('');
+  const [eduPeriod, setEduPeriod] = useState('');
+
   const avatarRef = useRef(null);
   const coverRef = useRef(null);
 
@@ -208,6 +218,9 @@ export const UserProfilePage = ({ onNavigate }) => {
     if (sk.length) setSkills(sk);
     const ex = parseJsonArray(user.experiences || user.work_history);
     if (ex.length) setExperiences(ex);
+    setSocial(parseSocial(user.social_links));
+    setLanguages(parseJsonArray(user.languages));
+    setEducation(parseJsonArray(user.education));
   }, [user?.id, isEmployer]);
 
   /* ── push check ── */
@@ -294,8 +307,8 @@ export const UserProfilePage = ({ onNavigate }) => {
   const handleShare = () => {
     soundService.playTick?.();
     const link = isEmployer
-      ? `${window.location.origin}/search?company=${encodeURIComponent(displayName)}`
-      : `${window.location.origin}/search/freelancers/${user?.id || ''}`;
+      ? `${window.location.origin}/share/company/${encodeURIComponent(user?.id || '')}`
+      : `${window.location.origin}/share/freelancer/${encodeURIComponent(user?.id || '')}`;
 
     if (navigator.share) {
       navigator.share({ title: `${displayName} — ئیش خواز`, url: link }).catch(() => { });
@@ -394,6 +407,7 @@ export const UserProfilePage = ({ onNavigate }) => {
       districtId: distId,
       subDistrictId: subId,
       fullLocation: location,
+      social_links: social,
     } : {
       name: name || user?.name,
       profession: profession || 'کارخواز',
@@ -411,6 +425,9 @@ export const UserProfilePage = ({ onNavigate }) => {
       fullLocation: location,
       skills,
       experiences,
+      social_links: social,
+      languages,
+      education,
     };
 
     if (updateUserProfile) {
@@ -640,8 +657,27 @@ export const UserProfilePage = ({ onNavigate }) => {
           <div className="ap-place"><MapPin className="w-4 h-4" />{location || 'سلێمانی'}{joinYear ? ` · ئەندام لە ${joinYear}` : ''}</div>
         </section>
 
+        {Object.values(parseSocial(user?.social_links)).some(Boolean) && (
+          <section className="ap-card">
+            <div className="ap-card-head"><span>تۆڕە کۆمەڵایەتییەکان</span><button onClick={() => setShowEdit(true)}>دەستکاری</button></div>
+            <SocialLinks links={user?.social_links} />
+          </section>
+        )}
+
         {isFreelancer && (
           <>
+            {(parseJsonArray(user?.languages).length > 0 || parseJsonArray(user?.education).length > 0) && (
+              <section className="ap-card">
+                <div className="ap-card-head"><span>زمان و خوێندن</span><button onClick={() => setShowEdit(true)}>دەستکاری</button></div>
+                {parseJsonArray(user?.languages).length > 0 && <div className="ap-chips" style={{ marginBottom: 10 }}>{parseJsonArray(user.languages).map(l => <span key={l}>{l}</span>)}</div>}
+                {parseJsonArray(user?.education).map((e, i) => (
+                  <div className="ap-exp" key={i} style={{ marginTop: 8 }}>
+                    <span className="ap-dot" />
+                    <div><div className="ap-exp-top"><strong>{e.title}</strong><small>{e.period}</small></div>{e.place && <p>{e.place}</p>}</div>
+                  </div>
+                ))}
+              </section>
+            )}
             <section className="ap-card">
               <div className="ap-card-head"><span>شارەزایی</span><button onClick={() => setShowEdit(true)}>زیادکردن</button></div>
               <div className="ap-chips">
@@ -704,6 +740,7 @@ export const UserProfilePage = ({ onNavigate }) => {
       { id: 'company_info', label: 'زانیاری کۆمپانیا', icon: Building2 },
       { id: 'location', label: 'شوێن و ناونیشان', icon: MapPin },
       { id: 'branding', label: 'لۆگۆ و کەڤەر', icon: Camera },
+      { id: 'social', label: 'تۆڕە کۆمەڵایەتییەکان', icon: Globe2 },
       { id: 'settings', label: 'ڕێکخستنەکان', icon: Settings },
     ] : [
       { id: 'basic', label: 'زانیاری بنەڕەتی', icon: User },
@@ -712,6 +749,8 @@ export const UserProfilePage = ({ onNavigate }) => {
       { id: 'skills', label: 'شارەزاییەکان', icon: Layers },
       { id: 'experience', label: 'مێژووی کار', icon: Briefcase },
       { id: 'cv', label: 'کارنامە (CV)', icon: FileText },
+      { id: 'more', label: 'زمان و خوێندن', icon: Award },
+      { id: 'social', label: 'تۆڕە کۆمەڵایەتییەکان', icon: Globe2 },
       { id: 'settings', label: 'ڕێکخستن', icon: Settings },
     ];
 
@@ -1044,6 +1083,60 @@ export const UserProfilePage = ({ onNavigate }) => {
                     <button type="button" onClick={() => { setShowEdit(false); onNavigate?.('resumes'); }} className="px-5 py-2.5 rounded-xl text-white text-xs font-black transition" style={{ background: TEAL }}>
                       چوون بۆ بەڕێوەبردنی کارنامەکان →
                     </button>
+                  </SectionCard>
+                </div>
+              )}
+
+              {/* ── TAB: SOCIAL LINKS (both roles) ── */}
+              {activeSection === 'social' && (
+                <div className="space-y-4 animate-fadeIn">
+                  <SectionCard title="تۆڕە کۆمەڵایەتییەکان و بەستەرەکان" icon={Globe2}>
+                    <p className="text-[11px] font-medium leading-6" style={{ color: MUTED }}>ئەوانەی پڕی دەکەیتەوە لەسەر پڕۆفایلەکەت بۆ هەموو کەسێک دەردەکەون. یوزەرنەیم یان بەستەری تەواو بنووسە.</p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {SOCIAL_FIELDS.map(({ key, label, placeholder, icon: SIcon, color }) => (
+                        <label key={key} className="block">
+                          <span className="mb-1.5 flex items-center gap-1.5 text-xs font-bold" style={{ color: TXT }}><SIcon className="h-3.5 w-3.5" style={{ color }} />{label}</span>
+                          <input value={social[key] || ''} onChange={e => setSocial(prev => ({ ...prev, [key]: e.target.value }))} dir="ltr" placeholder={placeholder} className={`${fieldCls} ${fieldFocus} text-left`} style={fieldStyle} />
+                        </label>
+                      ))}
+                    </div>
+                  </SectionCard>
+                </div>
+              )}
+
+              {/* ── TAB: LANGUAGES + EDUCATION (freelancer) ── */}
+              {activeSection === 'more' && (
+                <div className="space-y-4 animate-fadeIn">
+                  <SectionCard title="زمانەکان" icon={Globe2}>
+                    <div className="flex gap-2">
+                      <input value={langInput} onChange={e => setLangInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); const v = langInput.trim(); if (v && !languages.includes(v)) setLanguages(p => [...p, v]); setLangInput(''); } }}
+                        placeholder="نموونە: کوردی، عەرەبی، ئینگلیزی..." className={`${fieldCls} ${fieldFocus} flex-1`} style={fieldStyle} />
+                      <button type="button" onClick={() => { const v = langInput.trim(); if (v && !languages.includes(v)) setLanguages(p => [...p, v]); setLangInput(''); }} className="shrink-0 rounded-full px-5 text-xs font-bold text-white" style={{ background: TEAL }}>زیادکردن</button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {languages.map(l => (
+                        <span key={l} className="flex items-center gap-1.5 rounded-full border bg-white px-3 py-1.5 text-xs font-bold" style={{ borderColor: '#dce5e1' }}>{l}
+                          <button type="button" onClick={() => setLanguages(p => p.filter(x => x !== l))} className="text-stone-400 hover:text-rose-500"><X className="h-3.5 w-3.5" /></button></span>
+                      ))}
+                      {languages.length === 0 && <span className="text-xs font-bold" style={{ color: MUTED }}>هیچ زمانێک زیاد نەکراوە.</span>}
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard title="خوێندن و بڕوانامە" icon={Award}>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <input value={eduTitle} onChange={e => setEduTitle(e.target.value)} placeholder="بڕوانامە / بەش *" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                      <input value={eduPlace} onChange={e => setEduPlace(e.target.value)} placeholder="زانکۆ / پەیمانگا" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                    </div>
+                    <input value={eduPeriod} onChange={e => setEduPeriod(e.target.value)} placeholder="ماوە (نموونە: 2018 — 2022)" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                    <button type="button" onClick={() => { if (!eduTitle.trim()) return; setEducation(p => [...p, { title: eduTitle.trim(), place: eduPlace.trim(), period: eduPeriod.trim() }]); setEduTitle(''); setEduPlace(''); setEduPeriod(''); }}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-full py-3 text-xs font-bold text-white" style={{ background: TEAL }}><Plus className="h-4 w-4" />زیادکردنی بڕوانامە</button>
+                    {education.map((e, i) => (
+                      <div key={i} className="flex items-start justify-between gap-3 rounded-2xl border bg-white p-3.5" style={{ borderColor: '#e4eae7' }}>
+                        <button type="button" onClick={() => setEducation(p => p.filter((_, x) => x !== i))} className="p-1 text-stone-400 hover:text-rose-500"><Trash2 className="h-4 w-4" /></button>
+                        <div className="min-w-0 flex-1 text-right"><div className="text-xs font-bold" style={{ color: TXT }}>{e.title}</div><div className="mt-0.5 text-[11px]" style={{ color: MUTED }}>{[e.place, e.period].filter(Boolean).join(' · ')}</div></div>
+                      </div>
+                    ))}
                   </SectionCard>
                 </div>
               )}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { StoreProvider } from './context/StoreContext';
+import { StoreProvider, useStore } from './context/StoreContext';
 import { BottomNavbar } from './components/navigation/BottomNavbar';
 import { DesktopHeaderNav } from './components/navigation/DesktopHeaderNav';
 import { JobFeed } from './components/freelancer/JobFeed';
@@ -52,6 +52,7 @@ const getJobIdFromUrl = () => {
 
 function MainAppContent() {
   const { user, token, openAuthModal, needsProfileCompletion, clearNeedsProfileCompletion } = useAuth();
+  const { addToast } = useStore();
   const [isPostJobModalOpen, setIsPostJobModalOpen] = useState(false);
   // Draft CV data collected in KarnamaCVPage's wizard, handed off to the
   // in-app template picker — nothing leaves Ish-khwaz until the user saves.
@@ -180,6 +181,17 @@ function MainAppContent() {
   // current history entry instead of adding one (used to turn a legacy
   // /search?...&job= share link into the /jobs/{id} page without a Back loop).
   const setActiveTab = (tabId, params) => {
+    // A guest tapping Profile / Plans / Messages... gets a toast with a "log in" button instead of being thrown at the login page.
+    if (!user && !PUBLIC_TABS.includes(tabId)) {
+      addToast?.({
+        title: 'پێویستە بچیتە ژوورەوە',
+        message: 'بۆ بینینی ئەم بەشە تکایە چوونەژوورەوە بکە.',
+        type: 'info',
+        duration: 7000,
+        action: { label: 'چوونەژوورەوە', onClick: () => setActiveTab('login') },
+      });
+      return;
+    }
     if ((tabId === 'job_view' || tabId === 'job_detail') && params?.jobId) setViewJobId(String(params.jobId));
     setActiveTabState(tabId);
     if (typeof window !== 'undefined') {
