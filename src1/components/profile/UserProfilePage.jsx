@@ -579,7 +579,7 @@ export const UserProfilePage = ({ onNavigate }) => {
         <header className="ap-top">
           <h1 className="ap-title">{isEmployer ? 'پڕۆفایلی کۆمپانیا' : 'پڕۆفایل'}</h1>
           <div className="ap-top-actions">
-            <button type="button" className="ap-circle" onClick={handleShare} aria-label="هاوبەشکردن"><Share2 className="w-[18px] h-[18px]" /></button>
+            <button type="button" className="ap-circle lg:hidden" onClick={handleShare} aria-label="هاوبەشکردن"><Share2 className="w-[18px] h-[18px]" /></button>
           </div>
         </header>
 

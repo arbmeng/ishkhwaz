@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Globe, MapPin, Send, CheckCircle2, MessageSquareText, Phone, User } from 'lucide-react';
+import { Mail, Globe, Send, CheckCircle2, MessageSquareText, Phone, User } from 'lucide-react';
 import { PageHeader } from './PageHeader';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
@@ -14,7 +14,7 @@ const MAX = 2000;
 const INFO = [
   { icon: Mail, label: 'ئیمەیڵ', value: 'info@ishkhwaz.iq', href: 'mailto:info@ishkhwaz.iq', ltr: true },
   { icon: Globe, label: 'ماڵپەڕ', value: 'ishkhwaz.zeraworld.com', href: 'https://ishkhwaz.zeraworld.com', ltr: true },
-  { icon: MapPin, label: 'ناوچە', value: 'سلێمانی، هەولێر، دهۆک، هەڵەبجە و کەرکووک' },
+  { icon: Phone, label: 'ژمارەی مۆبایل', value: '+964 772 306 0909', href: 'tel:+9647723060909', ltr: true },
 ];
 
 const inputCls = 'w-full rounded-2xl bg-[#f6f9f8] border border-transparent px-4 py-3.5 text-[13px] font-medium text-[#111d1a] outline-none transition placeholder:text-[#9aaaa4] focus:bg-white focus:border-[#12796b]/40 focus:shadow-[0_0_0_4px_rgba(18,121,107,.08)]';

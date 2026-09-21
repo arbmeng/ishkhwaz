@@ -1,6 +1,5 @@
 import React from 'react';
-import { Briefcase, Building2, MapPin, MessageSquareText, ShieldCheck, FileText, Search } from 'lucide-react';
-import { PageHeader } from './PageHeader';
+import { ArrowRight, Briefcase, Building2, MapPin, MessageSquareText, ShieldCheck, FileText, Search } from 'lucide-react';
 
 const NK = "'IBM Plex Sans Arabic','Noto Kufi Arabic','Vazirmatn',system-ui,sans-serif";
 const GRAD = 'linear-gradient(155deg,#12897a 0%,#0d6a5d 48%,#083f37 100%)';
@@ -20,12 +19,12 @@ const POINTS = [
 
 export const AboutPage = ({ onBack, onNavigate }) => (
   <div dir="rtl" className="min-h-screen bg-[#f4f7f6] text-right text-[#111d1a]" style={{ fontFamily: NK }}>
-    <PageHeader title="دەربارەی ئیش خواز" onBack={onBack} />
-
     <section className="relative overflow-hidden text-white" style={{ background: GRAD }}>
       <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#43d1b8]/25 blur-3xl" />
       <div className="pointer-events-none absolute inset-0 opacity-[.07]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.9) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.9) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
-      <div className="relative mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-20">
+      <div className="relative mx-auto max-w-5xl px-4 pb-12 sm:px-6 sm:pb-20" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+        {/* phones: the back button lives inside the green card; on PC the site header is enough */}
+        <button type="button" onClick={onBack} aria-label="گەڕانەوە" className="mb-6 grid h-11 w-11 place-items-center rounded-2xl bg-white/15 backdrop-blur active:scale-95 lg:hidden"><ArrowRight className="h-5 w-5" /></button>
         <div className="mb-5 grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-white shadow-lg"><img src="/logo-flat.png" alt="" className="h-10 w-auto" /></div>
         <h1 className="max-w-2xl text-[30px] font-bold leading-[1.5] sm:text-[44px]">پلاتفۆرمی کار و دۆزینەوەی ئیش لە کوردستان</h1>
         <p className="mt-4 max-w-2xl text-[14px] leading-8 text-white/75 sm:text-[16px]">
