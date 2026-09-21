@@ -185,6 +185,7 @@ export const UserProfilePage = ({ onNavigate }) => {
   const [skillInput, setSkillInput] = useState('');
   const [experiences, setExperiences] = useState([]);
   const [expTitle, setExpTitle] = useState('');
+  const [expCompany, setExpCompany] = useState('');
   const [expPeriod, setExpPeriod] = useState('');
   const [expDesc, setExpDesc] = useState('');
   const [expLink, setExpLink] = useState('');
@@ -387,12 +388,13 @@ export const UserProfilePage = ({ onNavigate }) => {
     setExperiences(p => [{
       id: `exp-${Date.now()}`,
       title: expTitle.trim(),
+      company: expCompany.trim(),
       period: expPeriod.trim() || '2024 — ئێستا',
       description: expDesc.trim() || '',
       link: expLink.trim() || '',
       current: false,
     }, ...p]);
-    setExpTitle(''); setExpPeriod(''); setExpDesc(''); setExpLink('');
+    setExpTitle(''); setExpCompany(''); setExpPeriod(''); setExpDesc(''); setExpLink('');
   };
 
   const removeExperience = (idToRemove) => {
@@ -942,6 +944,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                   <SectionCard title="زیادکردنی ئەزموونی نوێ" icon={Plus}>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <input value={expTitle} onChange={e => setExpTitle(e.target.value)} placeholder="ناونیشانی کار / پڕۆژە *" className={`${fieldCls} ${fieldFocus} py-2.5`} style={fieldStyle} />
+                      <input value={expCompany} onChange={e => setExpCompany(e.target.value)} placeholder="ناوی کۆمپانیا / شوێنی کار" className={`${fieldCls} ${fieldFocus} py-2.5`} style={fieldStyle} />
                       <input value={expPeriod} onChange={e => setExpPeriod(e.target.value)} placeholder="ماوە (نموونە: 2022 — 2024)" className={`${fieldCls} ${fieldFocus} py-2.5`} style={fieldStyle} />
                     </div>
                     <input value={expLink} onChange={e => setExpLink(e.target.value)} placeholder="لینکی پڕۆژە یان پۆرتفۆلیۆ (ئارەزوومەندانە)" dir="ltr" className={`${fieldCls} ${fieldFocus} py-2.5`} style={fieldStyle} />
@@ -958,7 +961,7 @@ export const UserProfilePage = ({ onNavigate }) => {
                       <div key={exp.id || idx} className="p-3.5 rounded-xl bg-white border flex items-start justify-between gap-3 shadow-2xs" style={{ borderColor: '#e6e4ea' }}>
                         <button type="button" onClick={() => removeExperience(idx)} className="text-stone-400 hover:text-rose-500 transition p-1"><Trash2 className="w-4 h-4" /></button>
                         <div className="text-right flex-1 min-w-0">
-                          <div className="text-xs font-black" style={{ color: TXT }}>{exp.title}</div>
+                          <div className="text-xs font-black" style={{ color: TXT }}>{exp.title}{exp.company ? ` · ${exp.company}` : ''}</div>
                           <div className="text-[11px] font-mono mt-0.5" style={{ color: MUTED }}>{exp.period}</div>
                           {exp.description && <p className="text-[11px] mt-1" style={{ color: SUB }}>{exp.description}</p>}
                         </div>

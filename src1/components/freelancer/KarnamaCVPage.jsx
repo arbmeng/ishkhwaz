@@ -49,8 +49,12 @@ const prefillFromProfile = (user) => {
       website: social.website || '',
       linkedin: social.linkedin || '',
     },
-    experience: asList(user?.experience).map(e => ({ ...emptyExperience(), role: e.title || '', description: [e.period, e.description].filter(Boolean).join(' — ') })),
-    education: asList(user?.education).filter(e => e && (e.title || e.place)).map(e => ({ ...emptyEducation(), degree: e.title || '', institution: e.place || '', description: e.period || '' })),
+    experience: asList(user?.experience).map(e => {
+      const yrs = String(e.period || '').match(/\d{4}(?:[-/.]\d{1,2})?/g) || [];
+      const now = /ئێستا|present|now/i.test(String(e.period || ''));
+      return { ...emptyExperience(), company: e.company || '', role: e.title || '', startDate: yrs[0] || '', endDate: now ? '' : (yrs[1] || ''), current: now, description: e.description || '' };
+    }),
+    education: asList(user?.education).filter(e => e && (e.title || e.place)).map(e => { const yrs = String(e.period || '').match(/\d{4}(?:[-/.]\d{1,2})?/g) || []; return { ...emptyEducation(), degree: e.title || '', institution: e.place || '', startDate: yrs[0] || '', endDate: yrs[1] || '', description: yrs.length ? '' : (e.period || '') }; }),
     skills: asList(user?.skills).filter(Boolean).map(n => ({ ...emptySkill(), name: String(n), level: 4 })),
     languages: asList(user?.languages).filter(Boolean).map(n => ({ ...emptyLanguage(), name: String(n), level: 'باش' })),
   };
@@ -204,14 +208,30 @@ export const KarnamaCVPage = ({ onBack, onProceed, resumeId = null }) => {
           return;
         }
       }
+      // NEW CV: the account settings are the base, the latest saved CV adds what settings don't have
+      // (certificates, projects, references, address), and only what the person actually typed in an unfinished draft is kept on top.
+      const [fresh, saved] = await Promise.all([token ? apiService.me(token) : null, token ? apiService.getResumes(token) : null]);
+      const profile = { ...(user || {}), ...(fresh?.user || {}) };
+      const base = prefillFromProfile(profile);
+      const last = (saved?.resumes || [])[0]?.resume_data || {};
+      const lastSec = last.sections || {};
       let draft = null;
       try { const raw = localStorage.getItem(DRAFT_KEY); if (raw) draft = JSON.parse(raw); } catch { /* ignore a corrupt draft */ }
-      if (draft && (draft.personal || draft.experience)) {
-        apply({ personal: draft.personal, experience: draft.experience, education: draft.education, skills: draft.skills, languages: draft.languages, certifications: draft.certifications, projects: draft.projects, references: draft.references });
-      } else if (user) {
-        apply(prefillFromProfile(user));
-        setFromProfile(true);
-      }
+      const filled = (v) => Array.isArray(v) && v.length > 0;
+      const pick = (d, b, l) => (filled(d) ? d : filled(b) ? b : (l ? withIds(l) : []));
+      const nonEmpty = (o) => Object.fromEntries(Object.entries(o || {}).filter(([, v]) => String(v || '').trim() !== ''));
+      const lastPersonal = nonEmpty(last.personalInfo);
+      apply({
+        personal: { ...base.personal, ...lastPersonal, ...nonEmpty(base.personal), ...nonEmpty(draft?.personal && Object.fromEntries(Object.entries(draft.personal).filter(([k, v]) => v !== base.personal[k] && k !== 'country'))) },
+        experience: pick(draft?.experience, base.experience, lastSec.experience),
+        education: pick(draft?.education, base.education, lastSec.education),
+        skills: pick(draft?.skills, base.skills, lastSec.skills),
+        languages: pick(draft?.languages, base.languages, lastSec.languages),
+        certifications: pick(draft?.certifications, [], lastSec.certifications),
+        projects: pick(draft?.projects, [], lastSec.projects),
+        references: pick(draft?.references, [], lastSec.references),
+      });
+      setFromProfile(base.experience.length + base.education.length + base.skills.length + base.languages.length > 0 || !!base.personal.fullName);
       if (!cancelled) setRestored(true);
     })();
     return () => { cancelled = true; };
@@ -224,6 +244,15 @@ export const KarnamaCVPage = ({ onBack, onProceed, resumeId = null }) => {
       localStorage.setItem(DRAFT_KEY, JSON.stringify({ personal, experience, education, skills, languages, certifications, projects, references }));
     } catch { /* storage full/unavailable — fail silent, nothing user-facing depends on this */ }
   }, [restored, personal, experience, education, skills, languages, certifications, projects, references]);
+
+  const reloadFromProfile = async () => {
+    soundService.playTick?.();
+    const fresh = token ? await apiService.me(token) : null;
+    const base = prefillFromProfile({ ...(user || {}), ...(fresh?.user || {}) });
+    setPersonal(prev => ({ ...prev, ...base.personal }));
+    setExperience(base.experience); setEducation(base.education); setSkills(base.skills); setLanguages(base.languages);
+    setFromProfile(true);
+  };
 
   const setPersonalField = (field, value) => setPersonal(prev => ({ ...prev, [field]: value }));
 
@@ -314,6 +343,12 @@ export const KarnamaCVPage = ({ onBack, onProceed, resumeId = null }) => {
               {editing ? 'زانیارییەکانی سیڤیەکە دەستکاری بکە؛ دواتر شێواز و ڕەنگەکەشی دەتوانیت بگۆڕیت.' : fromProfile ? 'زانیارییەکانت خۆکارانە لە ڕێکخستنەکانی پڕۆفایلەکەتەوە هێنراون. هەرچی دەتەوێت بیگۆڕە، و بەشە نەبووەکان (بروانامە، پڕۆژە، کەسی متمانەپێکراو) زیاد بکە تا باشترین سیڤیت دروست ببێت.' : 'زانیارییەکانت لێرەدا بنووسە، دواتر شێواز و ڕەنگی سیڤیەکە هەڵدەبژێریت و بە PDF دایدەگریت.'}
             </p>
           </div>
+        )}
+
+        {!editing && step === 0 && (
+          <button type="button" onClick={reloadFromProfile} className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#d8cee9] bg-white py-3 text-xs font-black" style={{ color: TEAL_DEEP }}>
+            <Sparkles className="h-4 w-4" />نوێکردنەوەی زانیاری لە ڕێکخستنەکانی پڕۆفایل
+          </button>
         )}
 
         {error && (
