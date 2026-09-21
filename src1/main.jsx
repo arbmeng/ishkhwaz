@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import UpdateBanner from './components/pwa/UpdateBanner.jsx'
 import './index.css'
 
 // Required for real installability (Android's "Install App" prompt needs an active
@@ -24,26 +25,6 @@ if ('serviceWorker' in navigator) {
       window.addEventListener('focus', checkForUpdate);
       setInterval(checkForUpdate, 5 * 60 * 1000);
 
-      // Don't force-reload out from under someone mid-edit (a profile/job
-      // form etc. sets window.__ishkhwazEditing = true while open and fires
-      // 'ishkhwaz:edit-done' on close) — that used to silently discard
-      // whatever they were typing the moment a new deploy landed. If a new
-      // controller takes over while editing, just remember it and reload
-      // once editing actually finishes instead of reloading immediately.
-      let reloaded = false;
-      let pendingReload = false;
-      const doReload = () => {
-        if (reloaded) return;
-        reloaded = true;
-        window.location.reload();
-      };
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (window.__ishkhwazEditing) { pendingReload = true; return; }
-        doReload();
-      });
-      window.addEventListener('ishkhwaz:edit-done', () => {
-        if (pendingReload) doReload();
-      });
     }).catch(() => {});
   });
 }
@@ -51,5 +32,6 @@ if ('serviceWorker' in navigator) {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
+    <UpdateBanner />
   </React.StrictMode>,
 )
