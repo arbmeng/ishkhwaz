@@ -15,7 +15,7 @@ const adminHeaders = (token = '') => ({
 // come back "Database unavailable" even though the data is fine moments
 // later. One retry after a short delay absorbs that without ever blocking
 // the UI further than the existing safe-fallback behavior already does.
-const fetchJsonRetry = async (url, options, retries = 1) => {
+const fetchJsonRetry = async (url, options, retries = 2) => {
   for (let attempt = 0; ; attempt++) {
     try {
       const res = await fetch(url, options);
@@ -283,7 +283,7 @@ export const apiService = {
       const data = await fetchJsonRetry(`${API_BASE_URL}/freelancers`);
       return data.freelancers || [];
     } catch (e) {
-      return [];
+      return null; // null = "request failed", never "there are none" — callers keep what they had
     }
   },
 
@@ -292,7 +292,7 @@ export const apiService = {
       const data = await fetchJsonRetry(`${API_BASE_URL}/companies`);
       return data.companies || [];
     } catch (e) {
-      return [];
+      return null;
     }
   },
 
@@ -364,7 +364,7 @@ export const apiService = {
       const data = await fetchJsonRetry(url, token ? { headers: { 'Authorization': `Bearer ${token}` } } : undefined);
       return data.jobs || data;
     } catch (e) {
-      return [];
+      return null;
     }
   },
   async approveJob(id, token) {

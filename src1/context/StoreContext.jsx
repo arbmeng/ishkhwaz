@@ -77,6 +77,9 @@ export const StoreProvider = ({ children }) => {
   // slowest. Each apiService.* call already catches its own errors and
   // resolves to a safe fallback ([]/null/{}) rather than rejecting, so one
   // slow/failing endpoint can never block or fail the others via Promise.all.
+  // A list request that failed (host hiccup, connection ceiling) comes back as null. Keep whatever we
+  // already had and try again shortly, instead of showing "nothing found" until the next 30 s poll / a refresh.
+  const syncRetries = useRef(0);
   const syncBackendData = async () => {
     try {
       const [liveJobs, liveApps, liveNotifs, liveFreelancers, liveCompanies, liveCategories, liveWorkTypes, liveSettings, liveTiers] = await Promise.all([
@@ -103,6 +106,13 @@ export const StoreProvider = ({ children }) => {
       if (Array.isArray(liveWorkTypes) && liveWorkTypes.length > 0) setWorkTypes(prev => keepIfSame(prev, liveWorkTypes));
       if (liveSettings && Object.keys(liveSettings).length > 0) setSettings(prev => keepIfSame(prev, liveSettings));
       if (Array.isArray(liveTiers)) setPlanTiers(prev => keepIfSame(prev, liveTiers));
+
+      if ([liveJobs, liveFreelancers, liveCompanies].some(x => x === null) && syncRetries.current < 4) {
+        syncRetries.current += 1;
+        setTimeout(syncBackendData, 1500 * syncRetries.current);
+      } else {
+        syncRetries.current = 0;
+      }
     } catch (e) {
       console.warn('Sync error', e);
     } finally {

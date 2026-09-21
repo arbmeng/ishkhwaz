@@ -69,10 +69,8 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
             onClick={() => handleNav('home')}
             className="flex items-center gap-2.5 cursor-pointer group"
           >
-            <div className="w-10 h-10 rounded-2xl bg-[#12796b] flex items-center justify-center text-white font-black text-xl shadow-sm group-hover:scale-105 transition-transform">
-              ئ
-            </div>
-            <span className="text-xl font-black text-[#111d1a] tracking-tight">
+            <img src="/logo-flat.png" alt="ئیش خواز" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
+            <span className="text-xl font-black text-[#111d1a]">
               ئیش خواز
             </span>
           </div>

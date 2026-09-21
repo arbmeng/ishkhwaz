@@ -6,6 +6,7 @@ import { FreelancerProfileModal } from '../freelancer/FreelancerProfileModal';
 import { CompanyProfilePage } from './CompanyProfilePage';
 import { PlanBadge } from '../ui/PlanBadge';
 import { soundService } from '../../services/soundService';
+import { FreelancerTierCard, tierInfo, sortByTier } from '../freelancer/FreelancerTierCard';
 import {
   Search, MapPin, Star, ShieldCheck, Sparkles, Send, CheckCircle2,
   BadgeCheck, Building2, Briefcase, PlusCircle, Users, Check,
@@ -28,7 +29,7 @@ function parseSkills(raw) {
 
 export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNavigate }) => {
   const { user, openAuthModal } = useAuth();
-  const { freelancers = [], jobs = [], categories = [], companies: realCompanies = [] } = useStore();
+  const { freelancers = [], jobs = [], categories = [], companies: realCompanies = [], planTiers = [] } = useStore();
 
   const [mode, setMode] = useState(initialMode);
   useEffect(() => setMode(initialMode), [initialMode]);
@@ -54,7 +55,8 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
   // ---- Freelancers List ----
   const filteredFreelancers = useMemo(() => {
     const list = Array.isArray(freelancers) ? freelancers : [];
-    return list.filter((f) => {
+    // Pro / VIP profiles get the premium cards and come first (boosted, then VIP, then Pro).
+    return sortByTier(list.filter((f) => {
       if (govFilter !== 'all' && f.governorate !== govFilter) return false;
       if (categoryFilter !== 'all') {
         const skills = parseSkills(f.skills);
@@ -69,8 +71,8 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
         if (!hit) return false;
       }
       return true;
-    });
-  }, [freelancers, searchTerm, govFilter, categoryFilter, verifiedOnly]);
+    }), planTiers);
+  }, [freelancers, searchTerm, govFilter, categoryFilter, verifiedOnly, planTiers]);
 
   // ---- Companies List (real account data from GET /companies, matched by
   // company_id — jobs are only used to group/count, never as the source of
@@ -353,62 +355,16 @@ export const DirectoryPage = ({ initialMode = 'companies', onSelectJob, onNaviga
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {filteredFreelancers.map((f, i) => {
-                const initial = (f.name || 'ئ').trim().charAt(0);
-                const skills = parseSkills(f.skills);
-
+                const t = tierInfo(f, planTiers);
                 return (
-                  <div
+                  <FreelancerTierCard
                     key={f.id || i}
-                    onClick={() => { soundService.playTick?.(); setProfileTarget(f); }}
-                    className="bg-white rounded-[24px] border border-[#e8eeec] shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between cursor-pointer group"
-                  >
-                    <div
-                      className="h-20 w-full relative flex items-center justify-center"
-                      style={{ background: 'linear-gradient(135deg, #e8f7f4 0%, #f4faf8 100%)' }}
-                    >
-                      <div className="absolute -bottom-5 w-12 h-12 rounded-full bg-white border border-[#e8eeed] shadow-md flex items-center justify-center text-base font-black text-[#111d1a] overflow-hidden group-hover:scale-105 transition-transform">
-                        {f.avatar ? (
-                          <img src={f.avatar} alt={f.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span>{initial}</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="p-4 pt-7 text-center space-y-2 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-sm font-black text-[#111d1a] truncate">
-                          {f.name}
-                        </h3>
-                        <p className="text-[11px] text-[#12796b] font-bold mt-0.5 truncate">
-                          {f.title || f.profession || 'کارخواز'}
-                        </p>
-                        <p className="text-[10px] text-[#7b8e88] font-medium mt-0.5">
-                          {f.governorate || 'سلێمانی'}
-                        </p>
-                      </div>
-
-                      {/* Skills Preview */}
-                      <div className="flex flex-wrap gap-1 justify-center pt-1">
-                        {skills.slice(0, 3).map((s, idx) => (
-                          <span key={idx} className="px-2 py-0.5 rounded-md bg-[#f4f7f6] text-[#4a5854] text-[9px] font-bold">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Action */}
-                      <div className="pt-3 border-t border-[#f4f7f6]">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); soundService.playTick?.(); setInviteTarget(f); }}
-                          className="w-full py-2 rounded-xl bg-[#12796b] hover:bg-[#0d5c50] text-white text-[11px] font-black transition-all active:scale-95 flex items-center justify-center gap-1.5"
-                        >
-                          <Send className="w-3 h-3" />
-                          ناردنی داواکاری
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    f={f}
+                    tier={t.tier}
+                    isVip={t.isVip}
+                    onOpen={(x) => { soundService.playTick?.(); setProfileTarget(x); }}
+                    onInvite={(x) => { soundService.playTick?.(); setInviteTarget(x); }}
+                  />
                 );
               })}
             </div>

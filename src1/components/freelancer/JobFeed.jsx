@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { HScroll } from '../ui/HScroll';
+import { FreelancerTierCard, tierInfo, sortByTier } from './FreelancerTierCard';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { FreelancerProfileModal } from './FreelancerProfileModal';
@@ -413,7 +414,9 @@ export const JobFeed = ({ onNavigate }) => {
 
   const filteredFreelancers = useMemo(() => {
     const safe = Array.isArray(freelancers) ? freelancers : [];
-    return safe.filter(f => {
+    // Paid showcase: only Pro / VIP profiles are listed here, boosted and VIP first.
+    return sortByTier(safe.filter(f => {
+      if (!tierInfo(f, planTiers).isPaid) return false;
       if (govFilter !== 'all' && f.governorate !== GOV_LABELS[govFilter]) return false;
       if (selectedCategory !== 'all') {
         const catLabel = (CATEGORIES.find(c => c.id === selectedCategory)?.nameKu || '').toLowerCase();
@@ -432,8 +435,8 @@ export const JobFeed = ({ onNavigate }) => {
         );
       }
       return true;
-    });
-  }, [freelancers, searchTerm, govFilter, selectedCategory, verifiedOnly, CATEGORIES]);
+    }), planTiers);
+  }, [freelancers, searchTerm, govFilter, selectedCategory, verifiedOnly, CATEGORIES, planTiers]);
 
   useEffect(() => { setPage(1); }, [selectedCategory, govFilter, verifiedOnly, searchTerm]);
   const totalFreelancerPages = Math.max(1, Math.ceil(filteredFreelancers.length / PAGE_SIZE));
@@ -459,62 +462,6 @@ export const JobFeed = ({ onNavigate }) => {
 
   const [selectedFreelancer, setSelectedFreelancer] = useState(null);
   const [inviteTarget, setInviteTarget] = useState(null);
-
-  const FreelancerPhotoCard = ({ f }) => {
-    const skills = parseSkills(f.skills);
-    const isBoosted = f.plan_boost_until && new Date(f.plan_boost_until) > new Date();
-    const matched = freelancerMatchesCompany(f);
-
-    return (
-      <div onClick={() => { soundService.playTick?.(); setSelectedFreelancer(f); }}
-        className="bg-white rounded-[28px] border border-stone-100/90 shadow-[0_4px_20px_rgba(20,45,40,0.055)] hover:shadow-[0_18px_40px_rgba(20,45,40,0.12)] hover:-translate-y-1.5 transition-all duration-300 cursor-pointer overflow-hidden group"
-        style={isBoosted ? { boxShadow: `0 0 0 2px ${TEAL}, 0 2px 16px rgba(0,0,0,0.05)` } : {}}>
-        <div className="relative h-40 sm:h-44">
-          <CoverArt seed={f.name} cover={f.cover} className="w-full h-full" />
-
-          <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black bg-white/90 backdrop-blur text-stone-700 shadow-sm">
-            {f.governorate || 'کوردستان'}
-          </span>
-
-          {isBoosted && (
-            <span className="absolute top-12 left-3 px-2.5 py-1 rounded-full text-[10px] font-black text-white shadow-sm" style={{ background: TEAL }}>
-              🚀 بەرزکراوە
-            </span>
-          )}
-
-          {matched && (
-            <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black text-white shadow-sm" style={{ background: TEAL_DEEP }}>
-              دیدارکراو
-            </span>
-          )}
-
-          {f.avatar && (
-            <img src={f.avatar} alt={f.name}
-              className="absolute -bottom-4 right-4 w-10 h-10 rounded-full object-cover border-2 border-white shadow-md" />
-          )}
-        </div>
-
-        <div className="p-4 pt-6">
-          <h3 className="text-sm font-black text-stone-900 truncate group-hover:text-stone-600 transition-colors">{f.name || 'کارخواز'}</h3>
-          <div className="flex items-center gap-1 text-[11px] text-stone-400 font-bold mt-1 truncate">
-            <span className="truncate">{skills.slice(0, 2).join('، ') || 'کارخواز'}</span>
-            {Number(f.verified) === 1 && <BadgeCheck className="w-3 h-3 shrink-0" style={{ color: TEAL }} title="پشتڕاستکراو" />}
-          </div>
-
-          <div className="flex items-center justify-between mt-3">
-            <span className="text-[11px] font-bold text-stone-400 truncate">{f.district || f.governorate || ''}</span>
-          </div>
-
-          <button
-            onClick={e => { e.stopPropagation(); soundService.playTick?.(); setInviteTarget(f); }}
-            className="mt-3 w-full py-3 rounded-[14px] text-[11px] font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 text-white shadow-[0_7px_18px_rgba(18,121,107,0.16)] hover:brightness-105"
-            style={{ background: TEAL }}>
-            <Send className="w-3.5 h-3.5" />ناردنی داواکاری
-          </button>
-        </div>
-      </div>
-    );
-  };
 
   const JobPhotoCard = ({ job, wide = false }) => {
     const isApplied = applications.some(a => String(a.job_id) === String(job.id));
@@ -864,11 +811,13 @@ export const JobFeed = ({ onNavigate }) => {
               </div>
             </Reveal>
 
-            {filteredFreelancers.length===0 ? (
+            {isInitialLoading && filteredFreelancers.length===0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">{Array.from({length:4}).map((_,i)=><div key={i} className="h-80 rounded-[28px] bg-white border border-stone-100 animate-pulse"/>)}</div>
+            ) : filteredFreelancers.length===0 ? (
               <div className="rounded-[28px] bg-white border border-stone-100 py-20 text-center"><Users className="w-12 h-12 mx-auto text-stone-200 mb-3"/><h3 className="font-black text-stone-500">هیچ کارخوازێک نەدۆزرایەوە</h3><p className="text-xs text-stone-300 mt-1">گەڕان یان پاڵاوتنەکان بگۆڕە</p></div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {pagedFreelancers.map((f,i)=><div key={f.id} style={{animationDelay:`${Math.min(i,10)*35}ms`}} className="animate-fadeIn"><FreelancerPhotoCard f={f}/></div>)}
+                {pagedFreelancers.map((f,i)=><div key={f.id} style={{animationDelay:`${Math.min(i,10)*35}ms`}} className="animate-fadeIn min-w-0 [&>*]:h-full">{(() => { const t = tierInfo(f, planTiers); return <FreelancerTierCard f={f} tier={t.tier} isVip={t.isVip} matched={freelancerMatchesCompany(f)} onOpen={(x) => { soundService.playTick?.(); setSelectedFreelancer(x); }} onInvite={(x) => { soundService.playTick?.(); setInviteTarget(x); }} />; })()}</div>)}
               </div>
             )}
             {totalFreelancerPages>1 && <div className="flex justify-center items-center gap-3 pt-1">
