@@ -25,16 +25,16 @@ const NK = "'Noto Kufi Arabic', 'Vazirmatn', system-ui, sans-serif";
 // heavy corner-rounding and animated shimmer/pulse effects read as too
 // playful for a page employers also use professionally. Kept teal as the
 // single accent color, dropped the candy-mint backgrounds for neutral gray.
-const TEAL   = '#12796b';
+const TEAL = '#12796b';
 const TEAL_DEEP = '#0d5c50';
-const TEAL2  = '#245e56';
-const MINT   = '#eef1f0';
-const MINT2  = '#f4f5f4';
+const TEAL2 = '#245e56';
+const MINT = '#eef1f0';
+const MINT2 = '#f4f5f4';
 const BORDER = '#dde3e0';
-const TXT    = '#161f1c';
-const SUB    = '#425049';
-const MUTED  = '#6b7975';
-const CARD   = '#f6f7f6';
+const TXT = '#161f1c';
+const SUB = '#425049';
+const MUTED = '#6b7975';
+const CARD = '#f6f7f6';
 
 // Components defined *inside* UserProfilePage used to be a brand-new component type on every
 // render, so React unmounted and remounted the whole profile (avatar flicker, reset scroll,
@@ -119,17 +119,17 @@ export const UserProfilePage = ({ onNavigate }) => {
   const isFreelancer = !isEmployer;
 
   /* ── modal flags ── */
-  const [showEdit,     setShowEdit]     = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showSaved,    setShowSaved]    = useState(false);
-  const [showViewers,  setShowViewers]  = useState(false);
-  const [showLogout,   setShowLogout]   = useState(false);
-  const [showAbout,    setShowAbout]    = useState(false);
-  const [copied,       setCopied]       = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+  const [showViewers, setShowViewers] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   /* ── push ── */
   const [pushEnabled, setPushEnabled] = useState(false);
-  const [pushBusy,    setPushBusy]    = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
   useEffect(() => {
     if (!showSettings) return;
     const onKey = (e) => { if (e.key === 'Escape') setShowSettings(false); };
@@ -156,33 +156,33 @@ export const UserProfilePage = ({ onNavigate }) => {
   const [viewersState, setViewersState] = useState({ loaded: false, viewers: [] });
 
   /* ── form state — seeded from real user ── */
-  const [name,          setName]          = useState('');
-  const [profession,    setProfession]    = useState('');
-  const [phone,         setPhone]         = useState('');
-  const [email,         setEmail]         = useState('');
-  const [bio,           setBio]           = useState('');
-  const [avatar,        setAvatar]        = useState('');
-  const [cover,         setCover]         = useState('');
-  const [companyName,   setCompanyName]   = useState('');
-  const [industry,      setIndustry]      = useState('');
-  const [companyReg,    setCompanyReg]    = useState('');
-  const [saving,        setSaving]        = useState(false);
-  const [savingPhoto,   setSavingPhoto]   = useState(false);
-  const [saved,         setSaved]         = useState(false);
+  const [name, setName] = useState('');
+  const [profession, setProfession] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [bio, setBio] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [cover, setCover] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [companyReg, setCompanyReg] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [savingPhoto, setSavingPhoto] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   /* ── location ── */
-  const [govId,  setGovId]  = useState('sulaymaniyah');
+  const [govId, setGovId] = useState('sulaymaniyah');
   const [distId, setDistId] = useState('');
-  const [subId,  setSubId]  = useState('');
+  const [subId, setSubId] = useState('');
 
   /* ── skills / experiences ── */
-  const [skills,       setSkills]       = useState([]);
-  const [skillInput,   setSkillInput]   = useState('');
-  const [experiences,  setExperiences]  = useState([]);
-  const [expTitle,     setExpTitle]     = useState('');
-  const [expPeriod,    setExpPeriod]    = useState('');
-  const [expDesc,      setExpDesc]      = useState('');
-  const [expLink,      setExpLink]      = useState('');
+  const [skills, setSkills] = useState([]);
+  const [skillInput, setSkillInput] = useState('');
+  const [experiences, setExperiences] = useState([]);
+  const [expTitle, setExpTitle] = useState('');
+  const [expPeriod, setExpPeriod] = useState('');
+  const [expDesc, setExpDesc] = useState('');
+  const [expLink, setExpLink] = useState('');
 
   const avatarRef = useRef(null);
   const coverRef = useRef(null);
@@ -201,7 +201,7 @@ export const UserProfilePage = ({ onNavigate }) => {
     setIndustry(user.industry || 'تەکنەلۆژیا');
     setCompanyReg(user.company_reg || user.regNumber || '');
     setGovId(user.governorateId || user.governorate || 'sulaymaniyah');
-    setDistId(user.districtId  || user.district  || '');
+    setDistId(user.districtId || user.district || '');
     setSubId(user.subDistrictId || user.subDistrict || '');
     const sk = parseJsonArray(user.skills);
     if (sk.length) setSkills(sk);
@@ -217,22 +217,22 @@ export const UserProfilePage = ({ onNavigate }) => {
         const reg = await navigator.serviceWorker.ready;
         const sub = await reg.pushManager.getSubscription();
         setPushEnabled(!!sub && Notification.permission === 'granted');
-      } catch {}
+      } catch { }
     })();
   }, []);
 
   /* ── viewers ── */
   useEffect(() => {
     if (!token) return;
-    apiService.getProfileViewers(token).then((res) => setViewersState({ loaded: true, ...res })).catch(() => {});
+    apiService.getProfileViewers(token).then((res) => setViewersState({ loaded: true, ...res })).catch(() => { });
   }, [token]);
 
   /* ── location objects ── */
-  const govObj  = kurdistanGovernorates.find(g => g.id === govId || g.name_ku === govId) || kurdistanGovernorates[0];
-  const dists   = govObj?.districts || [];
+  const govObj = kurdistanGovernorates.find(g => g.id === govId || g.name_ku === govId) || kurdistanGovernorates[0];
+  const dists = govObj?.districts || [];
   const distObj = dists.find(d => d.id === distId || d.name_ku === distId) || dists[0];
-  const subs    = distObj?.subDistricts || [];
-  const subObj  = subs.find(s => s.id === subId || s.name_ku === subId);
+  const subs = distObj?.subDistricts || [];
+  const subObj = subs.find(s => s.id === subId || s.name_ku === subId);
   const location = [govObj?.name_ku, distObj?.name_ku, subObj?.name_ku].filter(Boolean).join('، ');
 
   /* ── employer jobs & applications ── */
@@ -253,41 +253,41 @@ export const UserProfilePage = ({ onNavigate }) => {
   }, [isEmployer, employerJobs, applications]);
 
   /* ── computed ── */
-  const displayName   = isEmployer ? (companyName || user?.company_name || user?.name || 'کۆمپانیا') : (name || user?.name || 'بەکارهێنەر');
+  const displayName = isEmployer ? (companyName || user?.company_name || user?.name || 'کۆمپانیا') : (name || user?.name || 'بەکارهێنەر');
   // For an employer, the subtitle under the name is the OWNER's own job
   // title (e.g. "گەشەپێدەر") — not the company's industry, which already
   // has its own field/section further down the page.
-  const displayTitle  = isEmployer ? (profession || user?.profession || 'خاوەنکار') : (profession || user?.profession || 'کارخواز');
-  const displayAvatar = avatar     || user?.avatar || user?.company_logo || '';
-  const initial       = displayName.trim().charAt(0) || (isEmployer ? 'ک' : 'ئ');
-  const joinYear      = user?.created_at ? new Date(user.created_at).getFullYear() : null;
-  const userPlanTier  = planTiers.find(t => t.id === user?.plan);
+  const displayTitle = isEmployer ? (profession || user?.profession || 'خاوەنکار') : (profession || user?.profession || 'کارخواز');
+  const displayAvatar = avatar || user?.avatar || user?.company_logo || '';
+  const initial = displayName.trim().charAt(0) || (isEmployer ? 'ک' : 'ئ');
+  const joinYear = user?.created_at ? new Date(user.created_at).getFullYear() : null;
+  const userPlanTier = planTiers.find(t => t.id === user?.plan);
   // The free tier's real id is a generated string (e.g. "_fc74"), never the
   // literal "free" — comparing against that literal meant every user (auto-
   // assigned the free plan at signup) showed a VIP badge on their own profile.
-  const isVIP         = !!userPlanTier && Number(userPlanTier.price) > 0;
-  const planAccent    = userPlanTier ? (getPlanColor(userPlanTier.color).gradient || getPlanColor(userPlanTier.color).accent) : TEAL;
+  const isVIP = !!userPlanTier && Number(userPlanTier.price) > 0;
+  const planAccent = userPlanTier ? (getPlanColor(userPlanTier.color).gradient || getPlanColor(userPlanTier.color).accent) : TEAL;
 
   const completion = useMemo(() => {
     let s = 0;
-    if (displayAvatar)                                    s += 20;
-    if ((bio || user?.bio || '').length > 10)             s += 20;
+    if (displayAvatar) s += 20;
+    if ((bio || user?.bio || '').length > 10) s += 20;
     if (isEmployer) {
-      if (companyName || user?.company_name)              s += 20;
-      if (industry || user?.industry)                     s += 20;
-      if (phone || user?.phone)                           s += 20;
+      if (companyName || user?.company_name) s += 20;
+      if (industry || user?.industry) s += 20;
+      if (phone || user?.phone) s += 20;
     } else {
       if (skills.length > 0 || parseJsonArray(user?.skills).length > 0) s += 20;
-      if (govId || user?.governorate)                       s += 20;
+      if (govId || user?.governorate) s += 20;
       if ((phone || user?.phone) || (profession || user?.profession)) s += 20;
     }
     return Math.min(Math.max(s, 20), 100);
   }, [displayAvatar, bio, skills, govId, phone, profession, user, isEmployer, companyName, industry]);
 
-  const profileViews    = Number(user?.profile_views) || 0;
-  const applCount       = applications.length;
-  const savedCount      = savedJobIds.length;
-  const savedList       = jobs.filter(j => savedJobIds.includes(j.id));
+  const profileViews = Number(user?.profile_views) || 0;
+  const applCount = applications.length;
+  const savedCount = savedJobIds.length;
+  const savedList = jobs.filter(j => savedJobIds.includes(j.id));
 
   /* ── handlers ── */
   const handleShare = () => {
@@ -295,9 +295,9 @@ export const UserProfilePage = ({ onNavigate }) => {
     const link = isEmployer
       ? `${window.location.origin}/search?company=${encodeURIComponent(displayName)}`
       : `${window.location.origin}/search/freelancers/${user?.id || ''}`;
-    
+
     if (navigator.share) {
-      navigator.share({ title: `${displayName} — ئیش خواز`, url: link }).catch(() => {});
+      navigator.share({ title: `${displayName} — ئیش خواز`, url: link }).catch(() => { });
     } else if (navigator.clipboard) {
       navigator.clipboard.writeText(link);
       setCopied(true);
@@ -431,7 +431,7 @@ export const UserProfilePage = ({ onNavigate }) => {
     if (pushBusy) return;
     setPushBusy(true);
     if (pushEnabled) {
-      try { const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); setPushEnabled(false); } catch {}
+      try { const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); setPushEnabled(false); } catch { }
     } else {
       const res = await pushService.subscribeUserToPush(token);
       if (res?.success) setPushEnabled(true);
@@ -899,30 +899,30 @@ export const UserProfilePage = ({ onNavigate }) => {
                     <span className="text-[10px] font-black text-white/70 shrink-0">پێشبینین</span>
                   </div>
 
-                <SectionCard title="زانیاری کۆمپانیا" icon={Building2}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Field label="ناوی فەرمی کۆمپانیا *">
-                      <input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="کۆمپانیای ئاسۆ" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
-                    </Field>
-                    <Field label="بواری کار (Industry)">
-                      <input value={industry} onChange={e => setIndustry(e.target.value)} placeholder="تەکنەلۆژیا، بیناسازی، پزیشکی..." className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
-                    </Field>
-                    <Field label="ناونیشانی پیشەیی خاوەنکار">
-                      <input value={profession} onChange={e => setProfession(e.target.value)} placeholder="گەشەپێدەر، بەڕێوەبەر..." className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
-                    </Field>
-                    <Field label="ژمارەی تەلەفۆنی فەرمی">
-                      <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+964 770 000 0000" dir="ltr" className={`${fieldCls} ${fieldFocus} font-mono text-right`} style={fieldStyle} />
-                    </Field>
-                    <Field label="ژمارەی تۆماری بازرگانی">
-                      <input value={companyReg} onChange={e => setCompanyReg(e.target.value)} placeholder="KR-123456" dir="ltr" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
-                    </Field>
-                  </div>
+                  <SectionCard title="زانیاری کۆمپانیا" icon={Building2}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field label="ناوی فەرمی کۆمپانیا *">
+                        <input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="کۆمپانیای ئاسۆ" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                      </Field>
+                      <Field label="بواری کار (Industry)">
+                        <input value={industry} onChange={e => setIndustry(e.target.value)} placeholder="تەکنەلۆژیا، بیناسازی، پزیشکی..." className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                      </Field>
+                      <Field label="ناونیشانی پیشەیی خاوەنکار">
+                        <input value={profession} onChange={e => setProfession(e.target.value)} placeholder="گەشەپێدەر، بەڕێوەبەر..." className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                      </Field>
+                      <Field label="ژمارەی تەلەفۆنی فەرمی">
+                        <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+964 770 000 0000" dir="ltr" className={`${fieldCls} ${fieldFocus} font-mono text-right`} style={fieldStyle} />
+                      </Field>
+                      <Field label="ژمارەی تۆماری بازرگانی">
+                        <input value={companyReg} onChange={e => setCompanyReg(e.target.value)} placeholder="KR-123456" dir="ltr" className={`${fieldCls} ${fieldFocus}`} style={fieldStyle} />
+                      </Field>
+                    </div>
 
-                  <Field label="دەربارەی کۆمپانیا و خزمەتگوزارییەکان">
-                    <textarea rows={4} value={bio} onChange={e => setBio(e.target.value)} placeholder="ناساندنی کورتی کۆمپانیا و بواری سەرەکی کارەکانتان..."
-                      className={`${fieldCls} ${fieldFocus} font-medium leading-relaxed resize-none p-4`} style={fieldStyle} />
-                  </Field>
-                </SectionCard>
+                    <Field label="دەربارەی کۆمپانیا و خزمەتگوزارییەکان">
+                      <textarea rows={4} value={bio} onChange={e => setBio(e.target.value)} placeholder="ناساندنی کورتی کۆمپانیا و بواری سەرەکی کارەکانتان..."
+                        className={`${fieldCls} ${fieldFocus} font-medium leading-relaxed resize-none p-4`} style={fieldStyle} />
+                    </Field>
+                  </SectionCard>
                 </div>
               )}
 
@@ -1195,12 +1195,12 @@ export const UserProfilePage = ({ onNavigate }) => {
             <div className="snap-sheet-label">هەژمار و یارمەتی</div>
             <div className="snap-sheet-group">
               {canSeePlans(user) && (
-<button type="button" className="snap-row" onClick={go(() => onNavigate?.('plans'))}>
-                <span className="snap-row-icon"><Sparkles className="w-[18px] h-[18px]" /></span>
-                <span className="snap-row-copy"><strong>پلانەکانی ئیش خواز</strong><small>{userPlanTier ? `پلانی ئێستا: ${userPlanTier.name_ku}` : 'بەرزکردنەوەی هەژمار'}</small></span>
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-)}
+                <button type="button" className="snap-row" onClick={go(() => onNavigate?.('plans'))}>
+                  <span className="snap-row-icon"><Sparkles className="w-[18px] h-[18px]" /></span>
+                  <span className="snap-row-copy"><strong>پلانەکانی ئیش خواز</strong><small>{userPlanTier ? `پلانی ئێستا: ${userPlanTier.name_ku}` : 'بەرزکردنەوەی هەژمار'}</small></span>
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              )}
               <button type="button" className="snap-row" onClick={go(() => onNavigate?.('how_it_works'))}>
                 <span className="snap-row-icon"><HelpCircle className="w-[18px] h-[18px]" /></span>
                 <span className="snap-row-copy"><strong>چۆنیەتی کارکردنی ئەپ</strong><small>چوونەژوورەوە و بەکارهێنانی سیستەم</small></span>
@@ -1337,150 +1337,57 @@ export const UserProfilePage = ({ onNavigate }) => {
       <input ref={coverRef} type="file" accept="image/*" onChange={handleCoverChange} className="hidden" />
 
       <style>{`
-        .profile-page-shell{position:relative;isolation:isolate;overflow:hidden}
-        .profile-ambient{position:absolute!important;z-index:0!important;pointer-events:none;filter:blur(1px)}
-        .profile-ambient-a{width:420px;height:420px;right:-220px;top:100px;background:radial-gradient(circle,rgba(15,107,95,.10),transparent 68%)}
-        .profile-ambient-b{width:360px;height:360px;left:-210px;bottom:120px;background:radial-gradient(circle,rgba(36,94,86,.07),transparent 68%)}
+        .profile-page-shell{position:relative;isolation:isolate;overflow:hidden;background:#f4f7f6!important}
+        .profile-ambient{position:absolute!important;z-index:0!important;pointer-events:none}
+        .profile-ambient-a{width:520px;height:520px;right:-260px;top:80px;background:radial-gradient(circle,rgba(18,121,107,.11),transparent 68%)}
+        .profile-ambient-b{width:460px;height:460px;left:-260px;bottom:60px;background:radial-gradient(circle,rgba(13,92,80,.07),transparent 68%)}
         .profile-commandbar{animation:profileFadeUp .45s cubic-bezier(.22,1,.36,1) both}
-        @media (min-width:1024px){.profile-page-shell{min-height:100vh}.profile-commandbar{margin-bottom:22px}.profile-page-shell .lg\\:sticky{box-shadow:0 12px 40px rgba(17,61,54,.06)}}
-        @media (max-width:639px){.profile-commandbar .rounded-\\[26px\\]{border-radius:22px}.profile-page-shell{padding-bottom:calc(80px + env(safe-area-inset-bottom))}}
-        @media (prefers-reduced-motion:reduce){.profile-commandbar{animation:none!important}.profile-page-shell *{scroll-behavior:auto!important;transition-duration:0.01ms!important}}
-
-        /* Profile visual system — the app's teal/white palette (same tokens as Dashboard, Plans and the job page). */
-        .profile-page-shell,.snap-sheet-overlay{--ink:#111d1a;--sub:#4a5b55;--muted:#7b8e88;--line:#e8eeec;--teal:#12796b;--teal-deep:#0d5c50;--mint:#e7f4f1;--mint-line:#cfe8e2;--bg:#f4f7f6;--danger:#dc2626}
-        .profile-page-shell{background:#f4f7f6!important}
-        .profile-page-shell .profile-ambient{display:none}
-        .snap-profile{color:var(--ink);padding-bottom:28px}
-        .snap-profile button:focus-visible,.snap-sheet button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
-        .snap-topbar{height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-        .snap-page-title{font-size:16px;font-weight:900;letter-spacing:-.01em}
-        .snap-icon-btn{width:44px;height:44px;border:1px solid var(--line);background:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--teal-deep);transition:.18s}
-        .snap-icon-btn:hover{background:var(--mint);border-color:var(--mint-line);transform:translateY(-1px)}
-        .snap-settings-btn{height:44px;padding:0 16px;border:1px solid var(--mint-line);background:var(--mint);color:var(--teal-deep);border-radius:14px;display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:900;transition:.18s}
-        .snap-settings-btn svg{transition:transform .35s}
-        .snap-settings-btn:hover{background:var(--teal);border-color:var(--teal);color:#fff}
-        .snap-settings-btn:hover svg{transform:rotate(60deg)}
-        .snap-alert{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#fff8e6;border:1px solid #f4dfa6;border-radius:18px;margin-bottom:12px;color:var(--ink)}
-        .snap-alert strong,.snap-alert span{display:block;font-size:10px;font-weight:800}
-        .snap-alert span{color:var(--muted);margin-top:2px;direction:ltr;text-align:right}
-        .snap-alert button{border:0;background:var(--teal);color:#fff;border-radius:11px;padding:9px 13px;font-size:10px;font-weight:900}
-        .snap-identity{text-align:center;background:#fff;border:1px solid var(--line);border-radius:28px;padding:26px 18px 18px;box-shadow:0 10px 40px rgba(18,121,107,.07)}
-        .snap-avatar-wrap{position:relative;width:112px;height:112px;margin:0 auto 12px}
-        .snap-avatar-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--teal) var(--pct),#dfe9e6 0)}
-        .snap-avatar-ring:after{content:"";position:absolute;inset:4px;background:#fff;border-radius:50%}
-        .snap-avatar{position:absolute;inset:9px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--teal),var(--teal-deep));z-index:2}
-        .snap-avatar-button{width:100%;height:100%;border:0;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;color:#fff;font-size:38px;font-weight:900;position:relative}
-        .snap-avatar-button img{width:100%;height:100%;object-fit:cover}
-        .snap-camera{position:absolute;bottom:5px;right:5px;width:27px;height:27px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
-        .snap-completion{position:absolute;bottom:-3px;left:50%;transform:translateX(-50%);background:var(--teal-deep);color:#fff;padding:3px 8px;border-radius:99px;font:900 9px monospace;z-index:3}
-        .snap-name-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
-        .snap-name-row h1{font-size:25px;line-height:1.2;font-weight:900;letter-spacing:-.02em;margin:0}
-        .snap-handle{margin:5px 0 0;font-size:12px;font-weight:800;color:var(--sub)}
-        .snap-location{margin:5px 0 16px;font-size:10px;font-weight:700;color:var(--muted)}
-        .snap-actions{display:flex;justify-content:center;gap:8px;margin-bottom:16px}
-        .snap-actions button{height:44px;border-radius:14px;padding:0 18px;border:1px solid var(--mint-line);font-size:11px;font-weight:900;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.18s}
-        .snap-primary{background:var(--teal);color:#fff;border-color:var(--teal)!important}
-        .snap-primary:hover{background:var(--teal-deep)}
-        .snap-secondary{background:#fff;color:var(--teal-deep)}
-        .snap-secondary:hover{background:var(--mint)}
-        .snap-stats{max-width:500px;margin:auto;border-top:1px solid var(--line);padding-top:14px;display:grid;grid-template-columns:repeat(3,1fr)}
-        .snap-stat{border:0;background:transparent;min-width:0;padding:4px 0;border-radius:12px;transition:background .15s}
-        .snap-stat:hover{background:var(--mint)}
-        .snap-stat+ .snap-stat{border-right:1px solid var(--line)}
-        .snap-stat strong,.snap-stat span{display:block}
-        .snap-stat strong{font-size:18px;font-weight:900;line-height:1.1;color:var(--teal-deep)}
-        .snap-stat span{font-size:9px;color:var(--muted);font-weight:800;margin-top:4px}
-        .snap-completion-card{background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;border-radius:20px;padding:16px 18px;margin:12px 0;box-shadow:0 10px 28px rgba(18,121,107,.22)}
-        .snap-completion-card>div:first-child{display:flex;align-items:center;justify-content:space-between;font-size:10px}
-        .snap-completion-card strong{font-size:11px}
-        .snap-progress{height:6px;background:rgba(255,255,255,.22);border-radius:99px;overflow:hidden;margin-top:10px}
-        .snap-progress i{display:block;height:100%;background:#fff;border-radius:inherit}
-        .snap-completion-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}
-        .snap-completion-foot p{margin:0;color:rgba(255,255,255,.82);font-size:9px;font-weight:700}
-        .snap-completion-foot button{flex:0 0 auto;border:0;background:#fff;color:var(--teal-deep);border-radius:10px;padding:7px 12px;font-size:10px;font-weight:900}
-        .snap-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-        .snap-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:17px;min-width:0}
-        .snap-wide{grid-column:1/-1}
-        .snap-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
-        .snap-section-head span{font-size:12px;font-weight:900}
-        .snap-section-head button{border:0;background:none;color:var(--teal);font-size:10px;font-weight:900;padding:6px}
-        .snap-section-head button:hover{text-decoration:underline}
-        .snap-card>p{font-size:12px;line-height:1.9;color:var(--sub);margin:0;font-weight:600}
-        .snap-list-row{width:100%;display:flex;align-items:center;gap:10px;border:0;background:var(--bg);border-radius:15px;padding:11px;text-align:right;color:var(--ink)}
-        .snap-list-row.static{cursor:default}
-        .snap-list-icon{width:38px;height:38px;border-radius:12px;background:var(--mint);color:var(--teal);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-        .snap-list-row>span:nth-child(2){flex:1;min-width:0}
-        .snap-list-row strong,.snap-list-row small{display:block}
-        .snap-list-row strong{font-size:11px;font-weight:900}
-        .snap-list-row small{font-size:9px;color:var(--muted);font-weight:700;margin-top:3px}
-        .snap-chips{display:flex;flex-wrap:wrap;gap:7px}
-        .snap-chips span{padding:8px 11px;border-radius:10px;background:var(--mint);border:1px solid var(--mint-line);color:var(--teal-deep);font-size:10px;font-weight:800}
-        .snap-chips small,.snap-empty{font-size:10px;color:var(--muted);font-weight:700}
-        .snap-timeline{display:flex;flex-direction:column;gap:14px}
-        .snap-experience{display:grid;grid-template-columns:10px 1fr;gap:11px}
-        .snap-dot{width:8px;height:8px;background:var(--teal);border-radius:50%;margin-top:5px}
-        .snap-exp-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
-        .snap-exp-top strong{font-size:11px;font-weight:900}
-        .snap-exp-top small{font-size:9px;color:var(--muted);font-family:monospace}
-        .snap-experience p{margin:5px 0 0;font-size:10px;line-height:1.7;color:var(--sub)}
-        .snap-verified{display:flex;align-items:center;gap:8px;color:var(--teal-deep);font-size:11px;font-weight:900}
-        .snap-verified svg{color:#16a34a}
-        @media(max-width:640px){
-          .snap-profile{padding-bottom:18px}
-          .snap-topbar{height:58px}
-          .snap-identity{border-radius:22px;padding-top:22px}
-          .snap-name-row h1{font-size:22px}
-          .snap-grid{grid-template-columns:1fr}
-          .snap-wide{grid-column:auto}
-          .snap-card{border-radius:18px}
-          .snap-actions button{flex:1}
-        }
-
-        /* Settings sheet */
-        @keyframes snapFade{from{opacity:0}to{opacity:1}}
-        @keyframes snapSheetUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
-        .snap-sheet-overlay{position:fixed;inset:0;z-index:9000;background:rgba(7,17,15,.5);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;animation:snapFade .2s ease both;font-family:'Noto Kufi Arabic','Vazirmatn',system-ui,sans-serif;color:var(--ink)}
-        .snap-sheet{width:100%;max-width:460px;max-height:90vh;background:var(--bg);border-radius:28px 28px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -20px 60px rgba(0,0,0,.25);animation:snapSheetUp .28s cubic-bezier(.22,1,.36,1) both}
-        .snap-sheet-grab{width:40px;height:4px;border-radius:99px;background:#cfdcd8;margin:10px auto 0}
-        .snap-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:8px 18px}
-        .snap-sheet-head h2{margin:0;font-size:17px;font-weight:900}
-        .snap-sheet-body{padding:4px 16px calc(20px + env(safe-area-inset-bottom));overflow-y:auto;display:flex;flex-direction:column;gap:8px}
-        .snap-sheet-account{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px}
-        .snap-sheet-avatar{width:52px;height:52px;border-radius:18px;background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;overflow:hidden;flex:0 0 auto}
-        .snap-sheet-avatar img{width:100%;height:100%;object-fit:cover}
-        .snap-sheet-account strong{display:block;font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .snap-sheet-account span{display:block;font-size:10px;color:var(--muted);font-weight:700;margin-top:3px;text-align:right}
-        .snap-sheet-account>button{height:36px;padding:0 14px;border-radius:12px;border:1px solid var(--mint-line);background:var(--mint);color:var(--teal-deep);font-size:10px;font-weight:900;flex:0 0 auto}
-        .snap-sheet-label{margin:12px 4px 2px;font-size:10px;font-weight:900;color:var(--muted)}
-        .snap-sheet-group{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden}
-        .snap-row{width:100%;min-height:60px;display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:0;border-bottom:1px solid #f0f4f2;text-align:right;color:var(--ink);cursor:pointer;transition:background .15s}
-        .snap-row:last-child{border-bottom:0}
-        .snap-row:hover{background:#f7fbfa}
-        .snap-row-icon{width:38px;height:38px;border-radius:12px;background:var(--mint);color:var(--teal);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-        .snap-row-copy{flex:1;min-width:0}
-        .snap-row-copy strong{display:block;font-size:12px;font-weight:900}
-        .snap-row-copy small{display:block;font-size:10px;color:var(--muted);font-weight:700;margin-top:2px}
-        .snap-row>svg{color:#a9b9b4;flex:0 0 auto}
-        .snap-switch{width:48px;height:28px;border-radius:99px;background:#cbd5d3;padding:3px;display:flex;justify-content:flex-start;border:0;transition:background .2s;flex:0 0 auto}
-        .snap-switch i{width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);display:block}
-        .snap-switch[aria-checked=true]{background:var(--teal);justify-content:flex-end}
-        .snap-switch:disabled{opacity:.6}
-        .snap-row.snap-danger{margin-top:8px;border:1px solid #f6d6d6;border-radius:18px;color:var(--danger)}
-        .snap-row.snap-danger .snap-row-icon{background:#fef0f0;color:var(--danger)}
-        .snap-row.snap-danger:hover{background:#fff5f5}
-        @media(min-width:640px){.snap-sheet-overlay{align-items:center;padding:20px}.snap-sheet{border-radius:28px}}
-        @media(prefers-reduced-motion:reduce){.snap-profile *,.snap-sheet,.snap-sheet-overlay{transition:none!important;animation:none!important}}
+        .profile-page-shell{--ink:#10201c;--sub:#50625c;--muted:#7b8c87;--line:#e2ebe7;--teal:#12796b;--teal-deep:#0d5c50;--mint:#e9f5f2;--mint-line:#cfe6df;--bg:#f4f7f6;--danger:#dc2626}
+        .profile-page-shell .profile-commandbar{max-width:1180px;margin-left:auto;margin-right:auto}
+        .profile-page-shell .profile-commandbar>div{border-radius:30px!important;box-shadow:0 18px 55px rgba(13,92,80,.09)!important}
+        .profile-page-shell .profile-commandbar .grid>div{background:linear-gradient(180deg,#fff,#f8fbfa)!important;border-color:#e2ebe7!important;border-radius:18px!important}
+        .snap-profile{color:var(--ink);padding-bottom:42px;max-width:1180px!important;margin:0 auto}
+        .snap-profile button:focus-visible,.snap-sheet button:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
+        .snap-topbar{height:68px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 2px}
+        .snap-page-title{font-size:17px;font-weight:950;letter-spacing:-.03em}
+        .snap-icon-btn{width:46px;height:46px;border:1px solid var(--line);background:rgba(255,255,255,.92);border-radius:15px;display:flex;align-items:center;justify-content:center;color:var(--teal-deep);transition:.2s;box-shadow:0 5px 18px rgba(13,92,80,.05)}
+        .snap-icon-btn:hover{background:var(--teal);border-color:var(--teal);color:#fff;transform:translateY(-2px)}
+        .snap-settings-btn{height:46px;padding:0 17px;border:1px solid var(--mint-line);background:#fff;color:var(--teal-deep);border-radius:15px;display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:950;transition:.2s;box-shadow:0 5px 18px rgba(13,92,80,.05)}
+        .snap-settings-btn:hover{background:var(--teal);border-color:var(--teal);color:#fff;transform:translateY(-2px)}
+        .snap-settings-btn svg{transition:transform .35s}.snap-settings-btn:hover svg{transform:rotate(60deg)}
+        .snap-alert{display:flex;align-items:center;gap:11px;padding:13px 15px;background:#fffaf0;border:1px solid #f2dfae;border-radius:18px;margin-bottom:14px;color:var(--ink);box-shadow:0 8px 24px rgba(94,72,15,.04)}
+        .snap-alert strong,.snap-alert span{display:block;font-size:10px;font-weight:850}.snap-alert span{color:var(--muted);margin-top:2px;direction:ltr;text-align:right}.snap-alert button{border:0;background:var(--teal);color:#fff;border-radius:11px;padding:9px 13px;font-size:10px;font-weight:950}
+        .snap-identity{position:relative;text-align:center;background:linear-gradient(145deg,#fff 0%,#fbfdfc 70%,#f0f8f5 100%);border:1px solid var(--line);border-radius:30px;padding:34px 28px 20px;box-shadow:0 20px 65px rgba(13,92,80,.09);overflow:hidden}
+        .snap-identity:before{content:"";position:absolute;width:300px;height:300px;top:-190px;left:-100px;border-radius:50%;background:radial-gradient(circle,rgba(18,121,107,.12),transparent 68%);pointer-events:none}
+        .snap-avatar-wrap{position:relative;width:128px;height:128px;margin:0 auto 15px}.snap-avatar-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--teal) var(--pct),#dce9e5 0);padding:1px}
+        .snap-avatar-ring:after{content:"";position:absolute;inset:5px;background:#fff;border-radius:50%}.snap-avatar{position:absolute;inset:10px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--teal),var(--teal-deep));z-index:2;box-shadow:0 10px 30px rgba(13,92,80,.18)}
+        .snap-avatar-button{width:100%;height:100%;border:0;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;color:#fff;font-size:42px;font-weight:950;position:relative}.snap-avatar-button img{width:100%;height:100%;object-fit:cover}.snap-camera{position:absolute;bottom:5px;right:5px;width:29px;height:29px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.16)}
+        .snap-completion{position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);background:var(--teal-deep);color:#fff;padding:4px 9px;border-radius:99px;font:900 9px monospace;z-index:3;box-shadow:0 4px 12px rgba(13,92,80,.2)}
+        .snap-name-row{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap}.snap-name-row h1{font-size:29px;line-height:1.2;font-weight:950;letter-spacing:-.04em;margin:0}.snap-handle{margin:6px 0 0;font-size:13px;font-weight:850;color:var(--sub)}.snap-location{margin:6px 0 18px;font-size:10px;font-weight:750;color:var(--muted)}
+        .snap-actions{display:flex;justify-content:center;gap:9px;margin-bottom:19px}.snap-actions button{height:46px;border-radius:15px;padding:0 21px;border:1px solid var(--mint-line);font-size:11px;font-weight:950;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.2s;box-shadow:0 6px 18px rgba(13,92,80,.05)}.snap-actions button:hover{transform:translateY(-2px)}
+        .snap-primary{background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;border-color:var(--teal)!important}.snap-secondary{background:#fff;color:var(--teal-deep)}.snap-secondary:hover{background:var(--mint)}
+        .snap-stats{max-width:620px;margin:auto;border-top:1px solid var(--line);padding-top:15px;display:grid;grid-template-columns:repeat(3,1fr)}.snap-stat{border:0;background:transparent;min-width:0;padding:7px 0;border-radius:13px;transition:.18s}.snap-stat:hover{background:var(--mint)}.snap-stat+.snap-stat{border-right:1px solid var(--line)}.snap-stat strong,.snap-stat span{display:block}.snap-stat strong{font-size:20px;font-weight:950;line-height:1.1;color:var(--teal-deep)}.snap-stat span{font-size:9px;color:var(--muted);font-weight:850;margin-top:5px}
+        .snap-completion-card{background:linear-gradient(135deg,#117a6b 0%,#0d5c50 100%);color:#fff;border-radius:22px;padding:18px 20px;margin:14px 0;box-shadow:0 14px 36px rgba(13,92,80,.20)}.snap-completion-card>div:first-child{display:flex;align-items:center;justify-content:space-between;font-size:10px}.snap-completion-card strong{font-size:12px}.snap-progress{height:7px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;margin-top:11px}.snap-progress i{display:block;height:100%;background:#fff;border-radius:inherit;transition:width .5s ease}.snap-completion-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}.snap-completion-foot p{margin:0;color:rgba(255,255,255,.82);font-size:9px;font-weight:750}.snap-completion-foot button{flex:0 0 auto;border:0;background:#fff;color:var(--teal-deep);border-radius:11px;padding:8px 13px;font-size:10px;font-weight:950}
+        .snap-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.snap-card{grid-column:span 6;background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:22px;padding:19px;min-width:0;box-shadow:0 8px 30px rgba(13,92,80,.045);transition:.2s}.snap-card:hover{box-shadow:0 12px 34px rgba(13,92,80,.075);transform:translateY(-1px)}.snap-wide{grid-column:1/-1}.snap-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.snap-section-head span{font-size:12px;font-weight:950}.snap-section-head button{border:0;background:var(--mint);color:var(--teal-deep);font-size:9px;font-weight:950;padding:7px 10px;border-radius:10px}.snap-section-head button:hover{background:var(--teal);color:#fff}.snap-card>p{font-size:12px;line-height:2;color:var(--sub);margin:0;font-weight:600}
+        .snap-list-row{width:100%;display:flex;align-items:center;gap:11px;border:1px solid transparent;background:var(--bg);border-radius:16px;padding:12px;text-align:right;color:var(--ink);transition:.18s}.snap-list-row:hover{background:var(--mint);border-color:var(--mint-line)}.snap-list-row.static{cursor:default}.snap-list-icon{width:40px;height:40px;border-radius:13px;background:#fff;color:var(--teal);display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-shadow:0 4px 12px rgba(13,92,80,.07)}.snap-list-row>span:nth-child(2){flex:1;min-width:0}.snap-list-row strong,.snap-list-row small{display:block}.snap-list-row strong{font-size:11px;font-weight:950}.snap-list-row small{font-size:9px;color:var(--muted);font-weight:750;margin-top:3px}.snap-chips{display:flex;flex-wrap:wrap;gap:8px}.snap-chips span{padding:8px 12px;border-radius:11px;background:var(--mint);border:1px solid var(--mint-line);color:var(--teal-deep);font-size:10px;font-weight:850}.snap-chips small,.snap-empty{font-size:10px;color:var(--muted);font-weight:750}.snap-timeline{display:flex;flex-direction:column;gap:16px}.snap-experience{display:grid;grid-template-columns:10px 1fr;gap:11px}.snap-dot{width:8px;height:8px;background:var(--teal);border-radius:50%;margin-top:5px;box-shadow:0 0 0 4px var(--mint)}.snap-exp-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.snap-exp-top strong{font-size:11px;font-weight:950}.snap-exp-top small{font-size:9px;color:var(--muted);font-family:monospace}.snap-experience p{margin:5px 0 0;font-size:10px;line-height:1.8;color:var(--sub)}.snap-verified{display:flex;align-items:center;gap:8px;color:var(--teal-deep);font-size:11px;font-weight:950}.snap-verified svg{color:#16a34a}
+        @media(max-width:900px){.snap-profile{max-width:760px!important}.snap-card{grid-column:span 12}}
+        @media(max-width:640px){.profile-page-shell{padding-left:10px!important;padding-right:10px!important}.snap-profile{padding-bottom:22px}.snap-topbar{height:60px}.snap-settings-btn{padding:0 12px}.snap-settings-btn span{display:none}.snap-identity{border-radius:23px;padding:26px 14px 17px}.snap-name-row h1{font-size:23px}.snap-avatar-wrap{width:116px;height:116px}.snap-actions{width:100%}.snap-actions button{flex:1;padding:0 10px}.snap-grid{grid-template-columns:1fr;gap:10px}.snap-card{grid-column:auto;border-radius:18px;padding:16px}.snap-wide{grid-column:auto}.snap-completion-card{border-radius:18px;padding:16px}.profile-commandbar .grid{gap:7px}.profile-commandbar .grid>div{padding:10px!important}.profile-commandbar h2{font-size:20px!important}}
+        @media(prefers-reduced-motion:reduce){.profile-commandbar,.snap-profile *,.snap-sheet,.snap-sheet-overlay{animation:none!important;transition:none!important}}
+        @keyframes snapFade{from{opacity:0}to{opacity:1}}@keyframes snapSheetUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+        .snap-sheet-overlay{position:fixed;inset:0;z-index:9000;background:rgba(7,17,15,.55);backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;animation:snapFade .2s ease both;font-family:'Noto Kufi Arabic','Vazirmatn',system-ui,sans-serif;color:var(--ink)}
+        .snap-sheet{width:100%;max-width:540px;max-height:92vh;background:#f5f8f7;border:1px solid rgba(255,255,255,.7);border-radius:30px 30px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -24px 80px rgba(0,0,0,.28);animation:snapSheetUp .28s cubic-bezier(.22,1,.36,1) both}.snap-sheet-grab{width:42px;height:4px;border-radius:99px;background:#c5d5d0;margin:10px auto 0}.snap-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:10px 19px}.snap-sheet-head h2{margin:0;font-size:17px;font-weight:950}.snap-sheet-body{padding:5px 17px calc(22px + env(safe-area-inset-bottom));overflow-y:auto;display:flex;flex-direction:column;gap:9px}.snap-sheet-account{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px;box-shadow:0 7px 24px rgba(13,92,80,.05)}.snap-sheet-avatar{width:54px;height:54px;border-radius:17px;background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:950;overflow:hidden;flex:0 0 auto}.snap-sheet-avatar img{width:100%;height:100%;object-fit:cover}.snap-sheet-account strong{display:block;font-size:13px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.snap-sheet-account span{display:block;font-size:10px;color:var(--muted);font-weight:700;margin-top:3px;text-align:right}.snap-sheet-account>button{height:36px;padding:0 14px;border-radius:12px;border:1px solid var(--mint-line);background:var(--mint);color:var(--teal-deep);font-size:10px;font-weight:950;flex:0 0 auto}.snap-sheet-label{margin:13px 4px 3px;font-size:9px;font-weight:950;color:var(--muted)}.snap-sheet-group{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 6px 22px rgba(13,92,80,.04)}.snap-row{width:100%;min-height:62px;display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:0;border-bottom:1px solid #edf2f0;text-align:right;color:var(--ink);cursor:pointer;transition:.16s}.snap-row:last-child{border-bottom:0}.snap-row:hover{background:#f5faf8}.snap-row-icon{width:39px;height:39px;border-radius:12px;background:var(--mint);color:var(--teal);display:flex;align-items:center;justify-content:center;flex:0 0 auto}.snap-row-copy{flex:1;min-width:0}.snap-row-copy strong{display:block;font-size:12px;font-weight:950}.snap-row-copy small{display:block;font-size:10px;color:var(--muted);font-weight:700;margin-top:2px}.snap-row>svg{color:#a9b9b4;flex:0 0 auto}.snap-switch{width:48px;height:28px;border-radius:99px;background:#cbd5d3;padding:3px;display:flex;justify-content:flex-start;border:0;transition:background .2s;flex:0 0 auto}.snap-switch i{width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);display:block}.snap-switch[aria-checked=true]{background:var(--teal);justify-content:flex-end}.snap-switch:disabled{opacity:.6}.snap-row.snap-danger{margin-top:8px;border:1px solid #f6d6d6;border-radius:18px;color:var(--danger)}.snap-row.snap-danger .snap-row-icon{background:#fef0f0;color:var(--danger)}
+        @media(min-width:640px){.snap-sheet-overlay{align-items:center;padding:22px}.snap-sheet{border-radius:30px;max-height:88vh}}
       `}</style>
       <ProfileHero />
 
       {/* Modals are portalled to <body>: inside this page's isolated stacking
           context the sticky desktop header would paint over their backdrop. */}
-      {showEdit     && createPortal(<EditModal />, document.body)}
+      {showEdit && createPortal(<EditModal />, document.body)}
       {showSettings && renderSettings()}
-      {showSaved    && createPortal(<SavedModal />, document.body)}
-      {showViewers  && createPortal(<ViewersModal />, document.body)}
-      {showLogout   && <LogoutModal />}
-      {showAbout    && createPortal(<AboutModal onClose={() => setShowAbout(false)} />, document.body)}
+      {showSaved && createPortal(<SavedModal />, document.body)}
+      {showViewers && createPortal(<ViewersModal />, document.body)}
+      {showLogout && <LogoutModal />}
+      {showAbout && createPortal(<AboutModal onClose={() => setShowAbout(false)} />, document.body)}
     </div>
   );
 };
