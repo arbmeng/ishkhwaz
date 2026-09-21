@@ -160,7 +160,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
   };
 
   useEffect(() => {
-    if (!desiredCategory && liveCategories.length > 0) setDesiredCategory(liveCategories[0].id);
+    // the category picker is hidden for now, so nothing is preselected (an employer would otherwise get the first category as a fake preference)
   }, [liveCategories.length]);
 
   const toggleDesiredCategory = (id) => {
@@ -923,16 +923,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
             </div>
 
             <form onSubmit={handleHiringPrefsNext} className="space-y-3.5">
-              <div>
-                <label className={labelCls}>بواری پیشەیی داواکراو</label>
-                <select
-                  value={desiredCategory}
-                  onChange={(e) => setDesiredCategory(e.target.value)}
-                  className={`${inputCls} px-4 py-3.5 font-bold`}
-                >
-                  {liveCategories.map(c => <option key={c.id} value={c.id}>{c.name_ku}</option>)}
-                </select>
-              </div>
+              {/* "requested professional field" is hidden for now (desiredCategory keeps its default) */}
 
               <div>
                 <label className={labelCls}>ئاستی خوێندنی داواکراو</label>
