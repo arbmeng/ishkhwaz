@@ -28,7 +28,10 @@ export const tierInfo = (f, planTiers = []) => {
 };
 
 // Boosted first, then higher tier (VIP above Pro above free), then newest.
+const isVipF = (f, planTiers) => tierInfo(f, planTiers).isVip;
 export const sortByTier = (list, planTiers = []) => [...list].sort((a, b) => {
+  const vip = (isVipF(b, planTiers) ? 1 : 0) - (isVipF(a, planTiers) ? 1 : 0);
+  if (vip) return vip;
   const boost = (boostedNow(b) ? 1 : 0) - (boostedNow(a) ? 1 : 0);
   if (boost) return boost;
   const price = tierInfo(b, planTiers).price - tierInfo(a, planTiers).price;

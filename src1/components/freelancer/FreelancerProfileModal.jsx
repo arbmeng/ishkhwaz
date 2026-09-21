@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, Suspense } from 'react';
-import { SocialLinks } from '../ui/SocialLinks';
+import { SocialLinks, parseSocial } from '../ui/SocialLinks';
+import { kurdistanGovernorates } from '../../data/kurdistanLocations';
 import { createPortal } from 'react-dom';
 import { soundService } from '../../services/soundService';
 import { useStore } from '../../context/StoreContext';
@@ -12,7 +13,7 @@ import { getTemplate } from '../../cvTemplates/registry';
 import {
   ArrowLeft, Send, Share2, BadgeCheck, Phone, Mail, ExternalLink,
   Rocket, Crown, MapPin, BriefcaseBusiness, Star, FileText, Loader2,
-  Sparkles, ChevronLeft, CheckCircle2, Award, UserRound, X, Flame, Zap, ShieldCheck
+  Sparkles, ChevronLeft, CheckCircle2, Award, UserRound, X, Flame
 } from 'lucide-react';
 
 const TEAL = '#641bd9';
@@ -301,7 +302,14 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
     freelancer.plan_boost_until &&
     new Date(freelancer.plan_boost_until) > new Date()
   );
-  const govDisplay = GOV_LABELS[gov] || gov || 'سلێمانی';
+  const locGov = kurdistanGovernorates.find((g) => g.id === (freelancer.governorate || freelancer.governorate_id));
+  const locDist = locGov?.districts?.find((d) => d.id === freelancer.district);
+  const locSub = locDist?.subDistricts?.find((x) => x.id === freelancer.sub_district);
+  const locParts = [locGov?.name_ku || GOV_LABELS[gov] || gov, locDist?.name_ku, locSub?.name_ku].filter(Boolean);
+  const govDisplay = locParts.join(' · ') || 'کوردستان';
+  const languageList = parseJsonArray(freelancer.languages);
+  const educationList = parseJsonArray(freelancer.education).filter((e) => e && (e.title || e.place));
+  const hasSocial = Object.values(parseSocial(freelancer.social_links)).some(Boolean);
   const profession = freelancer.profession || freelancer.title || null;
 
   const tier = planTiers.find((t) => t.id === freelancer.plan);
@@ -673,7 +681,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                   <div className="relative shrink-0">
                     {hasPaidPlan && (
                       <div
-                        className={`absolute -inset-3 rounded-[30px] blur-xl ${isVip ? 'vip-avatar-aura' : ''
+                        className={`absolute -inset-1 rounded-[26px] blur-lg ${isVip ? 'vip-avatar-aura' : ''
                           }`}
                         style={{
                           background: isVip
@@ -685,7 +693,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                     )}
 
                     <div
-                      className={`relative p-1.5 rounded-[28px] shadow-[0_18px_45px_rgba(0,0,0,.28)] ${isVip ? 'vip-avatar-ring' : ''
+                      className={`relative p-[3px] rounded-[22px] shadow-[0_10px_28px_rgba(0,0,0,.28)] ${isVip ? 'vip-avatar-ring' : ''
                         }`}
                       style={{
                         background: isVip
@@ -693,7 +701,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                           : 'rgba(255,255,255,.96)'
                       }}
                     >
-                      <div className="w-[82px] h-[82px] sm:w-[104px] sm:h-[104px] rounded-[22px] overflow-hidden bg-white flex items-center justify-center text-2xl sm:text-3xl font-black" style={{ color: TEAL_DEEP }}>
+                      <div className="w-[76px] h-[76px] sm:w-[96px] sm:h-[96px] rounded-[19px] overflow-hidden bg-white flex items-center justify-center text-2xl sm:text-3xl font-black" style={{ color: TEAL_DEEP }}>
                         {avatarUrl ? (
                           <img
                             src={avatarUrl}
@@ -761,11 +769,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                     <SocialLinks links={freelancer.social_links} size="sm" onDark className="mt-3" />
 
                     {isVip && (
-                      <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full vip-elite-badge">
-                        <Flame className="w-3.5 h-3.5" />
-                        <span>VIP · پڕۆفایلی تایبەت</span>
-                        <Zap className="w-3 h-3" />
-                      </div>
+                      <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full vip-elite-badge text-[11px] tracking-wide"><Flame className="w-3 h-3" /><span>VIP · تایبەت</span></div>
                     )}
                   </div>
                 </div>
@@ -776,22 +780,6 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
 
         {/* MAIN CONTENT */}
         <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10">
-          {isVip && (
-            <div className="relative z-10 -mt-4 mb-3 rounded-[22px] overflow-hidden border border-orange-200/80 bg-[linear-gradient(135deg,#2a0b02,#6e2100_48%,#2b0b02)] text-white shadow-[0_14px_42px_rgba(255,87,0,.16)]">
-              <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_15%_20%,rgba(255,190,90,.28),transparent_34%),radial-gradient(circle_at_85%_70%,rgba(255,71,0,.28),transparent_36%)]" />
-              <div className="relative flex items-center gap-3 px-4 py-3 sm:px-5">
-                <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0 shadow-inner">
-                  <Flame className="w-5 h-5 text-orange-300" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-black text-orange-200">VIP PROFILE</div>
-                  <div className="text-xs sm:text-sm font-black truncate">ئەم پڕۆفایلە بە شێوازی VIP پیشان دەدرێت</div>
-                </div>
-                <ShieldCheck className="w-5 h-5 text-orange-200 shrink-0" />
-              </div>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_330px] gap-5 lg:gap-7 -mt-1 pb-[150px] lg:pb-20">
 
             {/* PRIMARY COLUMN */}
@@ -895,6 +883,29 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
               )}
 
               {/* Experience */}
+              {(languageList.length > 0 || educationList.length > 0) && (
+                <Section eyebrow="BACKGROUND" title="زمان و خوێندن" icon={Award}>
+                  <div className="rounded-[24px] bg-white border border-stone-200/80 p-4 sm:p-5 shadow-[0_8px_30px_rgba(20,30,25,.04)]">
+                    {languageList.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {languageList.map((l) => (
+                          <span key={l} className="px-3 py-1.5 rounded-full text-xs font-black" style={{ background: TEAL_SOFT, color: TEAL_DEEP }}>{l}</span>
+                        ))}
+                      </div>
+                    )}
+                    {educationList.map((e, i) => (
+                      <div key={i} className={`flex items-start gap-3 ${i || languageList.length ? 'mt-3.5' : ''}`}>
+                        <span className="mt-2 w-2 h-2 rounded-full shrink-0" style={{ background: TEAL }} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-baseline justify-between gap-2"><strong className="text-sm font-black text-stone-900">{e.title}</strong>{e.period && <small className="text-[11px] font-bold text-stone-400">{e.period}</small>}</div>
+                          {e.place && <p className="text-xs font-medium text-stone-500 mt-0.5">{e.place}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
               {experienceList.length > 0 && (
                 <Section eyebrow="EXPERIENCE" title="مێژووی کار و پڕۆژەکان" icon={BriefcaseBusiness}>
                   <div className="rounded-[24px] bg-white border border-stone-200/80 p-5 sm:p-6 shadow-[0_8px_30px_rgba(20,30,25,.04)]">
@@ -1156,6 +1167,12 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                       label="شوێن"
                       value={govDisplay}
                     />
+                    {hasSocial && (
+                      <div className="pt-1">
+                        <div className="text-[10px] font-black text-stone-400 mb-2">تۆڕە کۆمەڵایەتییەکان</div>
+                        <SocialLinks links={freelancer.social_links} />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -411,7 +411,37 @@ function pusherTrigger(array $channels, string $event, array $data): void {
 // refetch its users/plans/jobs list without needing a full page reload.
 function notifyAdmins(PDO $pdo, string $type, array $payload = []): void {
     pusherTrigger(['private-admin-panel'], 'admin-update', array_merge(['type' => $type], $payload));
+    forwardToZeraHub($type, $payload);
 }
+
+// ---- Zera notification hub forwarding ----
+// Pusher above only reaches admins who have the console open right now. The
+// events an admin must not miss (new signup, job/plan/dispute needing action,
+// contact message) are also handed to the Zera hub, which stores them in the
+// admins' inbox and sends a real Web Push to their phones/desktops even when
+// the console is closed. ZERA_NOTIFY_URL / ZERA_NOTIFY_SECRET live in config.php;
+// without them this is a no-op. Like Pusher, it can never break the request
+// that triggered it (short timeouts, every failure swallowed).
+const ZERA_HUB_EVENTS = ['user_registered', 'job_pending_review', 'plan_purchase_pending', 'dispute_opened', 'dispute_message', 'contact_message'];
+
+function forwardToZeraHub(string $type, array $payload): void {
+    if (!defined('ZERA_NOTIFY_URL') || !defined('ZERA_NOTIFY_SECRET') || !in_array($type, ZERA_HUB_EVENTS, true)) return;
+    try {
+        $ch = curl_init(ZERA_NOTIFY_URL);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode(['source' => 'ishkhwaz', 'type' => $type, 'data' => $payload], JSON_UNESCAPED_UNICODE),
+            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'X-Notify-Secret: ' . ZERA_NOTIFY_SECRET],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT_MS => 800,
+            CURLOPT_TIMEOUT_MS => 2500,
+            CURLOPT_NOSIGNAL => true,
+        ]);
+        curl_exec($ch);
+        curl_close($ch);
+    } catch (Throwable $e) { /* hub outage must never break the calling request */ }
+}
+// ---- end Zera notification hub forwarding ----
 
 // Persistent per-user activity trail — real login/account/admin history,
 // distinct from notifyAdmins() above (that's a transient live Pusher ping,
@@ -3575,6 +3605,12 @@ if (preg_match('#/freelancers$#', $uri) && $method === 'GET') {
         ORDER BY (plan_boost_until IS NOT NULL AND plan_boost_until > NOW()) DESC, created_at DESC
     ");
     $freelancers = $stmt->fetchAll();
+    // Phone numbers are shown to signed-in users only (never to anonymous visitors / crawlers).
+    if (optionalAuthUser($pdo)) {
+        $phones = $pdo->query("SELECT id, phone FROM users WHERE role = 'freelancer' AND status = 'active'")->fetchAll(PDO::FETCH_KEY_PAIR);
+        foreach ($freelancers as &$fr) { $fr['phone'] = $phones[$fr['id']] ?? ''; }
+        unset($fr);
+    }
     echo json_encode(['success' => true, 'count' => count($freelancers), 'freelancers' => $freelancers]);
     exit(0);
 }

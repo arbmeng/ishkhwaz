@@ -1465,12 +1465,11 @@ export const UserProfilePage = ({ onNavigate }) => {
         @media(min-width:640px){.ap-overlay{align-items:center;padding:22px}.ap-sheet{border-radius:32px;max-height:90vh}}
         .ap-cols{display:block}
         @media(max-width:1023px){.ap-page input,.ap-page textarea,.ap-page select{font-size:16px!important}}
-        .ap-hdr{margin:-12px -14px 16px;position:sticky;top:0;z-index:30}.ap-hdr>div{position:relative!important}@media(min-width:1024px){.ap-hdr{position:relative}}@media(min-width:640px){.ap-hdr{margin:-20px -20px 20px}}@media(min-width:1024px){.ap-hdr{margin:-20px -32px 28px}}
+        .ap-hdr{display:contents}.ap-hdr>div{margin-left:-14px;margin-right:-14px;margin-bottom:16px}@media(min-width:640px){.ap-hdr>div{margin-left:-20px;margin-right:-20px;margin-bottom:20px}}@media(min-width:1024px){.ap-hdr>div{margin-left:-32px;margin-right:-32px;margin-bottom:28px}}
         .ap-page{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding-bottom:120px}
         .ap-page .ap-modal-foot{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;border:1px solid var(--line);border-radius:26px;margin:0;box-shadow:0 12px 34px rgba(31,12,61,.12)}
         .ap-page.ap-mobile-edit{position:fixed;inset:0;z-index:100;max-width:none;margin:0;padding:0;display:flex;flex-direction:column;background:#f6f3fb}
-        .ap-mobile-edit .ap-hdr{position:relative;margin:0;flex:none}
-        .ap-mobile-edit .ap-hdr>div{position:relative!important}
+        .ap-mobile-edit .ap-hdr>div{position:relative!important;margin:0;flex:none}
         .ap-mobile-edit .ap-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:16px 12px}
         .ap-page.ap-mobile-edit .ap-modal-foot{position:relative;left:auto;right:auto;bottom:auto;flex:none;margin:0 12px calc(12px + env(safe-area-inset-bottom))}
         .ap-page .ap-modal-head{padding-top:18px}
