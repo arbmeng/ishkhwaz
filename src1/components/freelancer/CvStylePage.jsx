@@ -108,9 +108,11 @@ export const CvStylePage = ({ draft, resume = null, onBack, onDone }) => {
           <div className="flex items-center gap-2.5 rounded-2xl bg-emerald-50 p-3.5 text-emerald-800">
             <CheckCircle2 className="h-5 w-5 shrink-0" /><p className="text-xs font-bold leading-6">سیڤیەکەت پاشەکەوت کرا. لێرە دەتوانیت شێواز و ڕەنگ بگۆڕیت و بە PDF دایبگریت.</p>
           </div>
-          <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
-            <iframe src={result.embed_url} title="CV" className="block w-full border-0" style={{ height: '78vh' }} />
-          </div>
+          <a href={result.view_url} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-3xl border border-stone-200 bg-white p-5 text-center shadow-sm">
+            <FileText className="mx-auto h-10 w-10" style={{ color: TEAL }} />
+            <div className="mt-3 text-base font-black text-stone-900">{result.title}</div>
+            <div className="mt-1 text-xs font-bold text-stone-400">کرتە بکە بۆ بینین و داگرتنی PDF</div>
+          </a>
           <div className="grid grid-cols-2 gap-2.5">
             <a href={result.view_url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 rounded-2xl border border-stone-200 bg-white py-3.5 text-xs font-black text-stone-700">
               <ExternalLink className="h-4 w-4" />کردنەوە

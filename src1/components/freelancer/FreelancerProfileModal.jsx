@@ -9,7 +9,6 @@ import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import { SendOfferModal } from '../requests/SendOfferModal';
 import { StarRatingDisplay } from '../ui/StarRating';
-import { CvViewerModal } from '../ui/CvViewerModal';
 import { shareLink } from '../../utils/shareLink';
 import {
   ArrowLeft, Send, Share2, BadgeCheck, Phone, Mail, ExternalLink,
@@ -151,24 +150,18 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
   const [isExportingCv, setIsExportingCv] = useState(false);
   const [selectedCv, setSelectedCv] = useState(null);
 
-  // The CV is hosted by Karnama: open its page inside a viewer (it has its own "Download PDF").
-  const [cvView, setCvView] = useState(null);
+  // The CV is hosted by Karnama: tapping it goes straight to that page (it has its own "Download PDF").
   const handleViewCv = async (cv = null) => {
     soundService.playTick?.();
+    if (cv?.view_url) { window.open(cv.view_url, '_blank', 'noopener'); return; } // synchronous, so no popup blocker
     setIsExportingCv(true);
     try {
-      let resume = cv && cv.embed_url ? cv : null;
-      if (!resume) {
-        const res = await apiService.getPublicResume(freelancer.id);
-        if (!res?.success) {
-          addToast?.({ title: 'CV نییە', message: 'ئەم کارخوازە CV ی گشتی دانەناوە.', type: 'info' });
-          return;
-        }
-        resume = res.resume;
-        setPublicResume(resume);
+      const res = await apiService.getPublicResume(freelancer.id);
+      if (!res?.success || !res.resume?.view_url) {
+        addToast?.({ title: 'CV نییە', message: 'ئەم کارخوازە CV ی گشتی دانەناوە.', type: 'info' });
+        return;
       }
-      setSelectedCv(resume);
-      setCvView(resume);
+      window.open(res.resume.view_url, '_blank', 'noopener');
     } catch {
       addToast?.({ title: 'سەرنەکەوت', message: 'کردنەوەی CV سەرکەوتوو نەبوو، دووبارە هەوڵبدەرەوە.', type: 'error' });
     } finally {
@@ -1174,8 +1167,6 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
           onClose={() => setIsSendOfferOpen(false)}
         />
       )}
-
-      <CvViewerModal open={!!cvView} title={cvView?.title || 'CV'} embedUrl={cvView?.embed_url} viewUrl={cvView?.view_url} onClose={() => setCvView(null)} />
     </>,
     document.body
   );

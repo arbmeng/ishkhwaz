@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PageHeader } from '../layout/PageHeader';
-import { CvViewerModal } from '../ui/CvViewerModal';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { apiService } from '../../services/api';
@@ -37,7 +36,6 @@ export const ResumesPage = ({ onBack, onCreateNew, onEdit }) => {
   const [deletingId, setDeletingId] = useState(null);
   const [publicIds, setPublicIds] = useState(new Set());
   const [settingPublicId, setSettingPublicId] = useState(null);
-  const [viewing, setViewing] = useState(null);
 
   const userTier = planTiers.find(t => t.id === user?.plan);
   const maxCvs = userTier ? Number(userTier.max_cvs ?? 1) : 1;
@@ -110,13 +108,13 @@ export const ResumesPage = ({ onBack, onCreateNew, onEdit }) => {
               return (
                 <div key={r.id} className={`space-y-3 rounded-3xl border bg-white p-4 ${isPublic ? 'border-[#641bd9]' : 'border-stone-200'}`}>
                   <div className="flex items-start gap-3.5">
-                    <button type="button" onClick={() => { soundService.playTick?.(); setViewing(r); }} aria-label="بینین"><Thumb src={r.embed_url} /></button>
+                    <a href={r.view_url} target="_blank" rel="noopener noreferrer" aria-label="بینین"><Thumb src={r.embed_url} /></a>
                     <div className="min-w-0 flex-1 pt-1">
                       <h3 className="truncate text-sm font-black text-stone-900">{r.title}</h3>
                       <p className="mt-0.5 text-[11px] font-bold text-stone-400">{r.template_id} · {fmt(r.updated_at)}</p>
                       {isPublic && <span className="mt-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-black" style={{ background: TEAL_SOFT, color: TEAL_DEEP }}>دیارە بۆ کۆمپانیاکان</span>}
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <button onClick={() => { soundService.playTick?.(); setViewing(r); }} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-black text-white" style={{ background: TEAL }}><Eye className="h-3.5 w-3.5" />بینین / PDF</button>
+                        <a href={r.view_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-black text-white" style={{ background: TEAL }}><Eye className="h-3.5 w-3.5" />بینین / PDF</a>
                         <button onClick={() => { soundService.playTick?.(); onEdit?.(r.id); }} className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-[11px] font-black text-stone-600"><Pencil className="h-3.5 w-3.5" />دەستکاری</button>
                         <a href={r.view_url} target="_blank" rel="noopener noreferrer" className="grid h-9 w-9 place-items-center rounded-xl border border-stone-200 bg-stone-50 text-stone-600" aria-label="کردنەوە"><ExternalLink className="h-3.5 w-3.5" /></a>
                         <button onClick={() => handleDelete(r.id)} disabled={deletingId === r.id} className="grid h-9 w-9 place-items-center rounded-xl border border-rose-100 bg-rose-50 text-rose-500 disabled:opacity-50" aria-label="سڕینەوە">
@@ -142,8 +140,6 @@ export const ResumesPage = ({ onBack, onCreateNew, onEdit }) => {
           <p className="text-[11px] font-bold leading-relaxed" style={{ color: TEAL_DEEP }}>کاتێک داواکاری بۆ هەلی کارێک دەنێریت، دەتوانیت هەڵبژێریت کام لەم سیڤیانە بنێریت.</p>
         </div>
       </div>
-
-      <CvViewerModal open={!!viewing} title={viewing?.title} embedUrl={viewing?.embed_url} viewUrl={viewing?.view_url} onClose={() => setViewing(null)} />
     </div>
   );
 };
