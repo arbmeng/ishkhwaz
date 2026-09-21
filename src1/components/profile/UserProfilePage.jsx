@@ -1329,13 +1329,29 @@ export const UserProfilePage = ({ onNavigate }) => {
             پڕۆفایلەکەت بە گشتی <strong>{profileViews}</strong> جار بینراوە.
           </div>
           {viewersState.viewers?.length > 0
-            ? viewersState.viewers.map((v, i) => (
-              <div key={i} className="p-3 rounded-xl border flex items-center justify-between text-xs" style={{ background: CARD, borderColor: '#e6e4ea' }}>
-                <span className="font-bold" style={{ color: '#1d1a23' }}>{v.viewer_company_name || v.viewer_name || 'کۆمپانیایەک'}</span>
-                <span dir="ltr" className="font-mono" style={{ fontSize: '10px', color: '#6b7975' }}>{new Date(v.viewed_at).toLocaleDateString('en-GB')}</span>
-              </div>
-            ))
-            : <div className="text-center py-8 text-xs font-bold" style={{ color: '#6b7975' }}>بینەرە نوێیەکان لێرەدا دەردەکەون.</div>}
+            ? viewersState.viewers.map((v, i) => {
+              const name = v.viewer_company_name || v.viewer_name || 'بەکارهێنەر';
+              const pic = v.company_logo || v.avatar;
+              return (
+                <div key={v.viewer_id || i} className="p-3 rounded-2xl border flex items-center gap-3 text-xs" style={{ background: CARD, borderColor: '#e6e4ea' }}>
+                  <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 grid place-items-center font-black" style={{ background: TEAL_SOFT, color: TEAL }}>
+                    {pic ? <img src={pic} alt="" className="w-full h-full object-cover" /> : name.charAt(0)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-black truncate" style={{ color: '#1d1a23', fontSize: '13px' }}>{name}</div>
+                    <div className="truncate" style={{ fontSize: '10px', color: '#6b7975' }}>
+                      {v.viewer_role === 'employer' ? 'کۆمپانیا' : 'کارخواز'}{v.industry ? ` · ${v.industry}` : ''}{Number(v.view_count) > 1 ? ` · ${v.view_count} جار` : ''}
+                    </div>
+                  </div>
+                  <span dir="ltr" className="font-mono shrink-0" style={{ fontSize: '10px', color: '#6b7975' }}>{new Date(v.viewed_at).toLocaleDateString('en-GB')}</span>
+                </div>
+              );
+            })
+            : <div className="text-center py-8 text-xs font-bold leading-6" style={{ color: '#6b7975' }}>
+              {viewersState.loaded && viewersState.success === false
+                ? (viewersState.message || 'ئەم تایبەتمەندییە لە پلانەکەتدا نییە.')
+                : 'کاتێک کۆمپانیایەک یان کەسێک بە هەژمارەوە پڕۆفایلەکەت ببینێت، لێرە دەردەکەوێت. بینینی میوان (بێ هەژمار) تەنها لە ژمارەکە دەژمێردرێت.'}
+            </div>}
         </div>
         <div className="p-4 border-t border-[#f2f0f4] bg-[#fcfbfd]">
           <button onClick={() => setShowViewers(false)} className="ap-save w-full">داخستن</button>

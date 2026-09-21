@@ -56,7 +56,7 @@ export default function JobLocationPicker({ lat, lng, locationName, governorateI
       }).setView([start.lat, start.lng], lat && lng ? 15 : 12);
       mapInst.current = map;
 
-      window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+      window.L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 19 }).addTo(map);
       window.L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
       map.on('click', async (e) => {

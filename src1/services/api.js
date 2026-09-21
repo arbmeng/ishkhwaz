@@ -543,9 +543,11 @@ export const apiService = {
 
   async registerFreelancerView(freelancerId) {
     try {
+      let token = null;
+      try { token = localStorage.getItem('ishkhwaz_token'); } catch { /* private mode */ }
       await fetch(`${API_BASE_URL}/freelancers/view`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ id: freelancerId })
       });
     } catch (e) { /* best-effort */ }

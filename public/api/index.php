@@ -3677,7 +3677,15 @@ if (preg_match('#/profile-viewers$#', $uri) && $method === 'GET') {
     if (!getPlanCapabilities($pdo, $authUser['plan'] ?? null, $authUser['role'] ?? null)['can_see_profile_viewers']) {
         jsonErr(403, 'پلانی ئێستات ئەم تایبەتمەندییە لەخۆناگرێت — پلانەکەت بەرزبکەرەوە بۆ بینینی ئەوانەی سەیری پرۆفایلت کردووە.');
     }
-    $stmt = $pdo->prepare('SELECT viewer_id, viewer_name, viewer_company_name, viewed_at FROM profile_views_log WHERE profile_id = ? ORDER BY viewed_at DESC LIMIT 100');
+    // One row per viewer (latest visit + how many times), with the viewer's company / photo.
+    $stmt = $pdo->prepare('
+        SELECT l.viewer_id, MAX(l.viewer_name) AS viewer_name, MAX(l.viewer_company_name) AS viewer_company_name,
+               MAX(l.viewed_at) AS viewed_at, COUNT(*) AS view_count,
+               MAX(u.role) AS viewer_role, MAX(u.company_logo) AS company_logo, MAX(u.avatar) AS avatar, MAX(u.industry) AS industry
+        FROM profile_views_log l LEFT JOIN users u ON u.id = l.viewer_id
+        WHERE l.profile_id = ?
+        GROUP BY l.viewer_id ORDER BY MAX(l.viewed_at) DESC LIMIT 100
+    ');
     $stmt->execute([$authUser['id']]);
     echo json_encode(['success' => true, 'viewers' => $stmt->fetchAll()]);
     exit(0);
