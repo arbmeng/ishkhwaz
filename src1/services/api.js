@@ -130,6 +130,24 @@ export const apiService = {
     }
   },
 
+  // Register step 3: confirm the email BEFORE the account exists. verify returns the proof /auth/register needs.
+  async sendEmailOtp(email) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/email-otp/send`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) { return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' }; }
+  },
+  async verifyEmailOtpPublic(email, otp) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/email-otp/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp }) });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) { return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' }; }
+  },
+
   // Public contact form (signed-in users are linked to their account).
   async sendContactMessage(payload, token) {
     try {

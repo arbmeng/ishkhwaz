@@ -4,7 +4,7 @@ import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { readFileAsDataUri } from '../../utils/file';
 import { apiService } from '../../services/api';
-import { PageHeader } from '../layout/PageHeader';
+import { HeroControls } from '../layout/HeroControls';
 import { JobDescription } from './JobDescription';
 import { sectorLabel } from '../../data/jobSectors';
 import { useScrollLock } from '../../utils/useScrollLock';
@@ -326,18 +326,10 @@ export const JobPage = ({ jobId, onBack, onNavigate }) => {
     >
       {/* Premium page shell */}
       <div className="min-h-[100dvh]">
-        {/* Header — the shared page header; save/share stay available on desktop as a toolbar row */}
-        <PageHeader
-          title={title}
-          onBack={() => { soundService.playTick?.(); onClose(); }}
-          actions={[
-            { icon: Bookmark, label: 'پاشەکەوتکردن', onClick: () => { soundService.playTick?.(); toggleSaveJob(job.id); }, active: isSaved },
-            { icon: Share2, label: 'هاوبەشکردن', onClick: handleShare },
-          ]}
-        />
 
         {/* Hero */}
-        <section className="relative overflow-hidden bg-[#101b18] text-white">
+        <section className="relative overflow-hidden bg-[#101b18] text-white" style={{ marginTop: 'calc(-1 * env(safe-area-inset-top))' }}>
+          <HeroControls onBack={() => { soundService.playTick?.(); onClose(); }} actions={[{ icon: Bookmark, label: 'پاشەکەوتکردن', onClick: () => { soundService.playTick?.(); toggleSaveJob(job.id); }, active: isSaved }, { icon: Share2, label: 'هاوبەشکردن', onClick: handleShare }]} />
           <div className="pointer-events-none absolute -right-28 -top-32 h-96 w-96 rounded-full bg-[#12796b]/25 blur-3xl" />
           <div className="pointer-events-none absolute -left-28 -bottom-44 h-[430px] w-[430px] rounded-full bg-[#43c8ad]/10 blur-3xl" />
           <div

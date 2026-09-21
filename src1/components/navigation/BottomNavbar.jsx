@@ -90,6 +90,7 @@ export const BottomNavbar = ({ activeTab, setActiveTab }) => {
   const navItem = (id, Icon, label, iconColor = 'text-[#12796b]', badge = 0) => (
     <div key={id} className="relative flex-1">
       <button
+        data-tour={`nav-${id}`}
         onClick={() => handleTabSelect(id)}
         className={`w-full flex flex-col items-center justify-center py-1.5 px-2 rounded-2xl transition-all duration-200 relative ${
           activeTab === id ? 'text-slate-900 font-black scale-105' : 'text-slate-500 hover:text-slate-900 font-medium'

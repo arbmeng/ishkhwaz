@@ -575,7 +575,7 @@ export const UserProfilePage = ({ onNavigate }) => {
   const ProfileHeroImpl = () => {
     // One soft rounded row, used for every menu item (same look as the settings sheet).
     const row = (key, Icon, title, { hint, onClick, danger } = {}) => (
-      <button key={key} type="button" className={`ap-row${danger ? ' ap-danger' : ''}`} onClick={() => { soundService.playTick?.(); onClick?.(); }}>
+      <button key={key} type="button" data-tour={`profile-${key}`} className={`ap-row${danger ? ' ap-danger' : ''}`} onClick={() => { soundService.playTick?.(); onClick?.(); }}>
         <span className="ap-row-ic"><Icon className="w-[19px] h-[19px]" /></span>
         <span className="ap-row-t">{title}</span>
         {hint != null && hint !== '' && <span className="ap-row-hint">{hint}</span>}

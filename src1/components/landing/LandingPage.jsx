@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useStore } from '../../context/StoreContext';
 import {
   ArrowLeft,
   BriefcaseBusiness,
@@ -117,6 +118,17 @@ export default function LandingPage({ onNavigate }) {
   const [activeFaq, setActiveFaq] = useState(0);
   const { canInstall, installed, install } = useInstallPrompt();
   const [activeNav, setActiveNav] = useState('home');
+  const { jobs = [], workTypes = [] } = useStore();
+  const GOV = { sulaymaniyah: 'سلێمانی', erbil: 'هەولێر', duhok: 'دهۆک', kirkuk: 'کەرکووک', halabja: 'هەڵەبجە' };
+  // The hero preview shows the newest real jobs; before they load it keeps three neutral placeholders.
+  const previewJobs = useMemo(() => {
+    const live = (Array.isArray(jobs) ? jobs : []).filter(j => j && (j.title_ku || j.title)).slice(0, 3).map(j => [
+      j.title_ku || j.title,
+      GOV[j.governorate_id] || j.governorate_id || 'کوردستان',
+      workTypes.find(t => t.id === j.job_type)?.name_ku || '',
+    ]);
+    return live.length ? live : [['هەلی کار', 'کوردستان', ''], ['هەلی کار', 'کوردستان', ''], ['هەلی کار', 'کوردستان', '']];
+  }, [jobs, workTypes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const ids = NAV_ITEMS.map(i => i.id);
@@ -176,8 +188,8 @@ export default function LandingPage({ onNavigate }) {
         .ish-nav:before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(rgba(255,255,255,.22) 1px,transparent 1.4px);background-size:22px 22px;opacity:.55}
         .ish-nav .ish-nav-inner{position:relative}
         .ish-nav .ish-brand{color:#fff}.ish-nav .ish-brand span{color:rgba(255,255,255,.7)}
-        .ish-logo-tile{display:grid;place-items:center;width:46px;height:46px;border-radius:15px;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.14)}
-        .ish-nav .ish-logo-tile img{width:30px;height:30px;border-radius:0}
+        .ish-logo-tile{display:block;flex:0 0 auto;width:46px;height:46px;border-radius:15px;overflow:hidden;box-shadow:0 0 0 1.5px rgba(255,255,255,.4),0 6px 16px rgba(0,0,0,.18)}
+        .ish-nav .ish-logo-tile img{display:block;width:100%;height:100%;max-width:none;object-fit:cover;border-radius:0}
         .ish-nav .ish-links{padding:5px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(10px)}
         .ish-nav .ish-links button{color:#fff;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:600;transition:.2s}
         .ish-nav .ish-links button:hover{background:rgba(255,255,255,.16);color:#fff}
@@ -194,7 +206,7 @@ export default function LandingPage({ onNavigate }) {
       <header className="ish-nav">
         <div className="ish-container ish-nav-inner">
           <button className="ish-brand" onClick={() => scrollToId('home')}>
-            <span className="ish-logo-tile"><img src="/logo-flat.png" alt="ئیش خواز" /></span>
+            <span className="ish-logo-tile"><img src="/logo-green.png" alt="ئیش خواز" /></span>
             <div><strong>ئیش خواز</strong><span>کار لە کوردستان</span></div>
           </button>
 
@@ -235,8 +247,8 @@ export default function LandingPage({ onNavigate }) {
                 <div className="ish-window-top"><i className="ish-dot" /><i className="ish-dot" /><i className="ish-dot" /></div>
                 <div className="ish-preview">
                   <div className="ish-searchbox"><Search size={16} /> بگەڕێ بۆ ناوی کار، کۆمپانیا یان شار...</div>
-                  {[['پەرەپێدەری وێب', 'سلێمانی', 'Full-time'], ['حسابدار', 'هەولێر', 'On-site'], ['گرافیک دیزاینەر', 'دهۆک', 'Remote']].map(([title, city, type]) => <div className="ish-job-card" key={title}>
-                    <div className="ish-job-row"><div className="ish-company"><div className="ish-company-logo"><Building2 size={18} /></div><div><div className="ish-job-title">{title}</div><div className="ish-job-meta"><MapPin size={10} style={{ verticalAlign: '-2px' }} /> {city}</div></div></div><span className="ish-pill">{type}</span></div>
+                  {previewJobs.map(([title, city, type], idx) => <div className="ish-job-card" key={idx}>
+                    <div className="ish-job-row"><div className="ish-company"><div className="ish-company-logo"><Building2 size={18} /></div><div><div className="ish-job-title">{title}</div><div className="ish-job-meta"><MapPin size={10} style={{ verticalAlign: '-2px' }} /> {city}</div></div></div>{type && <span className="ish-pill">{type}</span>}</div>
                     <div className="ish-job-tags"><span className="ish-pill">ئیش خواز</span><span className="ish-pill">پیشەیی</span></div>
                   </div>)}
                 </div>
@@ -266,7 +278,7 @@ export default function LandingPage({ onNavigate }) {
             <div className="ish-tutorial-card">
               <div className="ish-eyebrow" style={{ color: '#7de0cf' }}>ڕێبەری خێرا</div>
               <h2 style={{ fontSize: 28, lineHeight: 1.5, margin: '9px 0 0' }}>لە مۆبایلەکەتەوە<br />هەموو شتێک بەدەستەوە.</h2>
-              <div className="ish-phone"><div className="ish-phone-screen"><div className="ish-phone-logo"><img src="/logo-flat.png" alt="" style={{ width: 30, height: 30 }} /></div><div className="ish-phone-line" /><div className="ish-phone-line short" /><div className="ish-phone-line" /><div className="ish-phone-line short" /><div className="ish-phone-btn" /></div></div>
+              <div className="ish-phone"><div className="ish-phone-screen"><div className="ish-phone-logo"><img src="/logo-green.png" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 13 }} /></div><div className="ish-phone-line" /><div className="ish-phone-line short" /><div className="ish-phone-line" /><div className="ish-phone-line short" /><div className="ish-phone-btn" /></div></div>
             </div>
             <div>
               <div className="ish-eyebrow">Tutorial</div><h2 className="ish-title">چۆن لە ئیش خواز بەکاربهێنیت؟</h2><p className="ish-subtitle" style={{ margin: 0 }}>ئەم ڕێبەرە هەموو ئەو هەنگاوانە پیشان دەدات کە بۆ دەستپێکردن پێویستن.</p>
@@ -297,7 +309,7 @@ export default function LandingPage({ onNavigate }) {
         <section className="ish-cta"><div className="ish-container"><div className="ish-cta-box"><div><h2>ئامادەیت دەستپێبکەیت؟</h2><p>ئێستا هەژمارەکەت دروست بکە و دنیای هەلی کار لە ئیش خواز ببینە.</p></div><div className="ish-actions" style={{ margin: 0 }}><button className="ish-btn ish-soft" onClick={() => navigate('/register')}><UsersRound size={18} /> دروستکردنی هەژمار</button><button className="ish-btn" style={{ background: 'rgba(255,255,255,.1)', color: 'white', border: '1px solid rgba(255,255,255,.15)' }} onClick={handleInstall}><Download size={17} /> دابەزاندنی ئەپ</button></div></div></div></section>
       </main>
 
-      <footer className="ish-footer"><div className="ish-container"><div className="ish-footer-grid"><div><div className="ish-brand"><img src="/logo-flat.png" alt="ئیش خواز" /><div><strong style={{ color: 'white' }}>ئیش خواز</strong><span style={{ color: '#78918b' }}>کار لە کوردستان</span></div></div><p>پلاتفۆرمێکی نوێ بۆ پەیوەندیکردنی کارخوازان و کۆمپانیاکان، بە ئەزموونێکی سادە و مۆدێرن بۆ کوردستان.</p></div><div><h4>بەستەرەکان</h4><div className="ish-footer-links">{NAV_ITEMS.map(x => <button key={x.id} onClick={() => scrollToId(x.id)}>{x.label}</button>)}</div></div><div><h4>دەستپێکردن</h4><div className="ish-footer-links"><button onClick={() => navigate('/register')}>تۆمارکردن</button><button onClick={() => navigate('/login')}>چوونەژوورەوە</button><button onClick={() => navigate('/about')}>دەربارەی ئیش خواز</button><button onClick={() => navigate('/contact')}>پەیوەندیمان پێوە بکە</button><button onClick={handleInstall}>دابەزاندنی PWA</button></div></div></div><div className="ish-footer-bottom"><span>© {new Date().getFullYear()} ئیش خواز. هەموو مافەکان پارێزراون.</span><span>دروستکراوە بۆ کار لە کوردستان</span></div></div></footer>
+      <footer className="ish-footer"><div className="ish-container"><div className="ish-footer-grid"><div><div className="ish-brand"><img src="/logo-green.png" alt="ئیش خواز" /><div><strong style={{ color: 'white' }}>ئیش خواز</strong><span style={{ color: '#78918b' }}>کار لە کوردستان</span></div></div><p>پلاتفۆرمێکی نوێ بۆ پەیوەندیکردنی کارخوازان و کۆمپانیاکان، بە ئەزموونێکی سادە و مۆدێرن بۆ کوردستان.</p></div><div><h4>بەستەرەکان</h4><div className="ish-footer-links">{NAV_ITEMS.map(x => <button key={x.id} onClick={() => scrollToId(x.id)}>{x.label}</button>)}</div></div><div><h4>دەستپێکردن</h4><div className="ish-footer-links"><button onClick={() => navigate('/register')}>تۆمارکردن</button><button onClick={() => navigate('/login')}>چوونەژوورەوە</button><button onClick={() => navigate('/about')}>دەربارەی ئیش خواز</button><button onClick={() => navigate('/contact')}>پەیوەندیمان پێوە بکە</button><button onClick={handleInstall}>دابەزاندنی PWA</button></div></div></div><div className="ish-footer-bottom"><span>© {new Date().getFullYear()} ئیش خواز. هەموو مافەکان پارێزراون.</span><span>دروستکراوە بۆ کار لە کوردستان</span></div></div></footer>
 
       {!installed && <div className="ish-install"><span>ئیش خواز وەک ئەپ دابەزێنە</span><button onClick={handleInstall}>{canInstall ? 'دابەزاندن' : 'چۆن؟'}</button></div>}
 

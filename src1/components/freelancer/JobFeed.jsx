@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { FreelancerProfileModal } from './FreelancerProfileModal';
@@ -19,17 +19,17 @@ import {
   GraduationCap, Landmark, UtensilsCrossed, Truck, Package
 } from 'lucide-react';
 
-// Brand teal â€” matches the logo mark and the rest of the light screens.
+// Brand teal — matches the logo mark and the rest of the light screens.
 const TEAL = '#12796b';
 const TEAL_DEEP = '#0d5c50';
 const TEAL_SOFT = '#e7f4f1';
 
 const GOV_LABELS = {
-  sulaymaniyah: 'Ø³Ù„ÛŽÙ…Ø§Ù†ÛŒ', erbil: 'Ù‡Û•ÙˆÙ„ÛŽØ±', duhok: 'Ø¯Ù‡Û†Ú©',
-  kirkuk: 'Ú©Û•Ø±Ú©ÙˆÙˆÚ©', halabja: 'Ù‡Û•ÚµÛ•Ø¨Ø¬Û•',
+  sulaymaniyah: 'سلێمانی', erbil: 'هەولێر', duhok: 'دهۆک',
+  kirkuk: 'کەرکووک', halabja: 'هەڵەبجە',
 };
 
-// Real illustrated cover photos per governorate â€” falls back to the SVG
+// Real illustrated cover photos per governorate — falls back to the SVG
 // landmark symbol + color gradient for any governorate without one.
 const CITY_PHOTOS = {
   sulaymaniyah: '/cities/sulaymaniyah.png',
@@ -40,12 +40,12 @@ const CITY_PHOTOS = {
 };
 
 const JOB_TYPE_LABELS = {
-  fullTime: 'Ú©Ø§ØªÛŒ ØªÛ•ÙˆØ§Ùˆ', partTime: 'Ù¾Ø§Ø±Ú†Û•ÛŒÛŒ', contract: 'Ú¯Ø±ÛŽØ¨Û•Ø³Øª',
-  internship: 'Ù…Ø§ÙˆÛ•ÛŒ ÙÛŽØ±Ø¨ÙˆÙˆÙ†', remote: 'Ú©Ø§ØªÛŒ Ø¦Ø§Ø²Ø§Ø¯',
+  fullTime: 'کاتی تەواو', partTime: 'پارچەیی', contract: 'گرێبەست',
+  internship: 'ماوەی فێربوون', remote: 'کاتی ئازاد',
 };
 
 // A consistent line-icon set (same stroke weight) instead of mixed-platform
-// emoji, keyed to the real category ids seeded on the backend â€” unknown
+// emoji, keyed to the real category ids seeded on the backend — unknown
 // categories still get a sane fallback so nothing breaks if new ones are added.
 const CATEGORY_ICONS = {
   all: LayoutGrid,
@@ -62,10 +62,10 @@ const CATEGORY_ICONS = {
 };
 
 const PRICE_RANGES = [
-  { value: 'all', label: 'Ù‡Û•Ù…ÙˆÙˆ Ù†Ø±Ø®Û•Ú©Ø§Ù†' },
-  { value: 'lt400', label: 'Ú©Û•Ù…ØªØ± Ù„Û• Ù¤Ù Ù ,Ù Ù Ù ' },
-  { value: '400to800', label: 'Ù¤Ù Ù ,Ù Ù Ù  - Ù¨Ù Ù ,Ù Ù Ù ' },
-  { value: 'gt800', label: 'Ø²ÛŒØ§ØªØ± Ù„Û• Ù¨Ù Ù ,Ù Ù Ù ' },
+  { value: 'all', label: 'هەموو نرخەکان' },
+  { value: 'lt400', label: 'کەمتر لە ٤٠٠,٠٠٠' },
+  { value: '400to800', label: '٤٠٠,٠٠٠ - ٨٠٠,٠٠٠' },
+  { value: 'gt800', label: 'زیاتر لە ٨٠٠,٠٠٠' },
 ];
 
 const parseSkills = (raw) => {
@@ -78,14 +78,14 @@ const isNewJob = (job) => {
   return (Date.now() - new Date(job.created_at).getTime()) < 48 * 3600 * 1000;
 };
 
-// A simple time-of-day greeting â€” same idea as any native app's "Good
+// A simple time-of-day greeting — same idea as any native app's "Good
 // morning" header, just localized.
 const getGreeting = () => {
   const h = new Date().getHours();
-  if (h < 12) return 'Ø¨Û•ÛŒØ§Ù†ÛŒØª Ø¨Ø§Ø´';
-  if (h < 17) return 'Ù†ÛŒÙˆÛ•Ú•Û†Øª Ø¨Ø§Ø´';
-  if (h < 20) return 'Ø¦ÛŽÙˆØ§Ø±Û•Øª Ø¨Ø§Ø´';
-  return 'Ø´Û•ÙˆØª Ø¨Ø§Ø´';
+  if (h < 12) return 'بەیانیت باش';
+  if (h < 17) return 'نیوەڕۆت باش';
+  if (h < 20) return 'ئێوارەت باش';
+  return 'شەوت باش';
 };
 
 const PAGE_SIZE = 10;
@@ -101,23 +101,23 @@ const Reveal = ({ children, className = '' }) => {
   );
 };
 
-// Real cover art for a job card when no real photo (company_cover) exists â€”
+// Real cover art for a job card when no real photo (company_cover) exists —
 // a deterministic color pair + the company's own initial, never a fake stock photo.
 const CoverArt = ({ seed, cover, className = '' }) => {
   if (cover) return <img src={cover} alt="" className={`${className} object-cover`} />;
   const [c1, c2] = monogramColors(seed);
-  // A single name-initial letter here reads as ambiguous â€” for names
-  // starting with "Ø¦" (very common in Kurdish) it was mistaken for the
+  // A single name-initial letter here reads as ambiguous — for names
+  // starting with "ئ" (very common in Kurdish) it was mistaken for the
   // app's own logo mark. Spelled-out brand text instead of a lone letter
   // makes it unambiguous that this is just a placeholder, not a real photo.
   return (
     <div className={`${className} flex items-center justify-center`} style={{ background: `linear-gradient(135deg, ${c1}, ${c2})` }}>
-      <span className="text-white/30 font-black text-lg tracking-wide select-none">Ø¦ÛŒØ´ Ø®ÙˆØ§Ø²</span>
+      <span className="text-white/30 font-black text-lg tracking-wide select-none">ئیش خواز</span>
     </div>
   );
 };
 
-// A pill that opens a small option list â€” used for price/city, where the
+// A pill that opens a small option list — used for price/city, where the
 // option set doesn't fit a plain chip row.
 const DropdownChip = ({ label, value, options, onChange }) => {
   const [open, setOpen] = useState(false);
@@ -150,41 +150,71 @@ const DropdownChip = ({ label, value, options, onChange }) => {
   );
 };
 
-/* Premium marketplace hero */
-const PremiumFeedHero = ({ isEmployer, user, activeJobs, activePeople, newCount, onNavigate }) => {
-  const firstName = (user?.name || '').split(' ')[0] || 'Ø¨Û•Ú©Ø§Ø±Ù‡ÛŽÙ†Û•Ø±';
+/* Green page header (same look as every other page): greeting on phones, title, search, live counts */
+const FEED_GRAD = 'linear-gradient(155deg,#12897a 0%,#0d6a5d 48%,#083f37 100%)';
+const PremiumFeedHero = ({ isEmployer, user, activeJobs, activePeople, newCount, onNavigate, searchTerm, onSearch, unreadMessages = 0, unreadNotifs = 0 }) => {
+  const firstName = (user?.name || '').split(' ')[0] || 'بەکارهێنەر';
+  const iconBtn = 'relative grid h-11 w-11 place-items-center rounded-2xl border border-white/20 bg-white/12 text-white backdrop-blur active:scale-95 transition';
   return (
-    <section className="relative overflow-hidden rounded-[30px] sm:rounded-[36px] border border-white/70 bg-white shadow-[0_16px_55px_rgba(20,45,40,0.09)]">
-      <div className="absolute -top-24 -right-20 h-56 w-56 rounded-full blur-3xl opacity-30" style={{ background: `radial-gradient(circle, ${TEAL} 0%, transparent 68%)` }} />
-      <div className="absolute -bottom-28 -left-16 h-56 w-56 rounded-full blur-3xl opacity-20" style={{ background: `radial-gradient(circle, #8ccfc2 0%, transparent 68%)` }} />
-      <div className="relative p-5 sm:p-7 lg:p-8">
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+    <section
+      className="relative overflow-hidden rounded-b-[30px] text-white shadow-[0_14px_34px_rgba(8,63,55,.22)] lg:rounded-b-[36px]"
+      style={{ background: FEED_GRAD, marginTop: 'calc(-1 * env(safe-area-inset-top))', paddingTop: 'env(safe-area-inset-top)' }}
+    >
+      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-[#43d1b8]/25 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 opacity-[.07]" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.9) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.9) 1px,transparent 1px)', backgroundSize: '38px 38px' }} />
+      <div className="relative mx-auto max-w-6xl px-4 pb-7 pt-4 sm:px-6 lg:px-8 lg:pb-9 lg:pt-9">
+        {/* phones: greeting + shortcuts (the desktop header already has these) */}
+        <div className="mb-5 flex items-center justify-between lg:hidden">
+          <button type="button" onClick={() => onNavigate?.('profile')} className="flex items-center gap-3 text-right active:scale-95 transition">
+            <span className="grid h-11 w-11 place-items-center overflow-hidden rounded-2xl bg-white/15 text-base font-bold ring-1 ring-white/25">
+              {user?.avatar ? <img src={user.avatar} alt="" className="h-full w-full object-cover" /> : firstName.charAt(0)}
+            </span>
+            <span>
+              <span className="block text-[11px] font-medium text-white/70">{getGreeting()}</span>
+              <span className="block text-[17px] font-bold leading-tight">{firstName}</span>
+            </span>
+          </button>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => onNavigate?.('messages')} aria-label="پەیامەکان" className={iconBtn}><MessageCircle className="h-[18px] w-[18px]" />{unreadMessages > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-400" />}</button>
+            <button type="button" onClick={() => onNavigate?.('notifications')} aria-label="ئاگادارییەکان" className={iconBtn}><Bell className="h-[18px] w-[18px]" />{unreadNotifs > 0 && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-400" />}</button>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 bg-[#eef8f5] border border-[#d8eee8] text-[10px] font-black" style={{ color: TEAL_DEEP }}>
-              {isEmployer ? <UsersRound className="w-3.5 h-3.5" /> : <WandSparkles className="w-3.5 h-3.5" />}
-              {isEmployer ? 'Ø¨Ø§Ø²Ø§Ú•ÛŒ Ú©Ø§Ø±Ø®ÙˆØ§Ø²Ø§Ù†' : 'Ø¨Ø§Ø²Ø§Ú•ÛŒ Ù‡Û•Ù„ÛŒ Ú©Ø§Ø±'}
-            </div>
-            <h2 className="mt-4 text-[28px] sm:text-[36px] lg:text-[42px] leading-[1.12] font-black tracking-tight text-stone-950">
-              {isEmployer ? <>Ú©Ø§Ø±Ø®ÙˆØ§Ø²ÛŽÚ©ÛŒ <span style={{ color: TEAL }}>Ø¨Ø§Ø´ØªØ±</span> Ø¨Û† Ú©Ø§Ø±Û•Ú©Û•Øª Ø¨Ø¯Û†Ø²Û•Ø±Û•ÙˆÛ•.</> : <>Ù‡Û•Ù„ÛŒ Ú©Ø§Ø±ÛŽÚ©ÛŒ <span style={{ color: TEAL }}>Ú¯ÙˆÙ†Ø¬Ø§Ùˆ</span> Ø¨Û† ØªÛ† Ù„ÛŽØ±Û•ÛŒÛ•.</>}
-            </h2>
-            <p className="mt-3 max-w-xl text-xs sm:text-sm leading-6 font-bold text-stone-400">
-              {isEmployer ? `Ø³ÚµØ§Ùˆ ${firstName}ØŒ Ú©Ø§Ø±Ø®ÙˆØ§Ø²Û• Ù¾Ø´Ú©Ù†Ø±Ø§ÙˆÛ•Ú©Ø§Ù† Ø¨Û• Ù¾ÛŒØ´Û• Ùˆ Ø´ÙˆÛŽÙ† Ø¨Ú¯Û•Ú•ÛŽ Ùˆ Ù¾Û•ÛŒÙˆÛ•Ù†Ø¯ÛŒÛŒÛ•Ú©Û•Øª Ø¨Û• Ø®ÛŽØ±Ø§ÛŒÛŒ Ø¯Û•Ø³ØªÙ¾ÛŽØ¨Ú©Û•.` : `Ø³ÚµØ§Ùˆ ${firstName}ØŒ Ø¨Ú¯Û•Ú•ÛŽ Ø¨Û† Ú©Ø§Ø±Û•Ú©Ø§Ù† Ú©Û• Ù„Û•Ú¯Û•Úµ ØªÙˆØ§Ù†Ø§Ú©Ø§Ù† Ùˆ Ø´Ø§Ø±Û•Ú©Û•ØªØ¯Ø§ Ú¯ÙˆÙ†Ø¬Ø§ÙˆÙ† Ùˆ Ø¨Û• ÛŒÛ•Ú© Ú©Ù„ÛŒÚ© Ø³ÛŒÚ¤ÛŒ Ø¨Ù†ÛŽØ±Û•.`}
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-[#c8fff3]">
+              {isEmployer ? <UsersRound className="h-3.5 w-3.5" /> : <WandSparkles className="h-3.5 w-3.5" />}
+              {isEmployer ? 'بازاڕی کارخوازان' : 'بازاڕی هەلی کار'}
+            </span>
+            <h1 className="mt-3 text-[26px] font-bold leading-[1.45] sm:text-[34px] lg:text-[40px]">
+              {isEmployer ? 'کارخوازی باش بۆ کارەکەت بدۆزەرەوە' : 'هەلی کاری گونجاو بۆ تۆ لێرەیە'}
+            </h1>
+            <p className="mt-2 max-w-xl text-[13px] font-medium leading-7 text-white/75">
+              {isEmployer ? 'کارخوازانی Pro و VIP بە پیشە و شوێن بگەڕێ و بە خێرایی پەیوەندییان پێوە بکە.' : 'بگەڕێ، هەلی نوێ ببینە و بە یەک کرتە سیڤییەکەت بنێرە.'}
             </p>
           </div>
-          <button onClick={() => onNavigate?.(isEmployer ? 'post-job' : 'profile')} className="group shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-xs font-black text-white shadow-[0_10px_24px_rgba(18,121,107,0.22)] transition-all hover:-translate-y-0.5 active:scale-[0.98]" style={{ background: `linear-gradient(135deg, ${TEAL}, ${TEAL_DEEP})` }}>
-            {isEmployer ? 'Ø¨ÚµØ§ÙˆÚ©Ø±Ø¯Ù†Û•ÙˆÛ•ÛŒ Ù‡Û•Ù„ÛŒ Ú©Ø§Ø±' : 'Ù¾Ú•Û†ÙØ§ÛŒÙ„ÛŒ Ø®Û†Øª ØªÛ•ÙˆØ§Ùˆ Ø¨Ú©Û•'}
-            <ArrowUpRight className="w-4 h-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          <button type="button" onClick={() => onNavigate?.(isEmployer ? 'post-job' : 'profile')} className="group inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-xs font-bold text-[#0d5c50] shadow-[0_12px_28px_rgba(0,0,0,.18)] transition active:scale-95">
+            {isEmployer ? 'بڵاوکردنەوەی هەلی کار' : 'پڕۆفایلی خۆت تەواو بکە'}
+            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </button>
         </div>
-        <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-7 pt-5 border-t border-stone-100">
+
+        {/* search lives inside the card */}
+        <div className="relative mt-5 max-w-2xl">
+          <Search className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8aa39d]" />
+          <input value={searchTerm} onChange={e => onSearch?.(e.target.value)} placeholder={isEmployer ? 'گەڕان بۆ کارخواز، پیشە...' : 'گەڕان بۆ کار، کۆمپانیا...'}
+            className="w-full rounded-2xl border border-transparent bg-white py-3.5 pl-4 pr-11 text-sm font-bold text-[#111d1a] shadow-[0_10px_28px_rgba(0,0,0,.14)] outline-none placeholder:text-[#9db0ab] focus:ring-4 focus:ring-white/25" />
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
           {[
-            { value: activeJobs, label: isEmployer ? 'Ù‡Û•Ù„ÛŒ Ú©Ø§Ø±' : 'Ù‡Û•Ù„ÛŒ Ø¨Û•Ø±Ø¯Û•Ø³Øª', icon: Briefcase },
-            { value: activePeople, label: isEmployer ? 'Ú©Ø§Ø±Ø®ÙˆØ§Ø²' : 'Ú©Û†Ù…Ù¾Ø§Ù†ÛŒØ§', icon: isEmployer ? UsersRound : Users },
-            { value: newCount, label: 'Ù†ÙˆÛŽ', icon: Sparkles },
+            { value: activeJobs, label: isEmployer ? 'کارخوازی Pro/VIP' : 'هەلی بەردەست', icon: Briefcase },
+            { value: activePeople, label: isEmployer ? 'هەموو کارخواز' : 'کۆمپانیا', icon: isEmployer ? UsersRound : Users },
+            { value: newCount, label: 'نوێ', icon: Sparkles },
           ].map(({ value, label, icon: Icon }) => (
-            <div key={label} className="rounded-2xl bg-stone-50/80 border border-stone-100 px-3 py-3 sm:px-4">
-              <div className="flex items-center gap-2"><span className="w-7 h-7 rounded-xl bg-white flex items-center justify-center shadow-sm"><Icon className="w-3.5 h-3.5" style={{ color: TEAL }} /></span><span className="text-base sm:text-lg font-black text-stone-900 font-mono">{Number(value || 0).toLocaleString()}</span></div>
-              <p className="mt-1 text-[9px] sm:text-[10px] font-black text-stone-400">{label}</p>
+            <div key={label} className="rounded-2xl border border-white/15 bg-white/10 px-3 py-3 backdrop-blur sm:px-4">
+              <div className="flex items-center gap-2"><Icon className="h-4 w-4 text-[#8ff0dc]" /><span className="text-xl font-bold leading-none sm:text-2xl">{value}</span></div>
+              <p className="mt-1.5 text-[10px] font-medium text-white/70">{label}</p>
             </div>
           ))}
         </div>
@@ -200,11 +230,11 @@ const PremiumUpgradeBanner = ({ onNavigate, planName }) => (
     <div className="relative p-5 sm:p-7"><div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
       <div className="max-w-2xl">
         <div className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-white/10 border border-white/10 text-[10px] font-black text-[#b7eee3]"><Crown className="w-3.5 h-3.5" />KARNAMA PRO</div>
-        <h3 className="mt-4 text-2xl sm:text-3xl font-black tracking-tight text-white">Ø¨Û† Ù‡Û•Ø± Ú©Ø§Ø±ÛŽÚ©ØŒ Ø³ÛŒÚ¤ÛŒÛŒÛ•Ú©ÛŒ ØªØ§ÛŒØ¨Û•Øª.</h3>
-        <p className="mt-2 text-xs sm:text-sm leading-6 font-bold text-white/55">Ú†Û•Ù†Ø¯ Ø³ÛŒÚ¤ÛŒÛŒÛ•Ú©ÛŒ Ø¬ÛŒØ§ÙˆØ§Ø² Ø¯Ø±ÙˆØ³Øª Ø¨Ú©Û• Ùˆ Ø¨Û† Ù‡Û•Ø± Ù‡Û•Ù„ÛŒ Ú©Ø§Ø±ÛŽÚ© Ø¦Û•ÙˆÛ•ÛŒ Ú¯ÙˆÙ†Ø¬Ø§ÙˆØªØ±Û• Ù‡Û•ÚµØ¨Ú˜ÛŽØ±Û•.{planName ? ` Ù¾Ù„Ø§Ù†Û•Ú©Û•ÛŒ ØªÛ†: ${planName}` : ''}</p>
-        <div className="flex flex-wrap gap-2 mt-5">{[['Pro', 'ØªØ§ Ù£ Ø³ÛŒÚ¤ÛŒ'], ['Pro+', 'ØªØ§ Ù¦ Ø³ÛŒÚ¤ÛŒ'], ['Smart', 'Ø¦Ø§Ù…Ø§Ø¯Û•ØªØ± Ø¨Û† Ø¯Ø§ÙˆØ§Ú©Ø§Ø±ÛŒ']].map(([title, sub]) => <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-2.5"><div className="text-[10px] font-black text-white">{title}</div><div className="text-[9px] font-bold text-white/45 mt-0.5">{sub}</div></div>)}</div>
+        <h3 className="mt-4 text-2xl sm:text-3xl font-black tracking-tight text-white">بۆ هەر کارێک، سیڤییەکی تایبەت.</h3>
+        <p className="mt-2 text-xs sm:text-sm leading-6 font-bold text-white/55">چەند سیڤییەکی جیاواز دروست بکە و بۆ هەر هەلی کارێک ئەوەی گونجاوترە هەڵبژێرە.{planName ? ` پلانەکەی تۆ: ${planName}` : ''}</p>
+        <div className="flex flex-wrap gap-2 mt-5">{[['Pro', 'تا ٣ سیڤی'], ['Pro+', 'تا ٦ سیڤی'], ['Smart', 'ئامادەتر بۆ داواکاری']].map(([title, sub]) => <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-2.5"><div className="text-[10px] font-black text-white">{title}</div><div className="text-[9px] font-bold text-white/45 mt-0.5">{sub}</div></div>)}</div>
       </div>
-      <button onClick={() => onNavigate?.('plans')} className="group shrink-0 w-full lg:w-auto min-w-[210px] rounded-2xl bg-white px-5 py-4 text-xs font-black text-[#0b1714] shadow-[0_12px_28px_rgba(0,0,0,.18)] transition-all hover:-translate-y-0.5 active:scale-[0.98]"><span className="flex items-center justify-center gap-2">Ø¨Û•Ø±Ø²Ú©Ø±Ø¯Ù†Û•ÙˆÛ•ÛŒ Ù¾Ù„Ø§Ù†<ArrowUpRight className="w-4 h-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></span><span className="block text-[9px] text-stone-400 mt-1">Ø³ÛŒÚ¤ÛŒÛŒÛ•Ú©Ø§Ù†Øª Ø¨Û• Ø´ÛŽÙˆÛ•ÛŒÛ•Ú©ÛŒ Ø²ÛŒØ±Û•Ú© Ø¨Û•Ú©Ø§Ø±Ø¨Ù‡ÛŽÙ†Û•</span></button>
+      <button onClick={() => onNavigate?.('plans')} className="group shrink-0 w-full lg:w-auto min-w-[210px] rounded-2xl bg-white px-5 py-4 text-xs font-black text-[#0b1714] shadow-[0_12px_28px_rgba(0,0,0,.18)] transition-all hover:-translate-y-0.5 active:scale-[0.98]"><span className="flex items-center justify-center gap-2">بەرزکردنەوەی پلان<ArrowUpRight className="w-4 h-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></span><span className="block text-[9px] text-stone-400 mt-1">سیڤییەکانت بە شێوەیەکی زیرەک بەکاربهێنە</span></button>
     </div></div>
   </section>
 );
@@ -214,7 +244,7 @@ export const JobFeed = ({ onNavigate }) => {
   const { jobs = [], applications = [], savedJobIds = [], categories = [], regions = [], freelancers = [], toggleSaveJob, isInitialLoading, unreadNotifCount = 0, planTiers = [] } = useStore();
 
   // Company accounts land here too (App.jsx routes their Home tab to this
-  // component) â€” everything below computes both a job-feed and a
+  // component) — everything below computes both a job-feed and a
   // freelancer-feed in parallel, and the final render picks one shell.
   const isEmployer = user?.role === 'employer' || user?.role === 'owner' || user?.role === 'admin';
 
@@ -231,12 +261,12 @@ export const JobFeed = ({ onNavigate }) => {
   }, [token]);
 
   // Quick-filter chips show only the curated primary categories (the ones
-  // with a real icon in CATEGORY_ICONS above) â€” the backend's full category
+  // with a real icon in CATEGORY_ICONS above) — the backend's full category
   // list runs past 80 entries once sub-specialties are counted, and dumping
   // all of them into one horizontal row makes it unusable. The job-posting
   // form still offers the complete list; this is browse-time only.
   const CATEGORIES = useMemo(() => [
-    { id: 'all', nameKu: 'Ù‡Û•Ù…ÙˆÙˆ' },
+    { id: 'all', nameKu: 'هەموو' },
     ...categories.filter(c => CATEGORY_ICONS[c.id]).map(c => ({ id: c.id, nameKu: c.name_ku })),
   ], [categories]);
 
@@ -251,7 +281,7 @@ export const JobFeed = ({ onNavigate }) => {
   const [recommended, setRecommended] = useState({ jobs: [], aiPowered: false });
   const [recommendedLoading, setRecommendedLoading] = useState(false);
 
-  // Real personalization â€” skills/category/city overlap always runs
+  // Real personalization — skills/category/city overlap always runs
   // server-side; once there's an actual CV or listed skills, the backend
   // adds one real AI ranking pass on top (see GET /jobs/recommended).
   useEffect(() => {
@@ -264,8 +294,8 @@ export const JobFeed = ({ onNavigate }) => {
 
   const expandedGovData = useMemo(() => regions.find(r => r.id === expandedGovId), [regions, expandedGovId]);
 
-  // Flattened down to real neighborhood/sub-district level (e.g. "ØªÛ•Ú©ÛŒÛ•ÛŒ
-  // Ú©Ø§Ú©Û•Ù…Û•Ù†Ø¯", "Ø¨Ø§Ø²ÛŒØ§Ù†") â€” not just the district name â€” since that's the
+  // Flattened down to real neighborhood/sub-district level (e.g. "تەکیەی
+  // کاکەمەند", "بازیان") — not just the district name — since that's the
   // actual granularity people search by.
   const expandedTowns = useMemo(() => {
     if (!expandedGovData) return [];
@@ -360,7 +390,7 @@ export const JobFeed = ({ onNavigate }) => {
   const totalPages = Math.max(1, Math.ceil(filteredJobs.length / PAGE_SIZE));
   const pagedJobs = filteredJobs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Newest openings â€” real created_at order, independent of any boost, so
+  // Newest openings — real created_at order, independent of any boost, so
   // this rail always reflects what actually just got posted.
   const newestJobs = useMemo(() => {
     return [...(Array.isArray(jobs) ? jobs : [])]
@@ -368,7 +398,7 @@ export const JobFeed = ({ onNavigate }) => {
       .slice(0, 8);
   }, [jobs]);
 
-  // Real per-governorate job counts â€” only real, non-empty cities are shown,
+  // Real per-governorate job counts — only real, non-empty cities are shown,
   // never a padded list of every governorate regardless of activity.
   const cityStats = useMemo(() => {
     const counts = {};
@@ -382,12 +412,12 @@ export const JobFeed = ({ onNavigate }) => {
       .sort((a, b) => b.count - a.count);
   }, [jobs]);
 
-  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â• EMPLOYER BRANCH â€” freelancers as primary content â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+  /* ══════════════ EMPLOYER BRANCH — freelancers as primary content ══════════════ */
 
   const GOV_NAME_TO_ID = useMemo(() => Object.fromEntries(Object.entries(GOV_LABELS).map(([id, name]) => [name, id])), []);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
-  // Same ownership check Dashboard.jsx uses â€” which jobs this company actually posted.
+  // Same ownership check Dashboard.jsx uses — which jobs this company actually posted.
   const myPostedJobs = useMemo(() => {
     const safeJobs = Array.isArray(jobs) ? jobs : [];
     if (!user) return [];
@@ -440,11 +470,8 @@ export const JobFeed = ({ onNavigate }) => {
   const totalFreelancerPages = Math.max(1, Math.ceil(filteredFreelancers.length / PAGE_SIZE));
   const pagedFreelancers = filteredFreelancers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  const newestFreelancers = useMemo(() => {
-    return [...(Array.isArray(freelancers) ? freelancers : [])]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, 8);
-  }, [freelancers]);
+  // Only used for the "new" counter in the header (the list itself is filteredFreelancers: Pro / VIP only)
+  const newestFreelancers = useMemo(() => filteredFreelancers.filter(f => (Date.now() - new Date(f.created_at || 0).getTime()) < 7 * 24 * 3600 * 1000), [filteredFreelancers]);
 
   const freelancerCityStats = useMemo(() => {
     const counts = {};
@@ -470,13 +497,13 @@ export const JobFeed = ({ onNavigate }) => {
     const isBoosted = f.plan_boost_until && new Date(f.plan_boost_until) > new Date();
     const matched = freelancerMatchesCompany(f);
     const verified = Number(f.verified) === 1 || f.verified === true;
-    const displayTitle = f.job_title || f.title || f.specialty || skills[0] || 'Ú©Ø§Ø±Ø®ÙˆØ§Ø²';
+    const displayTitle = f.job_title || f.title || f.specialty || skills[0] || 'کارخواز';
     const years = Number(f.experience_years ?? f.years_experience ?? f.experience ?? 0);
     const tags = skills.slice(0, 5);
-    const initials = (f.name || 'Ú©').trim().charAt(0);
+    const initials = (f.name || 'ک').trim().charAt(0);
     const avatar = f.avatar || f.profile_image || f.photo;
     const cover = f.cover || f.cover_image || f.banner;
-    const location = [f.district || f.sub_district, f.governorate].filter(Boolean).join('ØŒ ') || 'Ú©ÙˆØ±Ø¯Ø³ØªØ§Ù†';
+    const location = [f.district || f.sub_district, f.governorate].filter(Boolean).join('، ') || 'کوردستان';
 
     return (
       <article
@@ -516,12 +543,12 @@ export const JobFeed = ({ onNavigate }) => {
           </div>
 
           <span className={`absolute top-3 left-3 rounded-full px-2.5 py-1.5 text-[10px] font-black backdrop-blur-md shadow-sm ${isVip ? 'bg-black/35 text-white border border-white/15' : 'bg-white/90 text-stone-700'}`}>
-            {f.governorate || 'Ú©ÙˆØ±Ø¯Ø³ØªØ§Ù†'}
+            {f.governorate || 'کوردستان'}
           </span>
 
           {isBoosted && (
             <span className={`absolute top-12 left-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[10px] font-black shadow-sm ${isVip ? 'bg-orange-500/90 text-white' : 'text-white'}`} style={!isVip ? { background: TEAL } : {}}>
-              <Rocket className="w-3 h-3" /> Ø¨Û•Ø±Ø²Ú©Ø±Ø§ÙˆÛ•
+              <Rocket className="w-3 h-3" /> بەرزکراوە
             </span>
           )}
 
@@ -538,7 +565,7 @@ export const JobFeed = ({ onNavigate }) => {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
-                <h3 className={`text-[15px] font-black truncate ${isVip ? 'text-white' : 'text-stone-950'}`}>{f.name || 'Ú©Ø§Ø±Ø®ÙˆØ§Ø²'}</h3>
+                <h3 className={`text-[15px] font-black truncate ${isVip ? 'text-white' : 'text-stone-950'}`}>{f.name || 'کارخواز'}</h3>
                 {verified && <ShieldCheck className="w-4 h-4 shrink-0" style={{ color: isVip ? '#ffb36b' : TEAL }} />}
               </div>
               <p className={`mt-1 text-[10px] font-bold truncate ${isVip ? 'text-orange-100/60' : 'text-stone-400'}`}>{displayTitle}</p>
@@ -553,7 +580,7 @@ export const JobFeed = ({ onNavigate }) => {
             </div>
             <div className={`rounded-xl px-2.5 py-2 flex items-center gap-1.5 ${isVip ? 'bg-white/[.06] border border-white/[.08]' : 'bg-stone-50 border border-stone-100'}`}>
               <Briefcase className="w-3.5 h-3.5 shrink-0" style={{ color: isVip ? '#ff9d4d' : TEAL }} />
-              <span className="truncate">{years > 0 ? `${years} Ø³Ø§Úµ Ø¦Û•Ø²Ù…ÙˆÙˆÙ†` : 'Ø¦Û•Ø²Ù…ÙˆÙˆÙ† Ù„Û• Ù¾Ú•Û†ÙØ§ÛŒÙ„'}</span>
+              <span className="truncate">{years > 0 ? `${years} ساڵ ئەزموون` : 'ئەزموون لە پڕۆفایل'}</span>
             </div>
           </div>
 
@@ -570,14 +597,14 @@ export const JobFeed = ({ onNavigate }) => {
             </div>
           )}
 
-          {matched && <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-black ${isVip ? 'bg-emerald-400/10 text-emerald-200 border border-emerald-300/10' : 'bg-[#e7f4f1] text-[#0d5c50]'}`}><Zap className="w-3 h-3" /> Ú¯ÙˆÙ†Ø¬Ø§Ùˆ Ø¨Û† Ú©Ø§Ø±ÛŒ ØªÛ†</div>}
+          {matched && <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-black ${isVip ? 'bg-emerald-400/10 text-emerald-200 border border-emerald-300/10' : 'bg-[#e7f4f1] text-[#0d5c50]'}`}><Zap className="w-3 h-3" /> گونجاو بۆ کاری تۆ</div>}
 
           <div className="mt-4 flex gap-2">
             <button onClick={e => { e.stopPropagation(); soundService.playTick?.(); setSelectedFreelancer(f); }} className={`flex-1 py-2.5 rounded-xl text-[10px] font-black border transition-all active:scale-95 ${isVip ? 'border-white/10 bg-white/[.06] text-white hover:bg-white/[.10]' : 'border-stone-100 bg-stone-50 text-stone-600 hover:bg-stone-100'}`}>
-              Ù¾Ú•Û†ÙØ§ÛŒÙ„
+              پڕۆفایل
             </button>
             <button onClick={e => { e.stopPropagation(); soundService.playTick?.(); setInviteTarget(f); }} className={`flex-[1.35] py-2.5 rounded-xl text-[10px] font-black text-white transition-all active:scale-95 shadow-lg ${isVip ? 'vip-cta' : ''}`} style={!isVip ? { background: `linear-gradient(135deg,${TEAL},${TEAL_DEEP})` } : undefined}>
-              <span className="inline-flex items-center justify-center gap-1.5"><Send className="w-3 h-3" /> Ø¨Ø§Ù†Ú¯Ù‡ÛŽØ´Øª</span>
+              <span className="inline-flex items-center justify-center gap-1.5"><Send className="w-3 h-3" /> بانگهێشت</span>
             </button>
           </div>
         </div>
@@ -587,14 +614,14 @@ export const JobFeed = ({ onNavigate }) => {
   const JobPhotoCard = ({ job }) => {
     const isApplied = applications.some(a => String(a.job_id) === String(job.id));
     const isSaved = savedJobIds.includes(job.id);
-    const company = job.company_name || job.companyName || job.company || 'Ú©Û†Ù…Ù¾Ø§Ù†ÛŒØ§';
-    const title = job.title_ku || job.title || 'Ù‡Û•Ù„ÛŒ Ú©Ø§Ø±';
-    const govBase = GOV_LABELS[job.governorate_id] || job.location || 'Ú©ÙˆØ±Ø¯Ø³ØªØ§Ù†';
-    // Full address only when the employer actually entered one â€” never a
+    const company = job.company_name || job.companyName || job.company || 'کۆمپانیا';
+    const title = job.title_ku || job.title || 'هەلی کار';
+    const govBase = GOV_LABELS[job.governorate_id] || job.location || 'کوردستان';
+    // Full address only when the employer actually entered one — never a
     // fabricated neighborhood name standing in for real data.
-    const gov = job.location_detail ? `${govBase}ØŒ ${job.location_detail}` : govBase;
-    const salary = job.salary_min ? `${Number(job.salary_min).toLocaleString()} IQD` : 'Ù†Ø±Ø® Ú¯ÙØªÙˆÚ¯Û†Ú©Ø±Ø§Ùˆ';
-    const typeLabel = JOB_TYPE_LABELS[job.job_type] || 'Ú©Ø§ØªÛŒ ØªÛ•ÙˆØ§Ùˆ';
+    const gov = job.location_detail ? `${govBase}، ${job.location_detail}` : govBase;
+    const salary = job.salary_min ? `${Number(job.salary_min).toLocaleString()} IQD` : 'نرخ گفتوگۆکراو';
+    const typeLabel = JOB_TYPE_LABELS[job.job_type] || 'کاتی تەواو';
     const isNew = isNewJob(job);
     const matched = jobMatchesUser(job);
     const isBoosted = job.boosted_until && new Date(job.boosted_until) > new Date();
@@ -618,13 +645,13 @@ export const JobFeed = ({ onNavigate }) => {
 
           {isBoosted && (
             <span className="absolute top-12 left-3 px-2.5 py-1 rounded-full text-[10px] font-black text-white shadow-sm" style={{ background: TEAL }}>
-              ðŸš€ Ø¨Û•Ø±Ø²Ú©Ø±Ø§ÙˆÛ•
+              🚀 بەرزکراوە
             </span>
           )}
 
           {matched && (
             <span className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black text-white shadow-sm" style={{ background: TEAL_DEEP }}>
-              Ø¯ÛŒØ¯Ø§Ø±Ú©Ø±Ø§Ùˆ
+              دیدارکراو
             </span>
           )}
 
@@ -638,11 +665,11 @@ export const JobFeed = ({ onNavigate }) => {
           <h3 className="text-sm font-black text-stone-900 truncate group-hover:text-stone-600 transition-colors">{title}</h3>
           <div className="flex items-center gap-1 text-[11px] text-stone-400 font-bold mt-1 truncate">
             <span className="truncate">{company}</span>
-            {Number(job.company_verified) === 1 && <BadgeCheck className="w-3 h-3 shrink-0" style={{ color: TEAL }} title="Ú©Û†Ù…Ù¾Ø§Ù†ÛŒØ§ÛŒ Ù¾Ø´Ú©Ù†Ø±Ø§Ùˆ" />}
-            <span>Â· {gov}</span>
+            {Number(job.company_verified) === 1 && <BadgeCheck className="w-3 h-3 shrink-0" style={{ color: TEAL }} title="کۆمپانیای پشکنراو" />}
+            <span>· {gov}</span>
           </div>
           {avgResponseH > 0 && (
-            <div className="text-[10px] text-stone-400 font-bold mt-1">â± ÙˆÛ•ÚµØ§Ù…Ø¯Ø§Ù†Û•ÙˆÛ• Ù„Û• ~{avgResponseH < 1 ? '1' : Math.round(avgResponseH)} Ú©Ø§Ú˜ÛŽØ±Ø¯Ø§</div>
+            <div className="text-[10px] text-stone-400 font-bold mt-1">⏱ وەڵامدانەوە لە ~{avgResponseH < 1 ? '1' : Math.round(avgResponseH)} کاژێردا</div>
           )}
 
           <div className="flex items-center gap-2 mt-3 mb-1">
@@ -654,7 +681,7 @@ export const JobFeed = ({ onNavigate }) => {
           <div className="flex items-center justify-between mt-2">
             <span className="font-mono font-black text-sm text-stone-900">{salary}</span>
             <div className="flex items-center gap-2.5">
-              {isNew && <span className="w-1.5 h-1.5 rounded-full" style={{ background: TEAL }} title="Ù†ÙˆÛŽ Ø¨ÚµØ§ÙˆÚ©Ø±Ø§ÙˆÛ•ØªÛ•ÙˆÛ•" />}
+              {isNew && <span className="w-1.5 h-1.5 rounded-full" style={{ background: TEAL }} title="نوێ بڵاوکراوەتەوە" />}
               {Number(job.applications_count) > 0 && (
                 <span className="flex items-center gap-1 text-[10px] text-stone-400 font-bold font-mono">
                   <Users className="w-3 h-3" />{job.applications_count}
@@ -669,7 +696,7 @@ export const JobFeed = ({ onNavigate }) => {
             className={`mt-3 w-full py-2.5 rounded-xl text-[11px] font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 ${isApplied ? 'bg-emerald-50 text-emerald-700' : 'text-white'
               }`}
             style={!isApplied ? { background: TEAL } : {}}>
-            {isApplied ? <><CheckCircle2 className="w-3.5 h-3.5" />Ù†ÛŽØ±Ø¯Ø±Ø§ÙˆÛ•</> : <><Send className="w-3.5 h-3.5" />Ù†Ø§Ø±Ø¯Ù†ÛŒ Ø³ÛŒÚ¤ÛŒ</>}
+            {isApplied ? <><CheckCircle2 className="w-3.5 h-3.5" />نێردراوە</> : <><Send className="w-3.5 h-3.5" />ناردنی سیڤی</>}
           </button>
         </div>
       </div>
@@ -677,9 +704,9 @@ export const JobFeed = ({ onNavigate }) => {
   };
 
   const greetingName = (user?.name || '').split(' ')[0];
-  const avatarLetter = (user?.name || 'Ø¨').trim().charAt(0);
+  const avatarLetter = (user?.name || 'ب').trim().charAt(0);
 
-  // Paid-plan avatar ring â€” any admin-defined paid tier (vip/pro/whatever
+  // Paid-plan avatar ring — any admin-defined paid tier (vip/pro/whatever
   // it's called) gets its own gradient border straight from that tier's
   // color preset; free/no plan gets a plain neutral ring.
   const userPlanTier = planTiers.find(t => t.id === user?.plan);
@@ -691,65 +718,21 @@ export const JobFeed = ({ onNavigate }) => {
 
   return (
     <div dir="rtl" className="min-h-screen font-vazirmatn select-none pb-28" style={{ background: 'linear-gradient(180deg, #f7faf9 0%, #f2f6f4 48%, #eef3f1 100%)' }}>
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-7">
+      <PremiumFeedHero
+        isEmployer={isEmployer}
+        user={user}
+        activeJobs={isEmployer ? filteredFreelancers.length : filteredJobs.length}
+        activePeople={isEmployer ? freelancers.length : jobs.length}
+        newCount={isEmployer ? newestFreelancers.length : newestJobs.length}
+        onNavigate={onNavigate}
+        searchTerm={searchTerm}
+        onSearch={setSearchTerm}
+        unreadMessages={unreadMessageCount}
+        unreadNotifs={unreadNotifCount}
+      />
 
-        {/* â”€â”€ Greeting header â€” avatar grouped with the name on the right
-              (reading-start in RTL), notification bell alone on the left.
-              Mobile-only: DesktopHeaderNav (App.jsx) already shows the same
-              avatar/chat/bell on lg+ screens, so this must stay hidden there
-              or both render stacked on top of each other. â”€â”€ */}
-        <Reveal>
-          <div className="flex items-center justify-between mb-3 lg:hidden">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => onNavigate?.('profile')}
-                className="rounded-2xl active:scale-95 transition-transform shrink-0"
-                style={avatarRingStyle}
-                title={isPaidPlanUser ? (userPlanTier.name_ku || userPlanTier.name_en) : undefined}
-              >
-                <div
-                  className="w-10 h-10 rounded-[14px] bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] overflow-hidden flex items-center justify-center font-black text-sm"
-                  style={{ color: TEAL_DEEP }}
-                >
-                  {user?.avatar ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" /> : avatarLetter}
-                </div>
-              </button>
-              <div className="text-right">
-                <p className="text-xs text-stone-400 font-bold">{getGreeting()}</p>
-                <h1 className="text-2xl font-black text-stone-900 leading-tight">{greetingName || 'Ø¨Û•Ú©Ø§Ø±Ù‡ÛŽÙ†Û•Ø±'}</h1>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => onNavigate?.('messages')}
-                className="relative w-11 h-11 rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] flex items-center justify-center text-stone-500 active:scale-95 transition-transform"
-              >
-                <MessageCircle className="w-4 h-4" />
-                {unreadMessageCount > 0 && (
-                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500" />
-                )}
-              </button>
-              <button
-                onClick={() => onNavigate?.('notifications')}
-                className="relative w-11 h-11 rounded-2xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.06)] flex items-center justify-center text-stone-500 active:scale-95 transition-transform"
-              >
-                <Bell className="w-4 h-4" />
-                {unreadNotifCount > 0 && (
-                  <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500" />
-                )}
-              </button>
-            </div>
-          </div>
-        </Reveal>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-7">
 
-        <PremiumFeedHero
-          isEmployer={isEmployer}
-          user={user}
-          activeJobs={isEmployer ? filteredFreelancers.length : filteredJobs.length}
-          activePeople={isEmployer ? freelancers.length : jobs.length}
-          newCount={isEmployer ? newestFreelancers.length : newestJobs.length}
-          onNavigate={onNavigate}
-        />
 
         {!isEmployer && !isPaidPlanUser && (
           <Reveal>
@@ -759,26 +742,11 @@ export const JobFeed = ({ onNavigate }) => {
 
         {!isEmployer && (
           <>
-            {/* â”€â”€ Search block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ── Search block ────────────────────────────────────── */}
             <Reveal className="space-y-3">
-              <div className="flex gap-2 p-1.5 rounded-[22px] bg-white border border-stone-100 shadow-[0_8px_28px_rgba(0,0,0,0.05)]">
-                <div className="relative flex-1">
-                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-300" />
-                  <input
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    placeholder="Ú¯Û•Ú•Ø§Ù† Ø¨Û† Ú©Ø§Ø±ØŒ Ú©Û†Ù…Ù¾Ø§Ù†ÛŒØ§..."
-                    className="w-full bg-stone-50/70 rounded-[17px] pr-11 pl-4 py-3.5 text-sm text-stone-900 font-bold placeholder-stone-300 outline-none focus:bg-white focus:ring-2 focus:ring-[#12796b]/10 transition-all"
-                  />
-                </div>
-                <div className="w-12 h-12 rounded-[17px] bg-stone-50 border border-stone-100 flex items-center justify-center shrink-0 active:scale-95 transition-all cursor-pointer hover:bg-stone-100">
-                  <SlidersHorizontal className="w-4 h-4 text-stone-400" />
-                </div>
-              </div>
-
-              {/* Job-type pills â€” real values against job.job_type */}
+              {/* Job-type pills — real values against job.job_type */}
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-                {[{ value: 'all', label: 'Ù‡Û•Ù…ÙˆÙˆ' }, ...Object.entries(JOB_TYPE_LABELS).map(([value, label]) => ({ value, label }))].map(t => (
+                {[{ value: 'all', label: 'هەموو' }, ...Object.entries(JOB_TYPE_LABELS).map(([value, label]) => ({ value, label }))].map(t => (
                   <button key={t.value}
                     onClick={() => { soundService.playTick?.(); setJobTypeFilter(t.value); }}
                     className={`px-4 py-2 rounded-full text-xs font-bold shrink-0 transition-all active:scale-95 ${jobTypeFilter === t.value ? 'text-white' : 'bg-white text-stone-500 shadow-[0_2px_16px_rgba(0,0,0,0.05)] hover:text-stone-800'
@@ -790,21 +758,21 @@ export const JobFeed = ({ onNavigate }) => {
 
                 <span className="w-px h-6 bg-stone-200 shrink-0 mx-1" />
 
-                <DropdownChip label="Ù†Ø±Ø®" value={priceFilter} options={PRICE_RANGES} onChange={setPriceFilter} />
-                <DropdownChip label="Ø´Ø§Ø±" value={govFilter}
-                  options={[{ value: 'all', label: 'Ù‡Û•Ù…ÙˆÙˆ Ø´Ø§Ø±Û•Ú©Ø§Ù†' }, ...Object.entries(GOV_LABELS).map(([value, label]) => ({ value, label }))]}
+                <DropdownChip label="نرخ" value={priceFilter} options={PRICE_RANGES} onChange={setPriceFilter} />
+                <DropdownChip label="شار" value={govFilter}
+                  options={[{ value: 'all', label: 'هەموو شارەکان' }, ...Object.entries(GOV_LABELS).map(([value, label]) => ({ value, label }))]}
                   onChange={setGovFilter} />
 
                 {!isEmployer && user && hasActiveFilters && (
                   <button onClick={handleSaveSearch}
                     className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold shrink-0 bg-white text-stone-500 shadow-[0_2px_16px_rgba(0,0,0,0.05)] hover:text-stone-800 transition-all">
                     <Bell className="w-3.5 h-3.5" style={{ color: TEAL }} />
-                    Ù¾Ø§Ø´Û•Ú©Û•ÙˆØªÚ©Ø±Ø¯Ù†ÛŒ Ú¯Û•Ú•Ø§Ù†
+                    پاشەکەوتکردنی گەڕان
                   </button>
                 )}
               </div>
 
-              {/* Saved searches â€” real alerts fire server-side whenever a newly
+              {/* Saved searches — real alerts fire server-side whenever a newly
               posted job matches one of these */}
               {savedSearches.length > 0 && (
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -814,7 +782,7 @@ export const JobFeed = ({ onNavigate }) => {
                       className="flex items-center gap-1.5 pr-3 pl-1.5 py-1.5 rounded-full text-[11px] font-bold shrink-0 bg-white text-stone-500 shadow-[0_2px_16px_rgba(0,0,0,0.05)] hover:text-stone-800 transition-all">
                       {(s.category !== 'all' ? CATEGORIES.find(c => c.id === s.category)?.nameKu : null) ||
                         (s.governorate_id !== 'all' ? GOV_LABELS[s.governorate_id] : null) ||
-                        (s.job_type !== 'all' ? JOB_TYPE_LABELS[s.job_type] : null) || 'Ú¯Û•Ú•Ø§Ù†ÛŒ Ù¾Ø§Ø´Û•Ú©Û•ÙˆØªÚ©Ø±Ø§Ùˆ'}
+                        (s.job_type !== 'all' ? JOB_TYPE_LABELS[s.job_type] : null) || 'گەڕانی پاشەکەوتکراو'}
                       <span onClick={e => handleDeleteSavedSearch(s.id, e)} className="p-1 rounded-full hover:bg-stone-100">
                         <X className="w-3 h-3 text-stone-300" />
                       </span>
@@ -824,37 +792,37 @@ export const JobFeed = ({ onNavigate }) => {
               )}
             </Reveal>
 
-            {/* â”€â”€ Recommended for you â€” real overlap score, plus one real AI
+            {/* ── Recommended for you — real overlap score, plus one real AI
               ranking pass once there's an actual CV/skills to work from.
               While the request is in flight, show a real waiting state
               ("finding suitable work for you") instead of silently showing
-              nothing, so a freelancer never wonders if the feature exists. â”€â”€ */}
+              nothing, so a freelancer never wonders if the feature exists. ── */}
             {recommendedLoading ? (
               <Reveal className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-black text-stone-900">Ù¾ÛŽØ´Ù†ÛŒØ§Ø± Ø¨Û† ØªÛ†</h2>
+                  <h2 className="text-sm font-black text-stone-900">پێشنیار بۆ تۆ</h2>
                   <Sparkles className="w-4 h-4" style={{ color: TEAL }} />
                 </div>
                 <div className="flex items-center gap-3 p-5 rounded-3xl bg-white shadow-[0_2px_16px_rgba(0,0,0,0.05)]">
                   <Loader2 className="w-5 h-5 shrink-0 animate-spin" style={{ color: TEAL }} />
-                  <p className="text-xs font-bold text-stone-500">Ú†Ø§ÙˆÛ•Ú•ÛŽØ¨Û•ØŒ Ø¦ÛŽÙ…Û• Ú©Ø§Ø±ÛŒ Ú¯ÙˆÙ†Ø¬Ø§ÙˆØª Ø¨Û† Ø¯Û•Ø¯Û†Ø²ÛŒÙ†Û•ÙˆÛ•...</p>
+                  <p className="text-xs font-bold text-stone-500">چاوەڕێبە، ئێمە کاری گونجاوت بۆ دەدۆزینەوە...</p>
                 </div>
               </Reveal>
             ) : recommended.jobs.length > 0 && (
               <Reveal className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-black text-stone-900">Ù¾ÛŽØ´Ù†ÛŒØ§Ø± Ø¨Û† ØªÛ†</h2>
+                    <h2 className="text-sm font-black text-stone-900">پێشنیار بۆ تۆ</h2>
                     <Sparkles className="w-4 h-4" style={{ color: TEAL }} />
                   </div>
-                  <span className="text-xs font-bold" style={{ color: TEAL }}>Ù‡Û•Ù…ÙˆÙˆ</span>
+                  <span className="text-xs font-bold" style={{ color: TEAL }}>هەموو</span>
                 </div>
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none snap-x snap-mandatory">
                   {recommended.jobs.map((job) => {
                     const isSaved = savedJobIds.includes(job.id);
                     const isBoosted = job.boosted_until && new Date(job.boosted_until) > new Date();
-                    const company = job.company_name || job.companyName || 'Ú©Û†Ù…Ù¾Ø§Ù†ÛŒØ§';
-                    const govBase = GOV_LABELS[job.governorate_id] || job.location || 'Ú©ÙˆØ±Ø¯Ø³ØªØ§Ù†';
+                    const company = job.company_name || job.companyName || 'کۆمپانیا';
+                    const govBase = GOV_LABELS[job.governorate_id] || job.location || 'کوردستان';
                     return (
                       <div
                         key={job.id}
@@ -865,7 +833,7 @@ export const JobFeed = ({ onNavigate }) => {
                         <div className="flex items-center justify-between mb-3">
                           {isBoosted ? (
                             <span className="px-2.5 py-1 rounded-full text-[10px] font-black text-white flex items-center gap-1" style={{ background: TEAL }}>
-                              <Rocket className="w-2.5 h-2.5" />Ø¨Û•Ø±Ø²Ú©Ø±Ø§ÙˆÛ•
+                              <Rocket className="w-2.5 h-2.5" />بەرزکراوە
                             </span>
                           ) : <span />}
                           <button onClick={e => { e.stopPropagation(); toggleSaveJob(job.id); }}
@@ -874,10 +842,10 @@ export const JobFeed = ({ onNavigate }) => {
                           </button>
                         </div>
                         <h3 className="text-sm font-black text-stone-900 truncate">{job.title_ku}</h3>
-                        <span className="text-[11px] text-stone-500 font-bold block mt-0.5 truncate">{company}ØŒ {govBase}</span>
+                        <span className="text-[11px] text-stone-500 font-bold block mt-0.5 truncate">{company}، {govBase}</span>
                         <div className="h-px my-3" style={{ background: `${TEAL}30` }} />
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-stone-400">Ù…Ø§Ù†Ú¯Ø§Ù†Ù‡</span>
+                          <span className="text-[10px] font-bold text-stone-400">مانگانه</span>
                           <span dir="ltr" className="text-sm font-mono font-black" style={{ color: TEAL_DEEP }}>
                             {(job.salary_min || 0).toLocaleString()} IQD
                           </span>
@@ -889,14 +857,14 @@ export const JobFeed = ({ onNavigate }) => {
               </Reveal>
             )}
 
-            {/* â”€â”€ Explore by city â€” real illustrated photo cards; click one to
+            {/* ── Explore by city — real illustrated photo cards; click one to
              reveal its real towns (from the same data used at registration)
-             below the row, pick one to filter jobs by that place. â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+             below the row, pick one to filter jobs by that place. ────────── */}
             {cityStats.length > 0 && (
               <Reveal className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-black text-stone-900">Ú¯Û•Ú•Ø§Ù† Ø¨Û•Ù¾ÛŽÛŒ Ø´Ø§Ø±</h2>
-                  <span className="text-xs font-bold" style={{ color: TEAL }}>Ù†Û•Ø®Ø´Û•</span>
+                  <h2 className="text-sm font-black text-stone-900">گەڕان بەپێی شار</h2>
+                  <span className="text-xs font-bold" style={{ color: TEAL }}>نەخشە</span>
                 </div>
 
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none snap-x snap-mandatory">
@@ -918,29 +886,29 @@ export const JobFeed = ({ onNavigate }) => {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                         <div className="absolute bottom-4 right-4 left-4 text-right">
                           <div className="text-white font-black text-base">{c.label}</div>
-                          <div className="text-white/70 text-[11px] font-bold mt-0.5 font-mono">{c.count} Ù‡Û•Ù„ÛŒ Ú©Ø§Ø±</div>
+                          <div className="text-white/70 text-[11px] font-bold mt-0.5 font-mono">{c.count} هەلی کار</div>
                         </div>
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Towns of the selected province â€” appears below the row, not
+                {/* Towns of the selected province — appears below the row, not
                 in place of it. */}
                 {expandedGovId && (
                   <div key={expandedGovId} className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] p-4 animate-morph-in space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black text-stone-900">Ø´Ø§Ø±Û†Ú†Ú©Û•Ú©Ø§Ù†ÛŒ {GOV_LABELS[expandedGovId] || ''}</h3>
+                      <h3 className="text-xs font-black text-stone-900">شارۆچکەکانی {GOV_LABELS[expandedGovId] || ''}</h3>
                       <button onClick={() => { soundService.playTick?.(); setExpandedGovId(null); }}
                         className="flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-stone-800 transition-colors">
                         <ChevronRight className="w-3.5 h-3.5" />
-                        Ø¯Ø§Ø®Ø³ØªÙ†
+                        داخستن
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button onClick={() => { soundService.playTick?.(); setGovFilter(expandedGovId); setExpandedGovId(null); scrollToResults(); }}
                         className="px-4 py-2.5 rounded-full text-xs font-bold text-white transition-all active:scale-95" style={{ background: TEAL }}>
-                        Ù‡Û•Ù…ÙˆÙˆ {GOV_LABELS[expandedGovId]}
+                        هەموو {GOV_LABELS[expandedGovId]}
                       </button>
                       {expandedTowns.map((t, i) => (
                         <button key={t.id} onClick={() => handleDistrictClick(expandedGovId, t.name_ku)}
@@ -955,12 +923,12 @@ export const JobFeed = ({ onNavigate }) => {
               </Reveal>
             )}
 
-            {/* â”€â”€ Newest jobs â€” real created_at order â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ── Newest jobs — real created_at order ─────────────────── */}
             {newestJobs.length > 0 && (
               <Reveal className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-black text-stone-900">Ù†ÙˆÛŽØªØ±ÛŒÙ† Ú©Ø§Ø±Û•Ú©Ø§Ù†</h2>
-                  <span className="text-xs font-bold" style={{ color: TEAL }}>Ù‡Û•Ù…ÙˆÙˆ</span>
+                  <h2 className="text-sm font-black text-stone-900">نوێترین کارەکان</h2>
+                  <span className="text-xs font-bold" style={{ color: TEAL }}>هەموو</span>
                 </div>
                 <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none snap-x snap-mandatory">
                   {newestJobs.map((job, i) => (
@@ -972,7 +940,7 @@ export const JobFeed = ({ onNavigate }) => {
               </Reveal>
             )}
 
-            {/* â”€â”€ Category chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ── Category chips ──────────────────────────────────── */}
             <Reveal className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {CATEGORIES.map(cat => {
                 const Icon = CATEGORY_ICONS[cat.id] || Briefcase;
@@ -990,15 +958,15 @@ export const JobFeed = ({ onNavigate }) => {
               })}
             </Reveal>
 
-            {/* â”€â”€ Jobs header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ── Jobs header ──────────────────────────────────────── */}
             <div ref={jobsSectionRef} className="flex items-center justify-between scroll-mt-24">
-              <h2 className="text-sm font-black text-stone-900">Ù‡Û•Ù„ÛŒ Ú©Ø§Ø±Û• Ú†Ø§Ù„Ø§Ú©Û•Ú©Ø§Ù†</h2>
-              <span className="text-xs font-mono font-black text-stone-400">{filteredJobs.length} Ø¦Û•Ù†Ø¬Ø§Ù…</span>
+              <h2 className="text-sm font-black text-stone-900">هەلی کارە چالاکەکان</h2>
+              <span className="text-xs font-mono font-black text-stone-400">{filteredJobs.length} ئەنجام</span>
             </div>
 
-            {/* â”€â”€ Job grid â€” remounts (and replays its entrance stagger) every
+            {/* ── Job grid — remounts (and replays its entrance stagger) every
              time the filtered result set actually changes, so switching
-             filters or pages feels like a real transition. â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+             filters or pages feels like a real transition. ───────────── */}
             {isInitialLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -1015,8 +983,8 @@ export const JobFeed = ({ onNavigate }) => {
             ) : filteredJobs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)]">
                 <Briefcase className="w-12 h-12 text-stone-200 mb-3" />
-                <h3 className="text-base font-black text-stone-400 mb-1">Ù‡ÛŒÚ† Ù‡Û•Ù„ÛŒ Ú©Ø§Ø±ÛŽÚ© Ù†Û•Ø¯Û†Ø²Ø±Ø§ÛŒÛ•ÙˆÛ•</h3>
-                <p className="text-xs text-stone-300">Ù¾Ø§ÚµØ§ÙˆØªÙ†Û•Ú©Ø§Ù† Ø¨Ú¯Û†Ú•Û• ÛŒØ§Ù† ÙˆØ´Û•ÛŒÛ•Ú©ÛŒ ØªØ± Ø¨Û•Ú©Ø§Ø±Ø¨Ù‡ÛŽÙ†Û•</p>
+                <h3 className="text-base font-black text-stone-400 mb-1">هیچ هەلی کارێک نەدۆزرایەوە</h3>
+                <p className="text-xs text-stone-300">پاڵاوتنەکان بگۆڕە یان وشەیەکی تر بەکاربهێنە</p>
               </div>
             ) : (
               <>
@@ -1029,7 +997,7 @@ export const JobFeed = ({ onNavigate }) => {
                   ))}
                 </div>
 
-                {/* â”€â”€ Pagination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {/* ── Pagination ───────────────────────────────────── */}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-center gap-2 pt-2">
                     <button disabled={page === 1} onClick={() => setPage(p => p - 1)}
@@ -1052,20 +1020,8 @@ export const JobFeed = ({ onNavigate }) => {
 
         {isEmployer && (
         <>
-            {/* â”€â”€ Search block â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ── Search block ────────────────────────────────────── */}
             <Reveal className="space-y-3">
-              <div className="flex gap-2 p-1.5 rounded-[22px] bg-white border border-stone-100 shadow-[0_8px_28px_rgba(0,0,0,0.05)]">
-                <div className="relative flex-1">
-                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-300" />
-                  <input
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    placeholder="Ú¯Û•Ú•Ø§Ù† Ø¨Û† Ú©Ø§Ø±Ø®ÙˆØ§Ø²ØŒ Ù¾ÛŒØ´Û•..."
-                    className="w-full bg-stone-50/70 rounded-[17px] pr-11 pl-4 py-3.5 text-sm text-stone-900 font-bold placeholder-stone-300 outline-none focus:bg-white focus:ring-2 focus:ring-[#12796b]/10 transition-all"
-                  />
-                </div>
-              </div>
-
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                 <button
                   onClick={() => { soundService.playTick?.(); setVerifiedOnly(v => !v); }}
@@ -1073,23 +1029,23 @@ export const JobFeed = ({ onNavigate }) => {
                     }`}
                   style={verifiedOnly ? { background: TEAL } : {}}>
                   <BadgeCheck className="w-3.5 h-3.5" style={{ color: verifiedOnly ? '#fff' : '#a8a29e' }} />
-                  ØªÛ•Ù†Ù‡Ø§ Ù¾Ø´ØªÚ•Ø§Ø³ØªÚ©Ø±Ø§ÙˆÛ•Ú©Ø§Ù†
+                  تەنها پشتڕاستکراوەکان
                 </button>
 
                 <span className="w-px h-6 bg-stone-200 shrink-0 mx-1" />
 
-                <DropdownChip label="Ø´Ø§Ø±" value={govFilter}
-                  options={[{ value: 'all', label: 'Ù‡Û•Ù…ÙˆÙˆ Ø´Ø§Ø±Û•Ú©Ø§Ù†' }, ...Object.entries(GOV_LABELS).map(([value, label]) => ({ value, label }))]}
+                <DropdownChip label="شار" value={govFilter}
+                  options={[{ value: 'all', label: 'هەموو شارەکان' }, ...Object.entries(GOV_LABELS).map(([value, label]) => ({ value, label }))]}
                   onChange={setGovFilter} />
               </div>
             </Reveal>
 
-            {/* â”€â”€ Explore by city â€” real per-governorate freelancer counts â”€â”€ */}
+            {/* ── Explore by city — real per-governorate freelancer counts ── */}
             {freelancerCityStats.length > 0 && (
               <Reveal className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-black text-stone-900">Ú¯Û•Ú•Ø§Ù† Ø¨Û•Ù¾ÛŽÛŒ Ø´Ø§Ø±</h2>
-                  <span className="text-xs font-bold" style={{ color: TEAL }}>Ù†Û•Ø®Ø´Û•</span>
+                  <h2 className="text-sm font-black text-stone-900">گەڕان بەپێی شار</h2>
+                  <span className="text-xs font-bold" style={{ color: TEAL }}>نەخشە</span>
                 </div>
 
                 <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none snap-x snap-mandatory">
@@ -1111,7 +1067,7 @@ export const JobFeed = ({ onNavigate }) => {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                         <div className="absolute bottom-4 right-4 left-4 text-right">
                           <div className="text-white font-black text-base">{c.label}</div>
-                          <div className="text-white/70 text-[11px] font-bold mt-0.5 font-mono">{c.count} Ú©Ø§Ø±Ø®ÙˆØ§Ø²</div>
+                          <div className="text-white/70 text-[11px] font-bold mt-0.5 font-mono">{c.count} کارخواز</div>
                         </div>
                       </button>
                     );
@@ -1121,17 +1077,17 @@ export const JobFeed = ({ onNavigate }) => {
                 {expandedGovId && (
                   <div key={expandedGovId} className="bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] p-4 animate-morph-in space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black text-stone-900">Ø´Ø§Ø±Û†Ú†Ú©Û•Ú©Ø§Ù†ÛŒ {GOV_LABELS[expandedGovId] || ''}</h3>
+                      <h3 className="text-xs font-black text-stone-900">شارۆچکەکانی {GOV_LABELS[expandedGovId] || ''}</h3>
                       <button onClick={() => { soundService.playTick?.(); setExpandedGovId(null); }}
                         className="flex items-center gap-1 text-xs font-bold text-stone-400 hover:text-stone-800 transition-colors">
                         <ChevronRight className="w-3.5 h-3.5" />
-                        Ø¯Ø§Ø®Ø³ØªÙ†
+                        داخستن
                       </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button onClick={() => { soundService.playTick?.(); setGovFilter(expandedGovId); setExpandedGovId(null); scrollToResults(); }}
                         className="px-4 py-2.5 rounded-full text-xs font-bold text-white transition-all active:scale-95" style={{ background: TEAL }}>
-                        Ù‡Û•Ù…ÙˆÙˆ {GOV_LABELS[expandedGovId]}
+                        هەموو {GOV_LABELS[expandedGovId]}
                       </button>
                       {expandedTowns.map((t, i) => (
                         <button key={t.id} onClick={() => handleDistrictClick(expandedGovId, t.name_ku)}
@@ -1146,24 +1102,7 @@ export const JobFeed = ({ onNavigate }) => {
               </Reveal>
             )}
 
-            {/* â”€â”€ Newest freelancers â€” real created_at order â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            {newestFreelancers.length > 0 && (
-              <Reveal className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-black text-stone-900">Ù†ÙˆÛŽØªØ±ÛŒÙ† Ú©Ø§Ø±Ø®ÙˆØ§Ø²Ø§Ù†</h2>
-                  <span className="text-xs font-bold" style={{ color: TEAL }}>Ù‡Û•Ù…ÙˆÙˆ</span>
-                </div>
-                <div className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none snap-x snap-mandatory">
-                  {newestFreelancers.map((f, i) => (
-                    <div key={f.id} style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }} className="animate-fadeIn w-60 shrink-0 snap-start">
-                      <FreelancerPhotoCard f={f} />
-                    </div>
-                  ))}
-                </div>
-              </Reveal>
-            )}
-
-            {/* â”€â”€ Category chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ── Category chips ──────────────────────────────────── */}
             <Reveal className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {CATEGORIES.map(cat => {
                 const Icon = CATEGORY_ICONS[cat.id] || Briefcase;
@@ -1180,13 +1119,13 @@ export const JobFeed = ({ onNavigate }) => {
               })}
             </Reveal>
 
-            {/* â”€â”€ Freelancers header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ── Freelancers header ──────────────────────────────── */}
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-black text-stone-900">Ú©Ø§Ø±Ø®ÙˆØ§Ø²Û•Ú©Ø§Ù†</h2>
-              <span className="text-xs font-mono font-black text-stone-400">{filteredFreelancers.length} Ø¦Û•Ù†Ø¬Ø§Ù…</span>
+              <h2 className="text-sm font-black text-stone-900">کارخوازەکان</h2>
+              <span className="text-xs font-mono font-black text-stone-400">{filteredFreelancers.length} ئەنجام</span>
             </div>
 
-            {/* â”€â”€ Freelancer grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+            {/* ── Freelancer grid ─────────────────────────────────── */}
             {isInitialLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -1202,8 +1141,8 @@ export const JobFeed = ({ onNavigate }) => {
             ) : filteredFreelancers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-3xl shadow-[0_2px_16px_rgba(0,0,0,0.05)]">
                 <Users className="w-12 h-12 text-stone-200 mb-3" />
-                <h3 className="text-base font-black text-stone-400 mb-1">Ù‡ÛŒÚ† Ú©Ø§Ø±Ø®ÙˆØ§Ø²ÛŽÚ© Ù†Û•Ø¯Û†Ø²Ø±Ø§ÛŒÛ•ÙˆÛ•</h3>
-                <p className="text-xs text-stone-300">Ù¾Ø§ÚµØ§ÙˆØªÙ†Û•Ú©Ø§Ù† Ø¨Ú¯Û†Ú•Û• ÛŒØ§Ù† ÙˆØ´Û•ÛŒÛ•Ú©ÛŒ ØªØ± Ø¨Û•Ú©Ø§Ø±Ø¨Ù‡ÛŽÙ†Û•</p>
+                <h3 className="text-base font-black text-stone-400 mb-1">هیچ کارخوازێک نەدۆزرایەوە</h3>
+                <p className="text-xs text-stone-300">پاڵاوتنەکان بگۆڕە یان وشەیەکی تر بەکاربهێنە</p>
               </div>
             ) : (
               <>
@@ -1215,7 +1154,7 @@ export const JobFeed = ({ onNavigate }) => {
                   ))}
                 </div>
 
-                {/* â”€â”€ Pagination â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+                {/* ── Pagination ─────────────────────────────────── */}
                 {totalFreelancerPages > 1 && (
                   <div className="flex items-center justify-center gap-2 pt-2">
                     <button disabled={page === 1} onClick={() => setPage(p => p - 1)}

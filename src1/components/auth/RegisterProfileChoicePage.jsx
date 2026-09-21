@@ -82,7 +82,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
   //   job_seeker: 1 choice, 2 personal, 3 desired jobs/bio, 4 gender/photo, 5 complete
   //   recruiter:  1 choice, 2 personal, 3 company details, 4 hiring prefs, 5 gender/photo/logo, 6 complete
   const isRecruiter = selectedOption === 'recruiter';
-  const TOTAL_STEPS = isRecruiter ? 5 : 4;
+  const TOTAL_STEPS = 6; // 1 role, 2 personal, 3 email code, 4-6 depend on the role
   const COMPLETE_STEP = TOTAL_STEPS + 1;
 
   // Step 2: Personal Info — already known for a social sign-up (name/email
@@ -114,7 +114,9 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
   const [preferredDist, setPreferredDist] = useState('');
   const [preferredSub, setPreferredSub] = useState('');
   // Email confirmation code (sent right after the account is created)
-  const [otpPending, setOtpPending] = useState(false);
+  const [emailProof, setEmailProof] = useState('');
+  const [proofEmail, setProofEmail] = useState('');
+  const sentFor = useRef('');
   const [otpCode, setOtpCode] = useState('');
   const [otpBusy, setOtpBusy] = useState(false);
   const [otpError, setOtpError] = useState('');
@@ -213,7 +215,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
     // no password on a social account) — skip straight to step 3. A
     // completing employer still needs to give us their company info.
     if (isCompletingProfile && selectedOption === 'job_seeker') {
-      setStep(3);
+      setStep(4);
     } else {
       setStep(2);
     }
@@ -229,8 +231,10 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
       if (!password) { setErrorMsg('تکایە وشەی نهێنی بنووسە.'); return; }
       if (password.length < 8) { setErrorMsg('وشەی نهێنی دەبێت لانیکم ٨ پیت بێت.'); return; }
       if (password !== confirmPassword) { setErrorMsg('وشەی نهێنی و دووبارەکردنەوەکەی یەکناگرنەوە!'); return; }
+      if (!/^\S+@\S+\.\S+$/.test(email.trim())) { setErrorMsg('تکایە ئیمەیڵێکی دروست بنووسە.'); return; }
     }
-    setStep(3);
+    // A social sign-up already has a verified email; everyone else confirms it with a code (step 3).
+    setStep(isCompletingProfile ? 4 : 3);
   };
 
   // Recruiter-only step 3: company details, now its own page instead of
@@ -241,13 +245,20 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
     setErrorMsg(null);
     if (!companyName.trim()) { setErrorMsg('ناوی کۆمپانیا پێویستە.'); return; }
     if (!companyPhone.trim()) { setErrorMsg('ژمارەی تەلەفۆنی کۆمپانیا پێویستە.'); return; }
-    setStep(4);
+    setStep(5);
+  };
+
+  // Job seeker step 4 (field + place) -> step 5 (skills + about) -> step 6 (photo)
+  const handleSeekerPrefsNext = (e) => {
+    e.preventDefault();
+    soundService.playTick();
+    setStep(5);
   };
 
   const handleStep3Next = (e) => {
     e.preventDefault();
     soundService.playTick();
-    setStep(4);
+    setStep(6);
   };
 
   // Recruiter-only step 4: hiring preferences — moves on to step 5
@@ -256,7 +267,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
   const handleHiringPrefsNext = (e) => {
     e.preventDefault();
     soundService.playTick();
-    setStep(5);
+    setStep(6);
   };
 
   const handleStep4Next = (e) => {
@@ -314,7 +325,8 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         await register({
           name: fullName,
           phone: phone,
-          email: email,
+          email: email.trim(),
+          email_proof: emailProof,
           password: password,
           role: role,
           gender: gender,
@@ -338,9 +350,6 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         });
       }
       soundService.playSuccess();
-      // A brand-new account must confirm its email with the emailed code before it is finished;
-      // a social sign-up (completing profile) already has a verified email.
-      if (!isCompletingProfile) { setOtpPending(true); setResendIn(60); }
       setStep(COMPLETE_STEP);
     } catch (err) {
       const message = err?.message || 'تۆمارکردن سەرکەوتوو نەبوو. تکایە دووبارە هەوڵبدەرەوە.';
@@ -353,7 +362,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
   };
 
   // The guide has one more step than the form: the emailed code. Once it is confirmed, every step is done.
-  const guideStep = step === COMPLETE_STEP && !otpPending ? step + 1 : step;
+  const guideStep = step;
 
   const governorates = ['سلێمانی', 'هەولێر', 'دهۆک', 'هەڵەبجە', 'کەرکووک'];
 
@@ -369,14 +378,33 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
     return () => clearTimeout(t);
   }, [resendIn]);
 
+  const emailNorm = email.trim().toLowerCase();
+  const emailVerified = !!emailProof && proofEmail === emailNorm;
+
+  const sendCode = async () => {
+    setOtpError('');
+    const res = await apiService.sendEmailOtp(emailNorm);
+    if (res?.success) { setResendIn(60); }
+    else setOtpError(res?.message || 'ناردنی کۆد سەرکەوتوو نەبوو.');
+    return res;
+  };
+
+  // Reaching step 3 sends the code once for this email.
+  useEffect(() => {
+    if (step !== 3 || emailVerified || !emailNorm || sentFor.current === emailNorm) return;
+    sentFor.current = emailNorm;
+    sendCode();
+  }, [step, emailNorm, emailVerified]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const submitOtp = async (code) => {
     if (otpBusy || code.length !== 6) return;
     setOtpBusy(true); setOtpError('');
-    const res = await apiService.verifyEmailOtp(code, token);
+    const res = await apiService.verifyEmailOtpPublic(emailNorm, code);
     setOtpBusy(false);
-    if (res?.success) {
+    if (res?.success && res.proof) {
       soundService.playSuccess();
-      setOtpPending(false);
+      setEmailProof(res.proof); setProofEmail(emailNorm); setOtpCode('');
+      setStep(4);
     } else {
       setOtpError(res?.message || 'کۆدەکە هەڵەیە.');
       setOtpCode('');
@@ -386,10 +414,8 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
   const resendOtp = async () => {
     if (resendIn > 0) return;
     soundService.playTick();
-    setOtpError('');
-    const res = await apiService.resendVerificationEmail(token);
-    if (res?.success) { setResendIn(60); addToast({ title: 'نێردرایەوە', message: 'کۆدێکی نوێ بۆ ئیمەیڵەکەت نێردرا.', type: 'success' }); }
-    else setOtpError(res?.message || 'ناردنەوە سەرکەوتوو نەبوو.');
+    const res = await sendCode();
+    if (res?.success) addToast({ title: 'نێردرایەوە', message: 'کۆدێکی نوێ بۆ ئیمەیڵەکەت نێردرا.', type: 'success' });
   };
 
   const inputCls = "w-full rounded-2xl bg-white/85 border border-slate-200/90 focus:border-[#12796b] focus:bg-white focus:shadow-[0_0_0_4px_rgba(18,121,107,.08),0_8px_24px_rgba(15,23,42,.04)] outline-none transition-all text-xs text-slate-900 placeholder:text-slate-400";
@@ -404,8 +430,9 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
     if (step > 1) {
       // Step 2 was skipped on the way in for a completing
       // freelancer — skip it on the way back out too.
-      const skippingStep2 = isCompletingProfile && step === 3 && selectedOption === 'job_seeker';
-      setStep(skippingStep2 ? 1 : step - 1);
+      // a social sign-up skipped steps 2 and 3
+      const skipEmailSteps = isCompletingProfile && step === 4;
+      setStep(skipEmailSteps ? (selectedOption === 'job_seeker' ? 1 : 2) : step - 1);
     } else if (onBack) onBack('login');
   };
 
@@ -616,7 +643,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         )}
 
         {/* STEP 3 (RECRUITER ONLY): COMPANY DETAILS — its own page now */}
-        {step === 3 && isRecruiter && (
+        {step === 4 && isRecruiter && (
           <div className="space-y-5 animate-fadeIn">
             <div className="space-y-1">
               <h2 className="text-2xl font-black" style={{ color: '#111' }}>زانیاری کۆمپانیا</h2>
@@ -734,14 +761,57 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         )}
 
         {/* STEP 3: DESIRED JOBS & BIO (job seeker) / HIRING PREFERENCES (recruiter) */}
-        {step === 3 && selectedOption === 'job_seeker' && (
+        {/* STEP 3: confirm the email with the emailed code (before the account is created) */}
+        {step === 3 && (
+          <div className="text-center space-y-5 animate-fadeIn max-w-md mx-auto">
+            <div className="w-20 h-20 rounded-full border-4 flex items-center justify-center mx-auto" style={{ background: TEAL_SOFT, borderColor: TEAL, color: TEAL }}>
+              {emailVerified ? <CheckCircle2 className="w-9 h-9" /> : <Mail className="w-9 h-9" />}
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black" style={{ color: '#111' }}>{emailVerified ? 'ئیمەیڵەکەت دڵنیا کرا' : 'ئیمەیڵەکەت دڵنیا بکەرەوە'}</h2>
+              <p className="text-xs text-slate-500 font-medium leading-6">
+                {emailVerified ? 'دەتوانیت بەردەوام بیت.' : <>کۆدێکی ٦ ژمارەیی نێردرا بۆ<br /></>}
+                <span dir="ltr" className="font-mono font-bold text-slate-700">{email}</span>
+              </p>
+            </div>
+
+            {emailVerified ? (
+              <button type="button" onClick={() => setStep(4)} className={primaryBtnCls} style={primaryBtnStyle}>بەردەوام بە</button>
+            ) : (
+              <>
+                <input
+                  value={otpCode}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setOtpCode(v); setOtpError('');
+                    if (v.length === 6) submitOtp(v);
+                  }}
+                  inputMode="numeric" autoComplete="one-time-code" maxLength={6} dir="ltr" autoFocus
+                  placeholder="••••••"
+                  className={`${inputCls} py-4 text-center font-mono text-3xl tracking-[0.5em]`}
+                />
+                {otpError && <p className="text-xs font-bold text-rose-600">{otpError}</p>}
+                <button type="button" disabled={otpBusy || otpCode.length !== 6} onClick={() => submitOtp(otpCode)} className={primaryBtnCls} style={primaryBtnStyle}>
+                  {otpBusy ? 'خەریکی پشکنینە...' : 'دڵنیاکردنەوە'}
+                </button>
+                <button type="button" onClick={resendOtp} disabled={resendIn > 0} className="text-xs font-bold disabled:opacity-60" style={{ color: TEAL }}>
+                  {resendIn > 0 ? `ناردنەوەی کۆد لە ${resendIn} چرکەدا` : 'کۆدەکەم پێنەگەیشت، دووبارە بینێرە'}
+                </button>
+                <p className="text-[10px] text-slate-400">سندوقی Spam یش بپشکنە. کۆدەکە ١٠ خولەک کاردەکات.</p>
+              </>
+            )}
+            <button type="button" onClick={() => setStep(2)} className="block w-full text-xs font-bold text-slate-400">گۆڕینی ئیمەیڵ</button>
+          </div>
+        )}
+
+        {step === 4 && !isRecruiter && (
           <div className="space-y-5 animate-fadeIn">
             <div className="space-y-1">
-              <h2 className="text-2xl font-black" style={{ color: '#111' }}>ئارەزووەکانی کار</h2>
+              <h2 className="text-2xl font-black" style={{ color: '#111' }}>بوار و شوێن</h2>
               <p className="text-xs font-bold text-slate-500">حەز و لێهاتوویییەکانت هەڵبژێرە بۆ ئاسانکاری دۆزینەوەی کار</p>
             </div>
 
-            <form onSubmit={handleStep3Next} className="space-y-3.5">
+            <form onSubmit={handleSeekerPrefsNext} className="space-y-3.5">
               <div>
                 <label className={labelCls}>بوارە کاریەکان (دەتوانیت چەند بوارێک هەڵبژێریت)</label>
                 <div className="flex flex-wrap gap-2">
@@ -787,6 +857,21 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
                 </div>
               </div>
 
+              <button type="submit" className={primaryBtnCls} style={primaryBtnStyle}>
+                بەردەوام بە
+              </button>
+            </form>
+          </div>
+        )}
+
+        {step === 5 && !isRecruiter && (
+          <div className="space-y-5 animate-fadeIn">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black" style={{ color: '#111' }}>شارەزایی و دەربارە</h2>
+              <p className="text-xs font-bold text-slate-500">شارەزاییەکانت و باسێک لە خۆت بنووسە بۆ ئەوەی کۆمپانیاکان باشتر بتناسن.</p>
+            </div>
+
+            <form onSubmit={handleStep3Next} className="space-y-3.5">
               <div>
                 <label className={labelCls}>شارەزاییەکانت</label>
                 <div className="flex gap-2">
@@ -827,7 +912,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
           </div>
         )}
 
-        {step === 4 && isRecruiter && (
+        {step === 5 && isRecruiter && (
           <div className="space-y-5 animate-fadeIn">
             <div className="space-y-1">
               <h2 className="text-2xl font-black" style={{ color: '#111' }}>حەز و ئارەزووەکان</h2>
@@ -952,7 +1037,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         )}
 
         {/* GENDER & PROFILE PHOTO / COMPANY LOGO — step 4 for job seekers, step 5 for recruiters */}
-        {((step === 4 && !isRecruiter) || (step === 5 && isRecruiter)) && (
+        {step === 6 && (
           <div className="space-y-5 animate-fadeIn">
             <div className="space-y-1">
               <h2 className="text-2xl font-black" style={{ color: '#111' }}>
@@ -1044,48 +1129,14 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
               )}
 
               <button type="submit" disabled={isSubmitting} className={primaryBtnCls} style={primaryBtnStyle}>
-                {isSubmitting ? 'خەریکی دروستکردنە...' : 'دروستکردنی هەژمار و ناردنی کۆد'}
+                {isSubmitting ? 'خەریکی دروستکردنە...' : 'دروستکردنی هەژمار'}
               </button>
             </form>
           </div>
         )}
 
         {/* WELCOME COMPLETION SCREEN */}
-        {step === COMPLETE_STEP && otpPending && (
-          <div className="text-center space-y-5 animate-fadeIn max-w-md mx-auto">
-            <div className="w-20 h-20 rounded-full border-4 flex items-center justify-center mx-auto" style={{ background: TEAL_SOFT, borderColor: TEAL, color: TEAL }}>
-              <Mail className="w-9 h-9" />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-black" style={{ color: '#111' }}>ئیمەیڵەکەت دڵنیا بکەرەوە</h2>
-              <p className="text-xs text-slate-500 font-medium leading-6">
-                کۆدێکی ٦ ژمارەیی نێردرا بۆ<br />
-                <span dir="ltr" className="font-mono font-bold text-slate-700">{email}</span>
-              </p>
-            </div>
-            <input
-              value={otpCode}
-              onChange={(e) => {
-                const v = e.target.value.replace(/\D/g, '').slice(0, 6);
-                setOtpCode(v); setOtpError('');
-                if (v.length === 6) submitOtp(v);
-              }}
-              inputMode="numeric" autoComplete="one-time-code" maxLength={6} dir="ltr" autoFocus
-              placeholder="••••••"
-              className={`${inputCls} py-4 text-center font-mono text-3xl tracking-[0.5em]`}
-            />
-            {otpError && <p className="text-xs font-bold text-rose-600">{otpError}</p>}
-            <button type="button" disabled={otpBusy || otpCode.length !== 6} onClick={() => submitOtp(otpCode)} className={primaryBtnCls} style={primaryBtnStyle}>
-              {otpBusy ? 'خەریکی پشکنینە...' : 'دڵنیاکردنەوە'}
-            </button>
-            <button type="button" onClick={resendOtp} disabled={resendIn > 0} className="text-xs font-bold disabled:opacity-60" style={{ color: TEAL }}>
-              {resendIn > 0 ? `ناردنەوەی کۆد لە ${resendIn} چرکەدا` : 'کۆدەکەم پێنەگەیشت، دووبارە بینێرە'}
-            </button>
-            <p className="text-[10px] text-slate-400">سندوقی Spam یش بپشکنە. کۆدەکە ١٠ خولەک کاردەکات.</p>
-          </div>
-        )}
-
-        {step === COMPLETE_STEP && !otpPending && (
+        {step === COMPLETE_STEP && (
           <div className="text-center space-y-6 animate-fadeIn">
 
             <div className="w-20 h-20 rounded-full border-4 flex items-center justify-center mx-auto" style={{ background: TEAL_SOFT, borderColor: TEAL, color: TEAL }}>

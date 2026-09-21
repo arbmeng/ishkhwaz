@@ -12,7 +12,7 @@ import { getTemplate } from '../../cvTemplates/registry';
 import {
   ArrowLeft, Send, Share2, BadgeCheck, Phone, Mail, ExternalLink,
   Rocket, Crown, MapPin, BriefcaseBusiness, Star, FileText, Loader2,
-  Sparkles, ChevronLeft, CheckCircle2, Award, UserRound, X
+  Sparkles, ChevronLeft, CheckCircle2, Award, UserRound, X, Flame, Zap, ShieldCheck
 } from 'lucide-react';
 
 const TEAL = '#12796b';
@@ -274,8 +274,8 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
   const skillsList = parseJsonArray(freelancer.skills);
   const experienceList = parseJsonArray(
     freelancer.experience ||
-      freelancer.experiences ||
-      freelancer.work_history
+    freelancer.experiences ||
+    freelancer.work_history
   );
   const favCategoryIds = parseJsonArray(freelancer.favorite_categories);
   const favCategories = categories.filter((c) =>
@@ -299,13 +299,39 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
     Number(freelancer.verified) === 1 || Boolean(freelancer.verified);
   const isBoosted = Boolean(
     freelancer.plan_boost_until &&
-      new Date(freelancer.plan_boost_until) > new Date()
+    new Date(freelancer.plan_boost_until) > new Date()
   );
   const govDisplay = GOV_LABELS[gov] || gov || 'سلێمانی';
   const profession = freelancer.profession || freelancer.title || null;
 
   const tier = planTiers.find((t) => t.id === freelancer.plan);
-  const hasPaidPlan = Boolean(tier && Number(tier.price) > 0);
+  const tierName = String(
+    tier?.name_en ||
+    tier?.name_ku ||
+    tier?.slug ||
+    freelancer.plan_name ||
+    freelancer.plan ||
+    ''
+  ).toLowerCase();
+
+  const isVip = Boolean(
+    tier?.is_vip ||
+    tier?.vip ||
+    tier?.slug?.toLowerCase?.() === 'vip' ||
+    tierName.includes('vip') ||
+    tierName.includes('premium') ||
+    tierName.includes('pro+') ||
+    tierName.includes('pro plus') ||
+    tierName.includes('elite')
+  );
+
+  const hasPaidPlan = Boolean((tier && Number(tier.price) > 0) || isVip);
+  const isPro = hasPaidPlan && !isVip;
+
+  const vipLabel = tier?.name_ku || tier?.name_en || 'VIP';
+  const planAccent = isVip ? '#ff7a00' : TEAL;
+  const planAccentDeep = isVip ? '#e23b00' : TEAL_DEEP;
+  const planSoft = isVip ? '#fff1e7' : TEAL_SOFT;
 
   const cvVisibilityLimit = getCvVisibilityLimit(freelancer, tier);
   const allPublicCvs = normalizePublicCvs(freelancer);
@@ -327,7 +353,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
     };
 
     if (navigator.share) {
-      navigator.share(shareData).catch(() => {});
+      navigator.share(shareData).catch(() => { });
     } else if (navigator.clipboard) {
       navigator.clipboard.writeText(profileUrl);
       addToast?.({
@@ -395,19 +421,141 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
 
           .profile-no-scrollbar::-webkit-scrollbar { display: none; }
           .profile-no-scrollbar { scrollbar-width: none; }
+
+          @keyframes vipBorderSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+
+          @keyframes vipFirePulse {
+            0%, 100% { transform: scale(1); filter: saturate(1); opacity: .92; }
+            50% { transform: scale(1.045); filter: saturate(1.28); opacity: 1; }
+          }
+
+          @keyframes vipFloat {
+            0%, 100% { transform: translate3d(0, 0, 0); opacity: .25; }
+            50% { transform: translate3d(7px, -18px, 0); opacity: .95; }
+          }
+
+          @keyframes vipSparkRise {
+            0% { transform: translate3d(0, 18px, 0) scale(.65) rotate(0deg); opacity: 0; }
+            15% { opacity: .95; }
+            100% { transform: translate3d(12px, -95px, 0) scale(1.05) rotate(35deg); opacity: 0; }
+          }
+
+          @keyframes vipScan {
+            0% { transform: translateY(-100%); opacity: 0; }
+            15% { opacity: .35; }
+            55% { opacity: .08; }
+            100% { transform: translateY(100%); opacity: 0; }
+          }
+
+          .vip-profile-aura {
+            background: radial-gradient(circle, rgba(255,123,0,.42) 0%, rgba(255,69,0,.18) 42%, transparent 72%);
+            animation: vipFloat 5.5s ease-in-out infinite;
+            filter: blur(10px);
+          }
+
+          .vip-profile-aura-2 {
+            animation-delay: -2.4s;
+            animation-duration: 6.5s;
+            background: radial-gradient(circle, rgba(255,177,66,.28) 0%, rgba(255,78,0,.14) 44%, transparent 72%);
+          }
+
+          .vip-profile-scan {
+            background: linear-gradient(180deg, transparent 0%, rgba(255,183,77,.20) 45%, transparent 52%);
+            animation: vipScan 5.5s ease-in-out infinite;
+          }
+
+          .vip-profile-fire-floor {
+            background: radial-gradient(ellipse at center bottom, rgba(255,89,0,.34), rgba(255,124,0,.10) 36%, transparent 72%);
+            filter: blur(7px);
+          }
+
+          .vip-profile-spark {
+            position: absolute;
+            width: 5px;
+            height: 8px;
+            border-radius: 999px 999px 3px 3px;
+            background: linear-gradient(180deg, #ffd166, #ff7a00 55%, #ff3d00);
+            box-shadow: 0 0 12px rgba(255,111,0,.85);
+            animation: vipSparkRise 3.4s ease-in-out infinite;
+          }
+
+          .vip-plan-pill {
+            animation: vipFirePulse 2.4s ease-in-out infinite;
+          }
+
+          .vip-avatar-aura {
+            animation: vipFirePulse 2.7s ease-in-out infinite;
+          }
+
+          .vip-avatar-ring {
+            position: relative;
+            box-shadow:
+              0 0 0 1px rgba(255,255,255,.25),
+              0 0 26px rgba(255,91,0,.34),
+              0 18px 45px rgba(0,0,0,.28);
+          }
+
+          .vip-avatar-ring::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: inherit;
+            padding: 2px;
+            background: conic-gradient(from 0deg, #ff3d00, #ffb000, #ffd166, #ff5a00, #ff3d00);
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: vipBorderSpin 4s linear infinite;
+            pointer-events: none;
+          }
+
+          .vip-elite-badge {
+            color: #ffd08a;
+            background: linear-gradient(135deg, rgba(63,18,2,.90), rgba(132,40,0,.82));
+            border: 1px solid rgba(255,180,90,.34);
+            box-shadow: 0 0 22px rgba(255,99,0,.16), inset 0 1px rgba(255,255,255,.10);
+            animation: vipFirePulse 3.2s ease-in-out infinite;
+          }
+
+          .vip-light-card {
+            border: 1px solid #ffd7b8;
+            box-shadow: 0 10px 32px rgba(255,106,0,.065);
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .vip-profile-aura,
+            .vip-plan-pill,
+            .vip-avatar-aura,
+            .vip-avatar-ring::before,
+            .vip-elite-badge,
+            .vip-profile-spark,
+            .vip-profile-scan {
+              animation: none !important;
+            }
+          }
         `}</style>
 
         {/* Premium top accent */}
         <div
           className="fixed top-0 inset-x-0 h-1 z-[80]"
           style={{
-            background: `linear-gradient(90deg, #0f766e, #159a89, #8bd5ca)`
+            background: isVip
+              ? 'linear-gradient(90deg, #ff3d00, #ff7a00, #ffc04d, #ff5a00, #e23b00)'
+              : 'linear-gradient(90deg, #0f766e, #159a89, #8bd5ca)'
           }}
         />
 
         {/* HERO */}
         <header className="relative">
-          <div className="relative h-[250px] sm:h-[310px] lg:h-[350px] overflow-hidden">
+          <div
+            className={`relative overflow-hidden ${isVip
+              ? 'h-[285px] sm:h-[350px] lg:h-[405px]'
+              : 'h-[250px] sm:h-[310px] lg:h-[350px]'
+              }`}
+          >
             {coverUrl ? (
               <img
                 src={coverUrl}
@@ -436,10 +584,34 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
             <div
               className="absolute inset-0"
               style={{
-                background:
-                  'linear-gradient(180deg, rgba(7,24,21,.10) 0%, rgba(7,24,21,.05) 30%, rgba(7,24,21,.66) 100%)'
+                background: isVip
+                  ? 'linear-gradient(180deg, rgba(16,5,1,.08) 0%, rgba(22,8,2,.20) 38%, rgba(12,5,2,.88) 100%)'
+                  : 'linear-gradient(180deg, rgba(7,24,21,.10) 0%, rgba(7,24,21,.05) 30%, rgba(7,24,21,.66) 100%)'
               }}
             />
+
+            {isVip && (
+              <>
+                <div className="vip-profile-aura absolute -top-24 -right-16 w-72 h-72 rounded-full" />
+                <div className="vip-profile-aura vip-profile-aura-2 absolute -bottom-32 -left-20 w-80 h-80 rounded-full" />
+                <div className="absolute inset-0 vip-profile-scan opacity-40" />
+                <div className="absolute inset-x-0 bottom-0 h-28 vip-profile-fire-floor" />
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+                    <span
+                      key={i}
+                      className="vip-profile-spark"
+                      style={{
+                        left: `${8 + (i * 10) % 88}%`,
+                        bottom: `${10 + (i * 7) % 38}%`,
+                        animationDelay: `${i * -0.55}s`,
+                        animationDuration: `${2.7 + (i % 4) * 0.45}s`
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
 
             <div
               className="absolute inset-0 opacity-[.16]"
@@ -450,7 +622,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
               }}
             />
 
-            
+
 
             {/* Header controls */}
             <div
@@ -470,11 +642,17 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
               <div className="flex items-center gap-2">
                 {hasPaidPlan && (
                   <div
-                    className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[11px] font-black text-white shadow-lg backdrop-blur"
-                    style={{ background: 'rgba(15,118,110,.92)' }}
+                    className={`hidden sm:flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[11px] font-black text-white shadow-lg backdrop-blur ${isVip ? 'vip-plan-pill' : ''
+                      }`}
+                    style={{
+                      background: isVip
+                        ? 'linear-gradient(135deg, rgba(39,10,1,.94), rgba(176,57,0,.94))'
+                        : 'rgba(15,118,110,.92)',
+                      border: isVip ? '1px solid rgba(255,166,74,.45)' : undefined
+                    }}
                   >
-                    <Crown className="w-3.5 h-3.5" />
-                    {tier.name_ku || tier.name_en || 'VIP'}
+                    {isVip ? <Flame className="w-3.5 h-3.5" /> : <Crown className="w-3.5 h-3.5" />}
+                    {isVip ? vipLabel : (tier?.name_ku || tier?.name_en || 'PRO')}
                   </div>
                 )}
 
@@ -495,15 +673,24 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                   <div className="relative shrink-0">
                     {hasPaidPlan && (
                       <div
-                        className="absolute -inset-3 rounded-[30px] blur-xl opacity-70"
-                        style={{ background: 'linear-gradient(135deg,#0f766e,#7ccfc3)' }}
+                        className={`absolute -inset-3 rounded-[30px] blur-xl ${isVip ? 'vip-avatar-aura' : ''
+                          }`}
+                        style={{
+                          background: isVip
+                            ? 'linear-gradient(135deg,#ff3d00,#ff9f1c,#ffd166)'
+                            : 'linear-gradient(135deg,#0f766e,#7ccfc3)',
+                          opacity: isVip ? .88 : .70
+                        }}
                       />
                     )}
 
                     <div
-                      className="relative p-1.5 rounded-[28px] shadow-[0_18px_45px_rgba(0,0,0,.28)]"
+                      className={`relative p-1.5 rounded-[28px] shadow-[0_18px_45px_rgba(0,0,0,.28)] ${isVip ? 'vip-avatar-ring' : ''
+                        }`}
                       style={{
-                        background: 'rgba(255,255,255,.96)'
+                        background: isVip
+                          ? 'linear-gradient(135deg,#ff3d00,#ff8a00,#ffd166,#e23b00)'
+                          : 'rgba(255,255,255,.96)'
                       }}
                     >
                       <div className="w-[82px] h-[82px] sm:w-[104px] sm:h-[104px] rounded-[22px] overflow-hidden bg-white flex items-center justify-center text-2xl sm:text-3xl font-black" style={{ color: TEAL_DEEP }}>
@@ -541,11 +728,17 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                       )}
                       {hasPaidPlan && (
                         <span
-                          className="sm:hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black text-white"
-                          style={{ background: '#0f766e' }}
+                          className={`sm:hidden inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black text-white ${isVip ? 'vip-plan-pill' : ''
+                            }`}
+                          style={{
+                            background: isVip
+                              ? 'linear-gradient(135deg,#3a0d00,#d94a00,#ff8a00)'
+                              : '#0f766e',
+                            border: isVip ? '1px solid rgba(255,180,90,.45)' : undefined
+                          }}
                         >
-                          <Crown className="w-3 h-3" />
-                          {tier.name_ku || tier.name_en || 'VIP'}
+                          {isVip ? <Flame className="w-3 h-3" /> : <Crown className="w-3 h-3" />}
+                          {isVip ? vipLabel : (tier?.name_ku || tier?.name_en || 'PRO')}
                         </span>
                       )}
                     </div>
@@ -566,6 +759,14 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                       </span>
                     </div>
                     <SocialLinks links={freelancer.social_links} size="sm" onDark className="mt-3" />
+
+                    {isVip && (
+                      <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full vip-elite-badge">
+                        <Flame className="w-3.5 h-3.5" />
+                        <span>VIP · پڕۆفایلی تایبەت</span>
+                        <Zap className="w-3 h-3" />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -575,6 +776,22 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
 
         {/* MAIN CONTENT */}
         <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10">
+          {isVip && (
+            <div className="relative z-10 -mt-4 mb-3 rounded-[22px] overflow-hidden border border-orange-200/80 bg-[linear-gradient(135deg,#2a0b02,#6e2100_48%,#2b0b02)] text-white shadow-[0_14px_42px_rgba(255,87,0,.16)]">
+              <div className="absolute inset-0 opacity-40 bg-[radial-gradient(circle_at_15%_20%,rgba(255,190,90,.28),transparent_34%),radial-gradient(circle_at_85%_70%,rgba(255,71,0,.28),transparent_36%)]" />
+              <div className="relative flex items-center gap-3 px-4 py-3 sm:px-5">
+                <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0 shadow-inner">
+                  <Flame className="w-5 h-5 text-orange-300" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[11px] font-black text-orange-200">VIP PROFILE</div>
+                  <div className="text-xs sm:text-sm font-black truncate">ئەم پڕۆفایلە بە شێوازی VIP پیشان دەدرێت</div>
+                </div>
+                <ShieldCheck className="w-5 h-5 text-orange-200 shrink-0" />
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_330px] gap-5 lg:gap-7 -mt-1 pb-[150px] lg:pb-20">
 
             {/* PRIMARY COLUMN */}
@@ -582,7 +799,8 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
               {/* Quick summary strip */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 -mt-4 relative z-10">
                 {ratingSummary.count > 0 && (
-                  <div className="rounded-2xl bg-white border border-stone-200/80 p-3.5 shadow-[0_8px_28px_rgba(20,30,25,.06)]">
+                  <div className={`rounded-2xl bg-white p-3.5 shadow-[0_8px_28px_rgba(20,30,25,.06)] ${isVip ? 'vip-light-card' : 'border border-stone-200/80'
+                    }`}>
                     <div className="flex items-center gap-1.5 text-base font-black">
                       <Star className="w-4 h-4" style={{ color: '#f5a524', fill: '#f5a524' }} />
                       {ratingSummary.average.toFixed(1)}
@@ -594,20 +812,23 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                 )}
 
                 {skillsList.length > 0 && (
-                  <div className="rounded-2xl bg-white border border-stone-200/80 p-3.5 shadow-[0_8px_28px_rgba(20,30,25,.06)]">
+                  <div className={`rounded-2xl bg-white p-3.5 shadow-[0_8px_28px_rgba(20,30,25,.06)] ${isVip ? 'vip-light-card' : 'border border-stone-200/80'
+                    }`}>
                     <div className="text-base font-black">{skillsList.length}</div>
                     <div className="text-[10px] text-stone-400 font-bold mt-1">شارەزایی</div>
                   </div>
                 )}
 
                 {experienceList.length > 0 && (
-                  <div className="rounded-2xl bg-white border border-stone-200/80 p-3.5 shadow-[0_8px_28px_rgba(20,30,25,.06)]">
+                  <div className={`rounded-2xl bg-white p-3.5 shadow-[0_8px_28px_rgba(20,30,25,.06)] ${isVip ? 'vip-light-card' : 'border border-stone-200/80'
+                    }`}>
                     <div className="text-base font-black">{experienceList.length}</div>
                     <div className="text-[10px] text-stone-400 font-bold mt-1">ئەزموون</div>
                   </div>
                 )}
 
-                <div className="rounded-2xl bg-white border border-stone-200/80 p-3.5 shadow-[0_8px_28px_rgba(20,30,25,.06)]">
+                <div className={`rounded-2xl bg-white p-3.5 shadow-[0_8px_28px_rgba(20,30,25,.06)] ${isVip ? 'vip-light-card' : 'border border-stone-200/80'
+                  }`}>
                   <div className="text-base font-black flex items-center gap-1">
                     <CheckCircle2 className="w-4 h-4" style={{ color: TEAL }} />
                     {isVerified ? 'پشتڕاستکراو' : 'پڕۆفایل'}
@@ -622,7 +843,16 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
               {bio && (
                 <section
                   className="mt-5 rounded-[24px] bg-white border border-stone-200/80 p-5 sm:p-6 shadow-[0_8px_32px_rgba(20,30,25,.045)]"
-                  style={hasPaidPlan ? { borderColor: '#b9dcd6' } : undefined}
+                  style={
+                    isVip
+                      ? {
+                        borderColor: '#ffc58f',
+                        boxShadow: '0 12px 42px rgba(255,106,0,.10)'
+                      }
+                      : hasPaidPlan
+                        ? { borderColor: '#b9dcd6' }
+                        : undefined
+                  }
                 >
                   <div className="flex items-start gap-3">
                     <div
@@ -651,9 +881,9 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                           key={index}
                           className="px-3.5 py-2.5 rounded-xl text-xs sm:text-[13px] font-black border transition-all hover:-translate-y-0.5"
                           style={{
-                            color: TEAL_DEEP,
-                            background: `${TEAL}08`,
-                            borderColor: `${TEAL}22`
+                            color: isVip ? '#9a3d00' : TEAL_DEEP,
+                            background: isVip ? '#fff4eb' : `${TEAL}08`,
+                            borderColor: isVip ? '#ffd1ad' : `${TEAL}22`
                           }}
                         >
                           {skill}
@@ -677,8 +907,8 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                           <span
                             className="absolute right-0 top-1.5 w-3 h-3 rounded-full ring-4"
                             style={{
-                              background: TEAL,
-                              boxShadow: `0 0 0 4px ${TEAL_SOFT}`
+                              background: isVip ? '#ff7a00' : TEAL,
+                              boxShadow: `0 0 0 4px ${isVip ? '#fff0e2' : TEAL_SOFT}`
                             }}
                           />
 
@@ -737,8 +967,8 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                         <span
                           className="shrink-0 px-2.5 py-1.5 rounded-full text-[10px] font-black"
                           style={{
-                            color: TEAL_DEEP,
-                            background: TEAL_SOFT
+                            color: isVip ? '#9a3d00' : TEAL_DEEP,
+                            background: isVip ? '#fff0e2' : TEAL_SOFT
                           }}
                         >
                           {visibleCvs.length}/{cvVisibilityLimit}
@@ -855,7 +1085,10 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                 <div
                   className="rounded-[28px] bg-white border p-5 shadow-[0_12px_45px_rgba(20,30,25,.07)]"
                   style={{
-                    borderColor: hasPaidPlan ? '#cfe4e0' : '#e4e8e6'
+                    borderColor: isVip ? '#ffc58f' : hasPaidPlan ? '#cfe4e0' : '#e4e8e6',
+                    boxShadow: isVip
+                      ? '0 18px 55px rgba(255,106,0,.10)'
+                      : undefined
                   }}
                 >
                   <div className="text-[10px] font-black text-stone-400 mb-1">

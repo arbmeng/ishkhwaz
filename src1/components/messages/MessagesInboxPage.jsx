@@ -133,30 +133,7 @@ export const MessagesInboxPage = ({ onNavigate, onEditResumeStyle }) => {
       className="min-h-screen pb-28 select-none"
       style={{ background: '#f4f7f6', fontFamily: NK }}
     >
-      <PageHeader title="پەیامەکان" subtitle="گفتوگۆکانت لەگەڵ کۆمپانیا و کارخوازان">
-        <div className="relative max-w-2xl">
-          <Search
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-            style={{ color: '#9faea9' }}
-          />
-          <input
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            placeholder="گەڕان لە پەیامەکان"
-            className="w-full bg-white rounded-2xl pr-11 pl-9 py-3 text-sm text-[#111d1a] font-bold placeholder-[#9faea9] outline-none border border-[#e8eeed] shadow-[0_2px_12px_rgba(0,0,0,0.03)] focus:border-[#12796b] focus:ring-2 focus:ring-[#12796b]/10 transition-all"
-            style={{ fontFamily: NK }}
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-[#f0f4f2] flex items-center justify-center active:scale-90 transition-transform"
-              aria-label="سڕینەوە"
-            >
-              <X className="w-3 h-3 text-[#62736e]" />
-            </button>
-          )}
-        </div>
-      </PageHeader>
+      <PageHeader title="پەیامەکان" subtitle="گفتوگۆکانت لەگەڵ کۆمپانیا و کارخوازان" />
 
       <div className="max-w-2xl mx-auto px-4 pt-5 sm:pt-6 space-y-4">
 

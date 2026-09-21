@@ -71,8 +71,8 @@ export const AuthBrandPanel = ({ variant = 'login', step = 1, isRecruiter = fals
         style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.9) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.9) 1px,transparent 1px)', backgroundSize: '46px 46px' }} />
 
       <div className="relative flex items-center gap-3">
-        <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white shadow-lg overflow-hidden">
-          <img src="/logo-flat.png" alt="" className="h-9 w-auto object-contain" />
+        <div className="h-12 w-12 rounded-2xl shadow-lg overflow-hidden ring-1 ring-white/35">
+          <img src="/logo-green.png" alt="" className="h-full w-full object-cover" />
         </div>
         <div>
           <div className="text-xs font-black tracking-[0.24em]">ISHKHWAZ</div>
@@ -104,8 +104,8 @@ export const AuthMobileHero = ({ children }) => (
     <div className="pointer-events-none absolute inset-0 opacity-[.07]"
       style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.9) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.9) 1px,transparent 1px)', backgroundSize: '34px 34px' }} />
     <div className="relative mx-auto flex w-full max-w-[520px] items-center gap-3 px-6 pb-14 pt-3">
-      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white shadow-lg overflow-hidden shrink-0">
-        <img src="/logo-flat.png" alt="ئیش خواز" className="h-9 w-auto object-contain" />
+      <div className="h-12 w-12 rounded-2xl shadow-lg overflow-hidden shrink-0 ring-1 ring-white/35">
+        <img src="/logo-green.png" alt="ئیش خواز" className="h-full w-full object-cover" />
       </div>
       <div className="min-w-0">
         <div className="text-xs font-black tracking-[0.24em]">ISHKHWAZ</div>

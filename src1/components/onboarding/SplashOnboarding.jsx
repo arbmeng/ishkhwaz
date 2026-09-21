@@ -262,7 +262,7 @@ export const SplashOnboarding = ({ onComplete }) => {
               filter: `drop-shadow(0 16px 24px ${TEAL}45)`,
             }}
           >
-            <img src="/logo-flat.png" alt="ئیش خواز" className="h-full w-full object-contain" />
+            <img src="/logo-green.png" alt="ئیش خواز" className="h-full w-full object-contain" />
           </div>
 
           <div
@@ -353,7 +353,7 @@ export const SplashOnboarding = ({ onComplete }) => {
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
         <div className="flex items-center gap-2">
-          <img src="/logo-flat.png" alt="" className="h-7 w-7 object-contain" />
+          <img src="/logo-green.png" alt="" className="h-7 w-7 object-contain" />
           <span className="text-xs font-black text-[#26332f]">ئیش خواز</span>
         </div>
 

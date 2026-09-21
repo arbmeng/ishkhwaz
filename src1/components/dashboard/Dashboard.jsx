@@ -569,7 +569,7 @@ export const Dashboard = ({ onNavigate }) => {
       <main className="relative mx-auto w-full max-w-[1500px] px-3 pb-8 pt-4 sm:px-6 sm:pt-7 lg:px-8">
         {isEmployer && (
           <div className="dashboard-rise mb-4">
-            <GlassButton primary onClick={() => { soundService.playTick?.(); onNavigate?.('post_job'); }} className="w-full sm:w-auto sm:px-6 py-3.5 sm:py-3">
+            <GlassButton primary data-tour="dash-post" onClick={() => { soundService.playTick?.(); onNavigate?.('post_job'); }} className="w-full sm:w-auto sm:px-6 py-3.5 sm:py-3">
               <Plus className="h-4 w-4" />بڵاوکردنەوەی کار
             </GlassButton>
           </div>

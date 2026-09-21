@@ -4,7 +4,7 @@ import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { EditJobModal } from './EditJobModal';
 import { ConfirmationModal } from '../ui/ConfirmationModal';
-import { PageHeader } from '../layout/PageHeader';
+import { HeroControls } from '../layout/HeroControls';
 import { sectorLabel } from '../../data/jobSectors';
 import {
   ArrowRight, MapPin, Briefcase, Wallet, Calendar, Edit, Trash2, Tag, Clock, Building2,
@@ -111,17 +111,13 @@ export const JobDetailPage = ({ jobId, onBack }) => {
 
   return (
     <div dir="rtl" className="min-h-screen pb-28" style={{ background: BG, color: TXT, fontFamily: NK }}>
-      <PageHeader
-        title={title}
-        onBack={back}
-        actions={[{ icon: copied ? Check : Share2, label: 'هاوبەشکردن', onClick: handleShare, active: copied }]}
-      />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 lg:pt-6 space-y-4">
 
         {/* Hero */}
         <div className="rounded-3xl bg-white border overflow-hidden" style={{ borderColor: BORDER }}>
           <div className="relative h-32 sm:h-44" style={{ background: `linear-gradient(135deg, ${TEAL}, #0d5c50)` }}>
+            <HeroControls onBack={back} actions={[{ icon: copied ? Check : Share2, label: 'هاوبەشکردن', onClick: handleShare, active: copied }]} />
             {job.company_cover && (
               <img src={job.company_cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
             )}

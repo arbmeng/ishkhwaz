@@ -8,6 +8,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     port: 3000,
-    open: true
+    open: true,
+    // share links (/share/job/..) are answered by the real server (preview page + redirect)
+    proxy: { '/share': { target: 'https://ishkhwaz.zeraworld.com', changeOrigin: true } }
   }
 })

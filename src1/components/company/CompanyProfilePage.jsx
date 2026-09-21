@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { PageHeader } from '../layout/PageHeader';
+import { HeroControls } from '../layout/HeroControls';
 import { SocialLinks } from '../ui/SocialLinks';
 import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
@@ -495,17 +495,11 @@ export const CompanyProfilePage = ({
         className="company-page company-page-scroll fixed inset-0 z-[60] overflow-y-auto font-vazirmatn text-stone-900"
       >
         {/* Top navigation — the shared page header (same as every other page) */}
-        <PageHeader
-          desktop
-          insideMain={false}
-          title={getCompanyName(company)}
-          onBack={goBack}
-          actions={[{ icon: copied ? CheckCircle2 : Share2, label: 'هاوبەشکردن', onClick: handleShareCompany, active: copied }]}
-        />
 
         {/* Hero */}
         <section className="relative overflow-hidden">
           <div className="company-hero company-noise relative min-h-[310px] sm:min-h-[370px] lg:min-h-[440px]">
+            <HeroControls onBack={goBack} actions={[{ icon: copied ? CheckCircle2 : Share2, label: 'هاوبەشکردن', onClick: handleShareCompany, active: copied }]} />
             {company.cover || company.company_cover ? (
               <>
                 <img

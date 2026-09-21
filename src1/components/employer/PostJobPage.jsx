@@ -49,6 +49,20 @@ const selectClass =
 const inputClass =
   'w-full bg-[#f4f7f6] border border-[#e8eeed] rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold text-[#111d1a] outline-none';
 
+// The job page shows a job as these dropdowns ("Title:" blocks in the description), so the form asks for each one
+// separately and joins them in that format. `list` sections take one item per line and become bullets.
+const JOB_SECTIONS = [
+  { key: 'about', title: 'دەربارەی کۆمپانیا', label: 'دەربارەی کۆمپانیا', hint: 'کۆمپانیاکەت بە کورتی بناسێنە', placeholder: 'ئێمە کۆمپانیایەکین لە بواری... کە لە سلێمانی/هەولێر...' },
+  { key: 'summary', title: 'کورتەی کارەکە', label: 'کورتەی کارەکە', hint: 'یەک دوو ڕستە: ئەم کارە چییە و بۆچی گرنگە', placeholder: 'بە دوای فرۆشیارێکی چالاک دەگەڕێین بۆ...', required: true },
+  { key: 'duties', title: 'ئەرکە سەرەکییەکان', label: 'ئەرکە سەرەکییەکان', hint: 'هەر ئەرکێک لە دێڕێکدا', placeholder: 'وەڵامدانەوەی پەیوەندییەکان\nتۆمارکردنی داواکارییەکان', list: true },
+  { key: 'must', title: 'مەرجە پێویستەکان', label: 'مەرجە پێویستەکان', hint: 'هەر مەرجێک لە دێڕێکدا', placeholder: 'ئەزموونی ٢ ساڵ\nزانینی زمانی ئینگلیزی', list: true },
+  { key: 'nice', title: 'مەرجە باشترەکان (پێویست نین)', label: 'مەرجە باشترەکان (پێویست نین)', hint: 'ئەوانەی باشن بەڵام ناچارنین', placeholder: 'زانینی Excel\nئەگەری هەبوونی ئۆتۆمبێل', list: true },
+  { key: 'when', title: 'کاتی کار و شوێن', label: 'کاتی کار و شوێن', hint: 'کاتژمێرەکان و شوێنی کارکردن', placeholder: 'شەممە تا پێنجشەممە، ٨ی بەیانی تا ٤ی دوانیوەڕۆ\nشوێن: هەولێر، شەقامی...', list: true },
+  { key: 'pay', title: 'مووچە و بەرژەوەندییەکان', label: 'مووچە و بەرژەوەندییەکان', hint: 'مووچە، پاداشت، بیمە، گواستنەوە...', placeholder: 'مووچەی مانگانە + پاداشتی فرۆش\nبیمەی تەندروستی', list: true },
+  { key: 'apply', title: 'چۆن داواکاری بنێرم', label: 'چۆن داواکاری بنێرم', hint: 'کاندید چی بکات بۆ داواکاری', placeholder: 'لە ئەپەکەدا «ناردنی سیڤی» بکە و CVـیەکەت هاوپێچ بکە.', list: true },
+];
+const SECTION_MAX = 320; // 8 x 320 stays inside the server's 3000-character limit
+
 export const PostJobPage = ({ onBack, onSuccess }) => {
   const { user, token } = useAuth();
   const { addToast, categories: liveCategories = [], workTypes: liveWorkTypes = [] } = useStore();
@@ -65,7 +79,13 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedSubDistrict, setSelectedSubDistrict] = useState('');
   const [pin, setPin] = useState(null); // { lat, lng, locationName } from the map picker
-  const [description, setDescription] = useState('');
+  const [sec, setSec] = useState(() => ({ about: (user?.bio || user?.description || '').slice(0, 320), summary: '', duties: '', must: '', nice: '', when: '', pay: '', apply: '' }));
+  const composeDescription = () => JOB_SECTIONS.map(({ key, title, list }) => {
+    const lines = sec[key].split('\n').map(x => x.trim()).filter(Boolean);
+    if (!lines.length) return '';
+    return `${title}:\n` + lines.map(l => (list ? `• ${l.replace(/^[•\-–·*]\s*/, '')}` : l)).join('\n');
+  }).filter(Boolean).join('\n\n');
+  const descriptionLength = composeDescription().length;
   const [skills, setSkills] = useState([]);
   const [skillInput, setSkillInput] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -116,6 +136,10 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
       setErrorMsg('جۆری کەرت هەڵبژێرە (حکوومی، تایبەت، بازرگانی ...).');
       return;
     }
+    if (!sec.summary.trim()) {
+      setErrorMsg('کورتەی کارەکە پێویستە (لە بەشی وردەکاری کار).');
+      return;
+    }
     if (!token) {
       setErrorMsg('تکایە پێشتر بچۆ ژوورەوە.');
       return;
@@ -142,7 +166,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
         salary_min: parseInt(salaryMin) || 500000,
         salary_max: parseInt(salaryMax) || 1200000,
         salary_period: 'monthly',
-        description: description.trim(),
+        description: composeDescription(),
         required_skills: JSON.stringify(skills),
         company_name: companyName.trim(),
         deadline: deadline || null,
@@ -446,19 +470,27 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
               </div>
             </SectionCard>
 
-            <SectionCard title="٤. وردەکاری زیاتر" hint="ئەم زانیاریانە یارمەتی کاندیدەکان دەدات بۆ باشتر تێگەیشتن لە کارەکە">
-              <Field label="وەسفی کار">
-                <div className="flex items-center justify-between text-[10px] font-bold text-[#a0afa9] mb-1">
-                  <span className="font-mono">{description.length}/2000</span>
-                </div>
-                <textarea
-                  rows={4}
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  placeholder="مەرجەکان، بەرپرسیارێتییەکان و ئەرکەکانی کار..."
-                  className={inputClass + ' leading-relaxed resize-none'}
-                />
-              </Field>
+            <SectionCard title="٤. وردەکاری کار" hint="هەموو ئەم بەشانە لەسەر پەڕەی کارەکە وەک لیستی کراوە پیشان دەدرێن">
+              <div className="flex items-center justify-between text-[11px] font-bold text-[#7b8e88]">
+                <span>هەر بەشێک وەک لیستێکی جیا لەسەر پەڕەی کارەکە پیشان دەدرێت</span>
+                <span className="font-mono">{descriptionLength}/3000</span>
+              </div>
+              {JOB_SECTIONS.map(({ key, label, hint, placeholder, required }, idx) => (
+                <Field key={key} label={`${idx + 1}. ${label}${required ? ' *' : ''}`}>
+                  <div className="mb-1 flex items-center justify-between text-[10px] font-bold text-[#a0afa9]">
+                    <span>{hint}</span>
+                    <span className="font-mono">{sec[key].length}/{SECTION_MAX}</span>
+                  </div>
+                  <textarea
+                    rows={key === 'about' || key === 'summary' ? 3 : 4}
+                    maxLength={SECTION_MAX}
+                    value={sec[key]}
+                    onChange={e => setSec(prev => ({ ...prev, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    className={inputClass + ' leading-relaxed resize-none'}
+                  />
+                </Field>
+              ))}
 
               <Field label="کۆتا وادەی وەرگرتنی داواکاری">
                 <input

@@ -53,8 +53,8 @@ const detect = () => {
 /* ───────── phone mock ───────── */
 
 const AppIcon = ({ className = '' }) => (
-  <div className={`grid place-items-center rounded-[22%] bg-white shadow-md ${className}`}>
-    <img src="/logo-flat.png" alt="" className="h-[68%] w-auto object-contain" />
+  <div className={`overflow-hidden rounded-[22%] shadow-md ${className}`}>
+    <img src="/logo-green.png" alt="" className="h-full w-full object-cover" />
   </div>
 );
 
@@ -276,7 +276,7 @@ export const InstallPage = ({ onBack }) => {
             ) : <span />}
             <div className="flex items-center gap-2.5">
               <div className="text-left"><div className="text-[11px] font-bold tracking-[0.22em]">ISHKHWAZ</div><div className="text-[10px] font-medium text-white/65">کار لە کوردستان</div></div>
-              <div className="grid h-11 w-11 place-items-center overflow-hidden rounded-2xl bg-white shadow-lg"><img src="/logo-flat.png" alt="" className="h-8 w-auto" /></div>
+              <div className="h-11 w-11 overflow-hidden rounded-2xl shadow-lg ring-1 ring-white/35"><img src="/logo-green.png" alt="" className="h-full w-full object-cover" /></div>
             </div>
           </div>
           <div className="mt-8 max-w-xl">

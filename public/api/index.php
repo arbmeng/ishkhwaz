@@ -488,6 +488,29 @@ function sendVerificationEmail(string $toEmail, string $name, string $token, ?st
     return sendAppEmail($toEmail, $subject, $body, $alt);
 }
 
+// Signed "this email was confirmed" token handed to the client after the pre-registration code is entered.
+// /auth/register only accepts a new account whose email has one of these (valid 30 minutes).
+function emailProofMake(string $email, int $ttl = 1800): string {
+    $payload = rtrim(strtr(base64_encode(json_encode(['e' => strtolower($email), 'x' => time() + $ttl])), '+/', '-_'), '=');
+    return $payload . '.' . hash_hmac('sha256', $payload . ':emailproof', TOKEN_SECRET);
+}
+function emailProofValid(string $email, string $proof): bool {
+    if (strpos($proof, '.') === false) return false;
+    [$payload, $sig] = explode('.', $proof, 2);
+    if (!hash_equals(hash_hmac('sha256', $payload . ':emailproof', TOKEN_SECRET), $sig)) return false;
+    $d = json_decode(base64_decode(strtr($payload, '-_', '+/')), true);
+    return is_array($d) && ($d['e'] ?? '') === strtolower($email) && (int)($d['x'] ?? 0) > time();
+}
+function sendEmailCodeEmail(string $toEmail, string $otp): bool {
+    $subject = 'کۆدی دڵنیاکردنەوە — ئیش خواز';
+    $body = '<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f4f7f6;">'
+        . '<h2 style="color:#111d1a;">سڵاو 👋</h2>'
+        . '<p style="color:#4a5854;line-height:1.8;">کۆدی دڵنیاکردنەوەی ئیمەیڵت بۆ تۆمارکردن لە ئیش خواز (ماوەی ١٠ خولەک کاردەکات):</p>'
+        . '<p style="text-align:center;margin:18px 0;"><span dir="ltr" style="display:inline-block;background:#fff;border:2px dashed #12796b;border-radius:12px;padding:12px 26px;font-size:30px;letter-spacing:8px;font-weight:bold;color:#0d5c50;font-family:monospace;">' . $otp . '</span></p>'
+        . '<p style="color:#9faea9;font-size:12px;">ئەگەر تۆ داوات نەکردووە، ئەم ئیمەیلە پشتگوێ بخە.</p></div>';
+    return sendAppEmail($toEmail, $subject, $body, "کۆدی دڵنیاکردنەوەت: {$otp}");
+}
+
 // A fresh 6-digit code for confirming the account's email. Stored only as an HMAC (like the reset code).
 function issueEmailOtp(PDO $pdo, string $userId): string {
     $otp = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -1527,6 +1550,17 @@ $pdo->exec("
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
 
+// Codes for confirming an email BEFORE the account exists (register step 3). Only an HMAC is stored.
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS email_otps (
+    email VARCHAR(150) NOT NULL PRIMARY KEY,
+    hash VARCHAR(64) NOT NULL,
+    expires VARCHAR(32) NOT NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    sent_at INT NOT NULL DEFAULT 0
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+
 // Messages sent from the public Contact page (kept in the database; admins are also notified).
 $pdo->exec("
   CREATE TABLE IF NOT EXISTS contact_messages (
@@ -1977,6 +2011,56 @@ if (preg_match('#/health$#', $uri) || preg_match('#/v1/?$#', $uri)) {
 }
 
 // ================================================================
+// Pre-registration email code  POST /auth/email-otp/send {email}  /  POST /auth/email-otp/verify {email, otp}
+// (public; the code is confirmed BEFORE the account exists, and verify returns the proof /auth/register needs)
+// ================================================================
+if (preg_match('#/auth/email-otp/send$#', $uri) && $method === 'POST') {
+    if (!rateLimitCheck($pdo, $clientIp, 'email_otp_send')) jsonErr(429, 'زۆر جار داواتکرد. کەمێک چاوەڕوان بە.');
+    $em = strtolower(trim(sanitize(safeJson()['email'] ?? '', 150)));
+    if (!filter_var($em, FILTER_VALIDATE_EMAIL)) jsonErr(400, 'ئیمەیڵێکی دروست بنووسە.');
+    $dup = $pdo->prepare('SELECT id FROM users WHERE LOWER(email) = ?');
+    $dup->execute([$em]);
+    if ($dup->fetch()) jsonErr(400, 'ئەم ئیمەیڵە پێشتر تۆمارکراوە.');
+
+    $row = $pdo->prepare('SELECT sent_at FROM email_otps WHERE email = ?');
+    $row->execute([$em]);
+    $prev = $row->fetch();
+    if ($prev && (int)$prev['sent_at'] > time() - 60) jsonErr(429, 'کۆدێکی نوێ تازە نێردراوە. ١ خولەک چاوەڕوان بە.');
+
+    $otp = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $pdo->prepare('REPLACE INTO email_otps (email, hash, expires, attempts, sent_at) VALUES (?, ?, ?, 0, ?)')
+        ->execute([$em, hash_hmac('sha256', $em . ':pre:' . $otp, TOKEN_SECRET), date('Y-m-d H:i:s', time() + 600), time()]);
+    $sent = sendEmailCodeEmail($em, $otp);
+    echo json_encode(['success' => true, 'sent' => $sent, 'message' => 'کۆدەکە بۆ ئیمەیڵەکەت نێردرا.']);
+    exit(0);
+}
+
+if (preg_match('#/auth/email-otp/verify$#', $uri) && $method === 'POST') {
+    if (!rateLimitCheck($pdo, $clientIp, 'email_otp_verify')) jsonErr(429, 'زۆر جار هەوڵت دا. کەمێک چاوەڕوان بە.');
+    $in = safeJson();
+    $em = strtolower(trim(sanitize($in['email'] ?? '', 150)));
+    $otp = preg_replace('/\D/', '', (string)($in['otp'] ?? ''));
+    $bad = 'کۆدەکە هەڵەیە یان بەسەرچووە.';
+    if (!filter_var($em, FILTER_VALIDATE_EMAIL) || strlen($otp) !== 6) jsonErr(400, $bad);
+
+    $st = $pdo->prepare('SELECT hash, expires, attempts FROM email_otps WHERE email = ?');
+    $st->execute([$em]);
+    $r = $st->fetch();
+    if (!$r || strtotime($r['expires']) < time()) jsonErr(400, $bad);
+    if ((int)$r['attempts'] >= 5) {
+        $pdo->prepare('DELETE FROM email_otps WHERE email = ?')->execute([$em]);
+        jsonErr(400, 'زۆر جار کۆدی هەڵەت نووسی. کۆدێکی نوێ داوا بکە.');
+    }
+    if (!hash_equals($r['hash'], hash_hmac('sha256', $em . ':pre:' . $otp, TOKEN_SECRET))) {
+        $pdo->prepare('UPDATE email_otps SET attempts = attempts + 1 WHERE email = ?')->execute([$em]);
+        jsonErr(400, $bad);
+    }
+    $pdo->prepare('DELETE FROM email_otps WHERE email = ?')->execute([$em]);
+    echo json_encode(['success' => true, 'proof' => emailProofMake($em)]);
+    exit(0);
+}
+
+// ================================================================
 // 2. Auth: Register  POST /auth/register
 // ================================================================
 if (preg_match('#/auth/register$#', $uri) && $method === 'POST') {
@@ -2026,6 +2110,7 @@ if (preg_match('#/auth/register$#', $uri) && $method === 'POST') {
     if (empty($phone) || !preg_match('/^[0-9+\s\-]{7,20}$/', $phone)) jsonErr(400, 'ژمارەی تەلەفۆنی دروست پێویستە.');
     if (strlen($password) < 8) jsonErr(400, 'وشەی نهێنی دەبێت لانیکم ٨ پیت بێت.');
     if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) jsonErr(400, 'ئیمەیڵێکی دروست پێویستە بۆ تۆمارکردن.');
+    if (!emailProofValid($email, (string)($input['email_proof'] ?? ''))) jsonErr(400, 'ئیمەیڵەکەت دڵنیا نەکراوەتەوە. کۆدی ٦ ژمارەیی بنووسە و دووبارە هەوڵبدەرەوە.');
     if ($role === 'employer' && (empty($companyName) || empty($companyPhone))) {
         jsonErr(400, 'ناوی کۆمپانیا و ژمارەی تەلەفۆنی کۆمپانیا پێویستن.');
     }
@@ -2081,8 +2166,9 @@ if (preg_match('#/auth/register$#', $uri) && $method === 'POST') {
         $createdAt
     ]);
 
-    $emailOtp = issueEmailOtp($pdo, $userId);
-    $emailSent = sendVerificationEmail($email, $name, $emailVerifyToken, $emailOtp);
+    // The email was already confirmed with its code (register step 3), so the account starts verified.
+    $pdo->prepare('UPDATE users SET email_verified = 1 WHERE id = ?')->execute([$userId]);
+    $emailSent = true;
 
     notifyAdmins($pdo, 'user_registered', ['id' => $userId, 'name' => $name, 'role' => $role]);
     logActivity($pdo, $userId, 'register', $role);
@@ -2103,7 +2189,7 @@ if (preg_match('#/auth/register$#', $uri) && $method === 'POST') {
             'favorite_categories' => $favoriteCategories, 'saved_jobs' => '[]', 'experience' => '[]', 'skills' => $signupSkillsJson,
             'status' => 'active', 'wallet_balance' => $balance, 'ref_code' => $refCode,
             'plan' => $primaryFree['id'] ?? null, 'plan_credits' => (int)($primaryFree['credits'] ?? 0),
-            'email_verified' => 0,
+            'email_verified' => 1,
             'created_at' => $createdAt,
         ]
     ]);
@@ -3101,7 +3187,7 @@ function renderSharePreview(string $title, string $description, string $image, s
 }
 
 $origin = (($_SERVER['HTTPS'] ?? '') !== '' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'ishkhwaz.zeraworld.com');
-$defaultShareImage = $origin . '/icon-512x512-v2.png';
+$defaultShareImage = $origin . '/icon-512x512-v3.png';
 
 // Logos/covers/avatars are stored as inline base64 data: URIs (no real image hosting in this app), which
 // og:image cannot use at all - crawlers need a real fetchable HTTP(S) URL. So a data: URI is served back

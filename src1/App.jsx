@@ -28,8 +28,8 @@ import { pushService } from './services/pushService';
 
 import { SearchPage } from './components/search/SearchPage';
 import { MessagesInboxPage } from './components/messages/MessagesInboxPage';
-import { AdminPage } from './components/admin/AdminPage';
 import { HowItWorksPage } from './components/layout/HowItWorksPage';
+import { AppTour, TOUR_DONE_KEY } from './components/tour/AppTour';
 import { AboutPage } from './components/layout/AboutPage';
 import { ContactPage } from './components/layout/ContactPage';
 import { NotificationsPage } from './components/layout/NotificationsPage';
@@ -46,13 +46,14 @@ import { FEATURES, canSeePlans } from './config/features';
 // refresh or shared link keeps the id exactly.
 const getJobIdFromUrl = () => {
   if (typeof window === 'undefined') return null;
-  const m = getAppPath().match(/^\/(?:dashboard\/)?jobs\/([^/?#]+)/i);
+  const m = getAppPath().match(/^\/(?:dashboard\/)?(?:jobs|share\/job)\/([^/?#]+)/i);
   return m ? decodeURIComponent(m[1]) : null;
 };
 
 function MainAppContent() {
   const { user, token, openAuthModal, needsProfileCompletion, clearNeedsProfileCompletion } = useAuth();
   const { addToast } = useStore();
+  const [showTour, setShowTour] = useState(false);
   const [isPostJobModalOpen, setIsPostJobModalOpen] = useState(false);
   // Draft CV data collected in KarnamaCVPage's wizard, handed off to the
   // in-app template picker — nothing leaves Ish-khwaz until the user saves.
@@ -108,6 +109,13 @@ function MainAppContent() {
         } catch { /* ignore */ }
         return 'connect';
       }
+      // Share links opened straight in the SPA (dev server, or a host without the /share rewrite)
+      if (target.startsWith('share/job/')) return 'job_detail';
+      if (target.startsWith('share/freelancer/')) {
+        try { window.history.replaceState({}, '', '/app/search/freelancers/' + target.split('/')[2]); } catch (e) { }
+        return 'search';
+      }
+      if (target.startsWith('share/company/')) return 'companies';
       if (target === 'authlogin') return 'login';
       if (target === 'map' || target === 'location') return 'map';
       if (target === 'search' || target === 'find' || target.startsWith('search/') || target.startsWith('find/')) return 'search';
@@ -124,7 +132,6 @@ function MainAppContent() {
       if (target === 'post-job' || target === 'post_job') return 'post_job';
       if (target === 'cv' || target === 'build-cv' || target === 'cv_builder' || target === 'karnama_cv') return 'karnama_cv';
       if (target === 'install') return 'install_app';
-      if (target === 'admin') return 'admin';
       if (target === 'how-it-works' || target === 'how_it_works' || target === 'guide') return 'how_it_works';
       if (target === 'about' || target === 'about-us') return 'about';
       if (target === 'contact' || target === 'contact-us') return 'contact';
@@ -215,7 +222,6 @@ function MainAppContent() {
       else if (tabId === 'karnama_cv') path = '/cv';
       else if (tabId === 'resumes') path = '/resumes';
       else if (tabId === 'install_app') path = '/install';
-      else if (tabId === 'admin') path = '/admin';
       else if (tabId === 'how_it_works') path = '/how-it-works';
       else if (tabId === 'about') path = '/about';
       else if (tabId === 'contact') path = '/contact';
@@ -331,6 +337,19 @@ function MainAppContent() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [user]);
+
+  // First time a signed-in user lands in the app: offer the guided tour once.
+  useEffect(() => {
+    if (!user) return undefined;
+    let seen = true;
+    try { seen = !!localStorage.getItem(TOUR_DONE_KEY) || !!localStorage.getItem('ishkhwaz_tour_offered'); } catch { /* private mode */ }
+    if (seen) return undefined;
+    const t = setTimeout(() => {
+      try { localStorage.setItem('ishkhwaz_tour_offered', '1'); } catch { /* private mode */ }
+      addToast?.({ title: 'بەخێربێیت 👋', message: 'دەتەوێت بە کورتی پیشانت بدەین ئەپەکە چۆن کاردەکات؟', type: 'info', duration: 12000, action: { label: 'دەستپێکردنی ڕێبەر', onClick: () => setShowTour(true) } });
+    }, 3500);
+    return () => clearTimeout(t);
+  }, [user?.id]);
 
   // A signed-in user who opens the bare website root gets the app: move the URL to /app/ too.
   useEffect(() => {
@@ -478,10 +497,6 @@ function MainAppContent() {
       return <UserProfilePage onNavigate={setActiveTab} />;
     }
 
-    if (activeTab === 'admin') {
-      return <AdminPage onBack={() => setActiveTab('home')} />;
-    }
-
     if (activeTab === 'about') {
       return <AboutPage onBack={() => setActiveTab(user ? 'home' : 'landing')} onNavigate={setActiveTab} />;
     }
@@ -491,7 +506,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'how_it_works') {
-      return <HowItWorksPage onBack={() => setActiveTab('profile')} />;
+      return <HowItWorksPage onBack={() => setActiveTab('profile')} onNavigate={setActiveTab} onStartTour={() => setShowTour(true)} />;
     }
 
     if (activeTab === 'notifications') {
@@ -574,12 +589,6 @@ function MainAppContent() {
           </p>
           {user && (user.role === 'owner' || user.role === 'admin') && (
             <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
-              <button
-                onClick={() => setActiveTab('admin')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-950 text-lime-400 text-[10px] font-black hover:bg-slate-800 transition"
-              >
-                🛡️ پانێلی ئەدمین
-              </button>
               <a
                 href="https://zeraworld.com/console/ishkhwaz/"
                 target="_blank"
@@ -597,6 +606,7 @@ function MainAppContent() {
       <AuthModal />
       <AccountBlockedModal />
       <ToastSystem />
+      <AppTour open={showTour} user={user} activeTab={activeTab} onNavigate={setActiveTab} onClose={() => setShowTour(false)} />
     </div>
   );
 }

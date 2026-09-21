@@ -15,7 +15,6 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
   const { user, token, logout } = useAuth();
   const { unreadNotifCount = 0, planTiers = [] } = useStore();
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
-  const [headerSearch, setHeaderSearch] = useState('');
 
   const isEmployer = user?.role === 'employer' || user?.role === 'owner' || user?.role === 'admin';
 
@@ -52,14 +51,6 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
     setActiveTab(tabId);
   };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (headerSearch.trim()) {
-      soundService.playTick?.();
-      setActiveTab('search');
-    }
-  };
-
   const displayName = user?.name || user?.full_name || 'هەڵمەت';
   const initialChar = displayName.trim().charAt(0) || 'هـ';
 
@@ -78,7 +69,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
             onClick={() => handleNav('home')}
             className="flex items-center gap-2.5 cursor-pointer group"
           >
-            <img src="/logo-flat.png" alt="ئیش خواز" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
+            <img src="/logo-green.png" alt="ئیش خواز" className="h-10 w-10 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform" />
             <span className="text-xl font-black text-[#111d1a]">
               ئیش خواز
             </span>
@@ -87,6 +78,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
           {/* Navigation Links with Active Underlines */}
           <nav className="flex items-center gap-1 text-[13px] font-bold">
             <button
+              data-tour="hdr-home"
               onClick={() => handleNav('home')}
               className={`px-3.5 py-2 rounded-xl transition-all relative ${
                 activeTab === 'home'
@@ -101,6 +93,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
             </button>
 
             <button
+              data-tour="hdr-search"
               onClick={() => handleNav('search')}
               className={`px-3.5 py-2 rounded-xl transition-all relative ${
                 searchActive
@@ -127,6 +120,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
 
             {FEATURES.map && (
 <button
+              data-tour="hdr-map"
               onClick={() => handleNav('map')}
               className={`px-3.5 py-2 rounded-xl transition-all relative ${
                 activeTab === 'map'
@@ -143,6 +137,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
 
             {canSeePlans(user) && (
 <button
+              data-tour="hdr-plans"
               onClick={() => handleNav('plans')}
               className={`px-3.5 py-2 rounded-xl transition-all relative ${
                 activeTab === 'plans'
@@ -179,24 +174,12 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
         </div>
 
         {/* ── 2. Middle Search Input ──────────────────────────── */}
-        <form
-          onSubmit={handleSearchSubmit}
-          className="flex-1 max-w-xs relative"
-        >
-          <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9faea9] pointer-events-none" />
-          <input
-            value={headerSearch}
-            onChange={e => setHeaderSearch(e.target.value)}
-            placeholder="گەڕان..."
-            className="w-full bg-[#f4f7f6] rounded-full pr-10 pl-4 py-2 text-xs font-bold text-[#111d1a] placeholder-[#9faea9] outline-none border border-[#e8eeed] focus:bg-white focus:border-[#12796b] transition-all"
-            style={{ fontFamily: NK }}
-          />
-        </form>
 
         {/* ── 3. Left Side: Actions & Profile Pill ─────────────── */}
         <div className="flex items-center gap-3">
           {/* Messages Icon */}
           <button
+            data-tour="hdr-messages"
             onClick={() => handleNav('messages')}
             className="w-10 h-10 rounded-2xl bg-[#f4f7f6] border border-[#e8eeed] flex items-center justify-center text-[#4a5854] hover:bg-[#eaf5f2] active:scale-95 transition relative"
             title="پەیامەکان"
@@ -211,6 +194,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
 
           {/* Notification Bell */}
           <button
+            data-tour="hdr-notifications"
             onClick={() => handleNav('notifications')}
             className="w-10 h-10 rounded-2xl bg-[#f4f7f6] border border-[#e8eeed] flex items-center justify-center text-[#4a5854] hover:bg-[#eaf5f2] active:scale-95 transition relative"
             title="ئاگادارکردنەوەکان"
@@ -224,6 +208,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
           {/* Plan badge — opens the plans page (crown = upgrade, plan icon/colour once subscribed) */}
           {user && canSeePlans(user) && (
             <button
+              data-tour="hdr-plans"
               onClick={() => handleNav('plans')}
               title={paidTier ? (paidTier.name_ku || 'پلان') : 'پلانەکان'}
               aria-label="پلانەکان"
@@ -239,6 +224,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
           {/* User Profile Pill Button */}
           {user ? (
             <button
+              data-tour="hdr-profile"
               onClick={() => handleNav('profile')}
               className="flex items-center gap-2.5 py-1.5 px-3 rounded-full bg-[#f4f7f6] hover:bg-[#eaf5f2] border border-[#e8eeed] transition active:scale-95 cursor-pointer"
             >
@@ -255,6 +241,7 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
             </button>
           ) : (
             <button
+              data-tour="hdr-login"
               onClick={() => handleNav('login')}
               className="px-5 py-2 rounded-xl bg-[#12796b] text-white text-xs font-black hover:bg-[#0d5c50] transition shadow-sm"
             >
