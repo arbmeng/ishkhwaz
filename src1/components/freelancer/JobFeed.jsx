@@ -1,3 +1,4 @@
+import { profileCompletion } from '../../utils/profileCompletion';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
@@ -193,10 +194,12 @@ const PremiumFeedHero = ({ isEmployer, user, activeJobs, activePeople, newCount,
               {isEmployer ? 'کارخوازانی Pro و VIP بە پیشە و شوێن بگەڕێ و بە خێرایی پەیوەندییان پێوە بکە.' : 'بگەڕێ، هەلی نوێ ببینە و بە یەک کرتە سیڤییەکەت بنێرە.'}
             </p>
           </div>
+          {(isEmployer || profileCompletion(user) < 100) && (
           <button type="button" onClick={() => onNavigate?.(isEmployer ? 'post-job' : 'profile')} className="group inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-xs font-bold text-[#4b13a5] shadow-[0_12px_28px_rgba(0,0,0,.18)] transition active:scale-95">
-            {isEmployer ? 'بڵاوکردنەوەی هەلی کار' : 'پڕۆفایلی خۆت تەواو بکە'}
+            {isEmployer ? 'بڵاوکردنەوەی هەلی کار' : `پڕۆفایلی خۆت تەواو بکە (${profileCompletion(user)}%)`}
             <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
           </button>
+          )}
         </div>
 
         {/* search lives inside the card */}
