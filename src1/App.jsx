@@ -1,4 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { SiteRoot } from './site/SiteRoot';
+import { STUDIO } from './site/siteStore';
+
+// The visual website editor is only downloaded when an owner opens it (?studio=1 / from the Zera console).
+const Studio = React.lazy(() => import('./site/Studio'));
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { StoreProvider, useStore } from './context/StoreContext';
 import { BottomNavbar } from './components/navigation/BottomNavbar';
@@ -76,6 +81,7 @@ function MainAppContent() {
   // Opening the app from a push notification goes straight to the page (no splash); the marker is stripped from the URL.
   const [showSplash, setShowSplash] = useState(() => {
     try { localStorage.setItem('ishkhwaz_splash_seen', 'true'); } catch { /* private mode */ }
+    if (STUDIO) return false;
     try {
       const q = new URLSearchParams(window.location.search);
       if (q.get('from') === 'push') {
@@ -324,7 +330,7 @@ function MainAppContent() {
   // goes straight home (or back to their shared link), same as a returning
   // phone login would.
   useEffect(() => {
-    if (user && (activeTab === 'login' || activeTab === 'landing')) {
+    if (!STUDIO && user && (activeTab === 'login' || activeTab === 'landing')) {
       if (needsProfileCompletion) {
         setActiveTab('register');
       } else {
@@ -376,7 +382,7 @@ function MainAppContent() {
 
   // A signed-in user who opens the bare website root gets the app: move the URL to /app/ too.
   useEffect(() => {
-    if (user && activeTab !== 'landing' && isSiteRoot()) {
+    if (!STUDIO && user && activeTab !== 'landing' && isSiteRoot()) {
       try { window.history.replaceState(window.history.state, '', activeTab === 'home' ? '/app/' : withApp('/' + activeTab)); } catch (e) { }
     }
   }, [user, activeTab]);
@@ -418,7 +424,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'landing') {
-      return <LandingPage onNavigate={(path) => setActiveTab(path === '/register' ? 'register' : path === '/install' ? 'install_app' : path === '/contact' ? 'contact' : path === '/about' ? 'about' : 'login')} />;
+      return <SiteRoot page="landing"><LandingPage onNavigate={(path) => setActiveTab(path === '/register' ? 'register' : path === '/install' ? 'install_app' : path === '/contact' ? 'contact' : path === '/about' ? 'about' : 'login')} /></SiteRoot>;
     }
 
     if (activeTab === 'login') {
@@ -434,7 +440,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'install_app') {
-      return <InstallPage onBack={() => backTo(user ? 'home' : 'landing')} />;
+      return <SiteRoot page="install"><InstallPage onBack={() => backTo(user ? 'home' : 'landing')} /></SiteRoot>;
     }
 
     if (activeTab === 'connect') {
@@ -519,15 +525,15 @@ function MainAppContent() {
     }
 
     if (activeTab === 'about') {
-      return <AboutPage onBack={() => backTo(user ? 'home' : 'landing')} onNavigate={setActiveTab} />;
+      return <SiteRoot page="about"><AboutPage onBack={() => backTo(user ? 'home' : 'landing')} onNavigate={setActiveTab} /></SiteRoot>;
     }
 
     if (activeTab === 'contact') {
-      return <ContactPage onBack={() => backTo(user ? 'home' : 'landing')} />;
+      return <SiteRoot page="contact"><ContactPage onBack={() => backTo(user ? 'home' : 'landing')} /></SiteRoot>;
     }
 
     if (activeTab === 'how_it_works') {
-      return <HowItWorksPage onBack={() => backTo('profile')} onNavigate={setActiveTab} onStartTour={() => setShowTour(true)} />;
+      return <SiteRoot page="how"><HowItWorksPage onBack={() => backTo('profile')} onNavigate={setActiveTab} onStartTour={() => setShowTour(true)} /></SiteRoot>;
     }
 
     if (activeTab === 'notifications') {
@@ -627,6 +633,7 @@ function MainAppContent() {
       <AuthModal />
       <AccountBlockedModal />
       <ToastSystem />
+      {STUDIO && <Suspense fallback={null}><Studio /></Suspense>}
       <AppTour open={showTour} user={user} activeTab={activeTab} onNavigate={setActiveTab} onClose={() => setShowTour(false)} />
     </div>
   );

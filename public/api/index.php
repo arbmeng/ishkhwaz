@@ -1624,6 +1624,27 @@ $pdo->exec("
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
 
+// Visual website editor: what the public pages show (published) and the work in progress (draft).
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS site_content (
+    page VARCHAR(40) PRIMARY KEY,
+    published LONGTEXT NULL,
+    draft LONGTEXT NULL,
+    updated_at VARCHAR(32) NOT NULL,
+    updated_by VARCHAR(64) NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+$pdo->exec("
+  CREATE TABLE IF NOT EXISTS site_content_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    page VARCHAR(40) NOT NULL,
+    content LONGTEXT NOT NULL,
+    created_at VARCHAR(32) NOT NULL,
+    created_by VARCHAR(64) NULL,
+    INDEX idx_sch_page (page, id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+
 // Bring an already-existing plan_tiers table up to the current shape —
 // CREATE TABLE IF NOT EXISTS above is a no-op once the table exists.
 foreach ([
@@ -2343,6 +2364,141 @@ if (preg_match('#/auth/resend-verification$#', $uri) && $method === 'POST') {
 // Contact form  POST /contact  { name, email, phone?, message }
 //   (public — signed-in users are linked to their account; rate limited)
 // ================================================================
+// ================================================================
+// Visual website editor (Zera console → Website editor).
+// Content is a small JSON: { text: {"<elementKey>#<n>": "new text"}, style: {"<elementKey>": {prop: value}},
+// hidden: ["<elementKey>"], img: {"<elementKey>": "https://… | data:image/…"} }.
+// Everything is whitelisted and length-limited here, so an editor can never inject script.
+// ================================================================
+const SITE_PAGES = ['landing', 'about', 'contact', 'how', 'install'];
+const SITE_STYLE_PROPS = ['backgroundColor', 'color', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textAlign', 'borderRadius', 'padding', 'margin',
+    'borderWidth', 'borderStyle', 'borderColor', 'boxShadow', 'opacity', 'backgroundImage', 'maxWidth', 'gap'];
+
+function siteContentClean(array $c): array {
+    $out = ['v' => 1, 'text' => [], 'style' => [], 'hidden' => [], 'img' => []];
+    $key = fn($k) => is_string($k) && strlen($k) <= 200 && preg_match('/^[\w.:>#\-]+$/u', $k);
+    foreach (array_slice(is_array($c['text'] ?? null) ? $c['text'] : [], 0, 500, true) as $k => $v) {
+        if ($key($k) && is_string($v)) $out['text'][$k] = mb_substr(strip_tags($v), 0, 2000);
+    }
+    foreach (array_slice(is_array($c['style'] ?? null) ? $c['style'] : [], 0, 400, true) as $k => $props) {
+        if (!$key($k) || !is_array($props)) continue;
+        $clean = [];
+        foreach ($props as $prop => $val) {
+            if (!in_array($prop, SITE_STYLE_PROPS, true) || !is_scalar($val)) continue;
+            $val = trim((string)$val);
+            if ($val === '' || strlen($val) > 200) continue;
+            if (!preg_match('/^[#0-9a-zA-Z(),.%\s\/\-]+$/', $val)) continue;                        // no ; { } : " ' \ etc.
+            if (preg_match('/url\s*\(|expression|javascript|@import|behavior/i', $val)) continue;
+            $clean[$prop] = $val;
+        }
+        if ($clean) $out['style'][$k] = $clean;
+    }
+    foreach (array_slice(is_array($c['hidden'] ?? null) ? $c['hidden'] : [], 0, 400) as $k) { if ($key($k)) $out['hidden'][] = $k; }
+    $budget = 1500000;
+    foreach (array_slice(is_array($c['img'] ?? null) ? $c['img'] : [], 0, 60, true) as $k => $v) {
+        if (!$key($k) || !is_string($v)) continue;
+        $ok = preg_match('#^https://[^\s"\'<>]{4,500}$#i', $v) || (preg_match('#^data:image/(png|jpe?g|webp);base64,[A-Za-z0-9+/=]+$#', $v) && strlen($v) <= 400000);
+        if ($ok && ($budget -= strlen($v)) >= 0) $out['img'][$k] = $v;
+    }
+    return $out;
+}
+
+function siteContentPage(): string {
+    $p = preg_replace('/[^a-z]/', '', strtolower((string)($_GET['page'] ?? '')));
+    if (!in_array($p, SITE_PAGES, true)) jsonErr(400, 'Unknown page.');
+    return $p;
+}
+
+// Public: what the page should look like right now.
+if (preg_match('#/site-content$#', $uri) && $method === 'GET') {
+    $page = siteContentPage();
+    $st = $pdo->prepare('SELECT published, updated_at FROM site_content WHERE page = ?');
+    $st->execute([$page]);
+    $row = $st->fetch();
+    header('Cache-Control: public, max-age=30');
+    echo json_encode(['success' => true, 'content' => $row && $row['published'] ? json_decode($row['published'], true) : new stdClass(), 'updated_at' => $row['updated_at'] ?? null], JSON_UNESCAPED_UNICODE);
+    exit(0);
+}
+
+// Admin: the draft (falls back to what is published) so the editor opens on the latest work.
+if (preg_match('#/admin/site-content$#', $uri) && $method === 'GET') {
+    requireAdmin($pdo);
+    $page = siteContentPage();
+    $st = $pdo->prepare('SELECT published, draft, updated_at FROM site_content WHERE page = ?');
+    $st->execute([$page]);
+    $row = $st->fetch() ?: [];
+    $pub = !empty($row['published']) ? json_decode($row['published'], true) : new stdClass();
+    $draft = !empty($row['draft']) ? json_decode($row['draft'], true) : $pub;
+    echo json_encode(['success' => true, 'published' => $pub, 'draft' => $draft, 'has_draft' => !empty($row['draft']) && ($row['draft'] !== ($row['published'] ?? null)), 'updated_at' => $row['updated_at'] ?? null], JSON_UNESCAPED_UNICODE);
+    exit(0);
+}
+
+if (preg_match('#/admin/site-content/save$#', $uri) && $method === 'POST') {
+    $admin = requireAdmin($pdo);
+    $in = safeJson();
+    $page = preg_replace('/[^a-z]/', '', strtolower((string)($in['page'] ?? '')));
+    if (!in_array($page, SITE_PAGES, true)) jsonErr(400, 'Unknown page.');
+    $clean = siteContentClean(is_array($in['content'] ?? null) ? $in['content'] : []);
+    $json = json_encode($clean, JSON_UNESCAPED_UNICODE);
+    if (strlen($json) > 2000000) jsonErr(413, 'ناوەڕۆکەکە زۆر گەورەیە.');
+    $pdo->prepare('INSERT INTO site_content (page, draft, updated_at, updated_by) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE draft = VALUES(draft), updated_at = VALUES(updated_at), updated_by = VALUES(updated_by)')
+        ->execute([$page, $json, date('Y-m-d H:i:s'), $admin['id']]);
+    echo json_encode(['success' => true]);
+    exit(0);
+}
+
+if (preg_match('#/admin/site-content/publish$#', $uri) && $method === 'POST') {
+    $admin = requireAdmin($pdo);
+    $in = safeJson();
+    $page = preg_replace('/[^a-z]/', '', strtolower((string)($in['page'] ?? '')));
+    if (!in_array($page, SITE_PAGES, true)) jsonErr(400, 'Unknown page.');
+    $st = $pdo->prepare('SELECT draft, published FROM site_content WHERE page = ?');
+    $st->execute([$page]);
+    $row = $st->fetch();
+    if (!$row || empty($row['draft'])) jsonErr(400, 'هیچ گۆڕانکارییەک نییە بۆ بڵاوکردنەوە.');
+    $now = date('Y-m-d H:i:s');
+    if (!empty($row['published'])) {
+        $pdo->prepare('INSERT INTO site_content_history (page, content, created_at, created_by) VALUES (?, ?, ?, ?)')->execute([$page, $row['published'], $now, $admin['id']]);
+        $pdo->prepare('DELETE FROM site_content_history WHERE page = ? AND id NOT IN (SELECT id FROM (SELECT id FROM site_content_history WHERE page = ? ORDER BY id DESC LIMIT 30) t)')->execute([$page, $page]);
+    }
+    $pdo->prepare('UPDATE site_content SET published = draft, updated_at = ?, updated_by = ? WHERE page = ?')->execute([$now, $admin['id'], $page]);
+    logActivity($pdo, $admin['id'], 'site_content_published', $page);
+    echo json_encode(['success' => true]);
+    exit(0);
+}
+
+// Throw the draft away (go back to what is published) or restore an older published version.
+if (preg_match('#/admin/site-content/discard$#', $uri) && $method === 'POST') {
+    $admin = requireAdmin($pdo);
+    $in = safeJson();
+    $page = preg_replace('/[^a-z]/', '', strtolower((string)($in['page'] ?? '')));
+    if (!in_array($page, SITE_PAGES, true)) jsonErr(400, 'Unknown page.');
+    $pdo->prepare('UPDATE site_content SET draft = published, updated_at = ?, updated_by = ? WHERE page = ?')->execute([date('Y-m-d H:i:s'), $admin['id'], $page]);
+    echo json_encode(['success' => true]);
+    exit(0);
+}
+
+if (preg_match('#/admin/site-content/history$#', $uri) && $method === 'GET') {
+    requireAdmin($pdo);
+    $page = siteContentPage();
+    $st = $pdo->prepare('SELECT id, created_at, created_by FROM site_content_history WHERE page = ? ORDER BY id DESC LIMIT 30');
+    $st->execute([$page]);
+    echo json_encode(['success' => true, 'versions' => $st->fetchAll()]);
+    exit(0);
+}
+
+if (preg_match('#/admin/site-content/restore$#', $uri) && $method === 'POST') {
+    $admin = requireAdmin($pdo);
+    $in = safeJson();
+    $st = $pdo->prepare('SELECT page, content FROM site_content_history WHERE id = ?');
+    $st->execute([(int)($in['id'] ?? 0)]);
+    $v = $st->fetch();
+    if (!$v) jsonErr(404, 'Version not found.');
+    $pdo->prepare('UPDATE site_content SET draft = ?, updated_at = ?, updated_by = ? WHERE page = ?')->execute([$v['content'], date('Y-m-d H:i:s'), $admin['id'], $v['page']]);
+    echo json_encode(['success' => true]);
+    exit(0);
+}
+
 if (preg_match('#/feedback$#', $uri) && $method === 'POST') {
     if (!rateLimitCheck($pdo, $clientIp, 'feedback')) jsonErr(429, 'زۆر جار ڕات ناردووە. کەمێک چاوەڕوان بە.');
     $input = safeJson();
