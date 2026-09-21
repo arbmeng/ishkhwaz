@@ -287,7 +287,8 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
   const planAccentDeep = isVip ? '#e23b00' : TEAL_DEEP;
   const planSoft = isVip ? '#fff1e7' : TEAL_SOFT;
 
-  const cvVisibilityLimit = getCvVisibilityLimit(freelancer, tier);
+  // The freelancer already chooses which CV is public (one), so every plan sees it — no plan-based hiding.
+  const cvVisibilityLimit = 6;
   const allPublicCvs = normalizePublicCvs(freelancer);
   const visibleCvs = allPublicCvs.slice(0, cvVisibilityLimit);
   const hasCompanyVisibleCvs = visibleCvs.length > 0;
@@ -921,17 +922,6 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                       <div className="text-xs sm:text-[13px] text-stone-500 font-medium leading-6">
                         کۆمپانیاکان دەتوانن ئەم CV ـانە ببینن و هەڵیبژێرن.
                       </div>
-                      {cvVisibilityLimit > 0 && (
-                        <span
-                          className="shrink-0 px-2.5 py-1.5 rounded-full text-[10px] font-black"
-                          style={{
-                            color: isVip ? '#9a3d00' : TEAL_DEEP,
-                            background: isVip ? '#fff0e2' : TEAL_SOFT
-                          }}
-                        >
-                          {visibleCvs.length}/{cvVisibilityLimit}
-                        </span>
-                      )}
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -941,7 +931,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                         return (
                           <button
                             key={cv.id || index}
-                            onClick={() => setSelectedCv(cv)}
+                            onClick={() => handleViewCv(cv)}
                             className="text-right rounded-2xl border p-3.5 transition-all hover:-translate-y-0.5 active:scale-[.99]"
                             style={{
                               background: isSelected ? `${TEAL}08` : '#fff',
@@ -964,7 +954,7 @@ export const FreelancerProfileModal = ({ freelancer, isOpen, onClose }) => {
                                   {cv.title || `CV ${index + 1}`}
                                 </div>
                                 <div className="text-[10px] text-stone-400 font-bold mt-1">
-                                  {isSelected ? 'هەڵبژێردراوە' : `CV ـی ${index + 1}`}
+                                  {isExportingCv ? 'دەکرێتەوە...' : 'کرتە بکە بۆ بینین و داگرتن (PDF)'}
                                 </div>
                               </div>
 

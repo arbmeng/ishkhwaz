@@ -3676,7 +3676,7 @@ if (preg_match('#/jobs/boost$#', $uri) && $method === 'POST') {
 if (preg_match('#/freelancers$#', $uri) && $method === 'GET') {
     // Only expose safe public fields — never expose phone/email raw
     $stmt = $pdo->query("
-        SELECT id, name, profession, role, gender, governorate, district, sub_district, skills, bio, avatar, cover, status, profile_views, plan, plan_boost_until, created_at, experience, favorite_categories, verified, public_resume_id, social_links, languages, education
+        SELECT id, name, profession, role, gender, governorate, district, sub_district, skills, bio, avatar, cover, status, profile_views, plan, plan_boost_until, created_at, experience, favorite_categories, verified, public_resume_id, (SELECT r.title FROM resumes r WHERE r.id = users.public_resume_id) AS public_resume_title, social_links, languages, education
         FROM users WHERE role = 'freelancer' AND status = 'active'
         ORDER BY (plan_boost_until IS NOT NULL AND plan_boost_until > NOW()) DESC, created_at DESC
     ");
