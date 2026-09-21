@@ -187,6 +187,9 @@ function MainAppContent() {
   // Optional 2nd arg: { jobId } for the job pages, { replace: true } to swap the
   // current history entry instead of adding one (used to turn a legacy
   // /search?...&job= share link into the /jobs/{id} page without a Back loop).
+  // every page opens at its top, never at the previous page's scroll position
+  useEffect(() => { window.scrollTo(0, 0); }, [activeTab]);
+
   const setActiveTab = (tabId, params) => {
     // A guest tapping Profile / Plans / Messages... gets a toast with a "log in" button instead of being thrown at the login page.
     if (!user && !PUBLIC_TABS.includes(tabId)) {

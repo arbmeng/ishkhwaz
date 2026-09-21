@@ -108,8 +108,9 @@ export const AppTour = ({ open, user, activeTab, onNavigate, onClose }) => {
     if (!open) return undefined;
     let cancelled = false;
     if (step?.tab && step.tab !== activeTab) onNavigate?.(step.tab);
-    setRect(null);
-    setSettled(!step?.target);
+    const changingPage = !!(step?.tab && step.tab !== activeTab);
+    if (changingPage || !step?.target) setRect(null);
+    setSettled(!step?.target || !changingPage);
     // wait for the page to render the target, jump it into view (no smooth scroll, so the spotlight never chases it), then reveal
     let tries = 0;
     const settle = (n = 0, last = null) => {
@@ -117,21 +118,21 @@ export const AppTour = ({ open, user, activeTab, onNavigate, onClose }) => {
       const el = visibleEl(step?.target);
       const r = el ? el.getBoundingClientRect() : null;
       const same = r && last && Math.abs(r.top - last.top) < 1 && Math.abs(r.left - last.left) < 1 && Math.abs(r.height - last.height) < 1;
-      if (same || n >= 14) { measure(); setSettled(true); return; }
-      setTimeout(() => settle(n + 1, r), 110);
+      if (same || n >= 12) { measure(); setSettled(true); return; }
+      setTimeout(() => settle(n + 1, r), 45);
     };
     const find = () => {
       if (cancelled) return;
       const el = visibleEl(step?.target);
       if (el) {
         const r = el.getBoundingClientRect();
-        // put the target around 40% down the screen (below any sticky header), jumping instantly
-        window.scrollBy({ top: r.top + r.height / 2 - window.innerHeight * 0.4, behavior: 'auto' });
-        setTimeout(() => settle(), 120);
-      } else if (step?.target && tries++ < 25) setTimeout(find, 120);
+        const onScreen = r.top > window.innerHeight * 0.14 && r.bottom < window.innerHeight * 0.62;
+        if (!onScreen) window.scrollBy({ top: r.top + r.height / 2 - window.innerHeight * 0.4, behavior: 'auto' });
+        settle();
+      } else if (step?.target && tries++ < 25) setTimeout(find, 100);
       else { measure(); setSettled(true); }
     };
-    const t = setTimeout(find, step?.tab && step.tab !== activeTab ? 250 : 0);
+    const t = setTimeout(find, step?.tab && step.tab !== activeTab ? 200 : 0);
     return () => { cancelled = true; clearTimeout(t); };
   }, [open, i]); // eslint-disable-line react-hooks/exhaustive-deps
 
