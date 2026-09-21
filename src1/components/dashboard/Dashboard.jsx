@@ -543,9 +543,13 @@ export const Dashboard = ({ onNavigate }) => {
     { value: sentRequests.filter(r => stageBucket(r.stage) === 'accepted').length, label: 'پەسەندکراو', icon: CheckCircle2, hint: 'ئەنجام', accent: false, tab: 'sent' },
   ];
 
+  const sentOffers = useMemo(() => safeArray(invitations).filter(i => String(i.company_id) === String(user?.id)), [invitations, user]);
+  const [offerFilter, setOfferFilter] = useState('all');
+
   const employerTabs = [
     { id: 'applicants', label: 'داواکارییەکان', Icon: Users, count: combinedApplicants.length },
     { id: 'jobs', label: 'کارەکان', Icon: Briefcase, count: companyJobs.length },
+    { id: 'offers', label: 'ئۆفەرەکان', Icon: Send, count: sentOffers.length },
     { id: 'analytics', label: 'شیکاری', Icon: BarChart3, count: null },
   ];
 
@@ -659,6 +663,65 @@ export const Dashboard = ({ onNavigate }) => {
                 )}
               </div>
             )}
+
+            {employerSubTab === 'offers' && (() => {
+              const count = (st) => sentOffers.filter(o => o.status === st).length;
+              const shown = offerFilter === 'all' ? sentOffers : sentOffers.filter(o => o.status === offerFilter);
+              const STAT = { pending: ['چاوەڕوان', 'bg-amber-50 text-amber-700 border-amber-200'], accepted: ['قبووڵکرا', 'bg-emerald-50 text-emerald-700 border-emerald-200'], rejected: ['ڕەتکرایەوە', 'bg-rose-50 text-rose-700 border-rose-200'] };
+              return (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {[['pending', 'چاوەڕوان', '#b45309'], ['accepted', 'قبووڵکراو', '#047857'], ['rejected', 'ڕەتکراو', '#be123c']].map(([st, l, col]) => (
+                      <button key={st} onClick={() => setOfferFilter(offerFilter === st ? 'all' : st)} className={`rounded-2xl border bg-white p-3.5 text-right transition active:scale-95 ${offerFilter === st ? 'border-[#641bd9] ring-2 ring-[#641bd9]/15' : 'border-[#e8e5ec]'}`}>
+                        <div className="text-2xl font-black leading-none" style={{ color: col }}>{count(st)}</div>
+                        <div className="mt-1.5 text-[11px] font-bold text-[#7b8e88]">{l}</div>
+                      </button>
+                    ))}
+                  </div>
+                  {shown.length === 0 ? (
+                    <EmptyState icon={Send} title={sentOffers.length ? 'هیچ ئۆفەرێک لەم دۆخەدا نییە' : 'هێشتا هیچ ئۆفەرێکت نەناردووە'} description="لە پڕۆفایلی کارخوازێک دوگمەی «پێشنیاری کار بنێرە» بکە و کارێکی بەردەست یان کارێکی نوێی بۆ بنێرە." />
+                  ) : (
+                    <div className="space-y-3">
+                      {shown.map(o => {
+                        const st = STAT[o.status] || STAT.pending;
+                        let det = {};
+                        try { det = o.details ? JSON.parse(o.details) : {}; } catch { det = {}; }
+                        return (
+                          <article key={o.id} className="rounded-[24px] border border-[#e8e5ec] bg-white p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[#eeeaf5] text-base font-black text-[#641bd9]">
+                                {o.freelancer_avatar ? <img src={o.freelancer_avatar} alt="" className="h-full w-full object-cover" /> : (o.freelancer_name || 'ک').charAt(0)}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <h3 className="truncate text-sm font-black text-[#1c1723]">{o.freelancer_name || 'کارخواز'}</h3>
+                                  <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-black ${st[1]}`}>{st[0]}</span>
+                                </div>
+                                <div className="truncate text-[11px] font-bold text-[#7b8e88]">{o.freelancer_profession || 'کارخواز'}</div>
+                              </div>
+                            </div>
+                            <div className="mt-3 rounded-2xl bg-[#f8f6fc] p-3">
+                              <div className="flex items-center gap-2 text-[13px] font-black text-[#4b13a5]"><Briefcase className="h-4 w-4" />{o.job_title}{o.job_id ? '' : <span className="rounded-full bg-white px-2 py-0.5 text-[9px] text-[#641bd9]">کاری نوێ</span>}</div>
+                              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-bold text-[#6b647d]">
+                                {o.salary_offer && <span dir="ltr">{o.salary_offer}</span>}
+                                {det.job_type && <span>{det.job_type}</span>}
+                                {det.location && <span>{det.location}</span>}
+                                {det.start_date && <span dir="ltr">{det.start_date}</span>}
+                              </div>
+                              {(o.message || det.description) && <p className="mt-2 line-clamp-2 text-[11.5px] font-medium leading-6 text-[#6b647d]">{o.message || det.description}</p>}
+                            </div>
+                            <div className="mt-2.5 flex items-center justify-between text-[10px] font-bold text-[#9a94aa]">
+                              <span dir="ltr">{String(o.created_at || '').slice(0, 10)}</span>
+                              {o.responded_at && <span className="flex items-center gap-1"><CheckCheck className="h-3 w-3" />وەڵام دراوەتەوە: <span dir="ltr">{String(o.responded_at).slice(0, 10)}</span></span>}
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {employerSubTab === 'analytics' && (
               <div className="space-y-3">

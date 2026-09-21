@@ -1713,6 +1713,9 @@ foreach ([
     "ALTER TABLE jobs ADD COLUMN sector VARCHAR(20) NULL",
     // How many freelancers the employer wants to hire; the job pauses itself once that many are accepted.
     "ALTER TABLE jobs ADD COLUMN positions INT NOT NULL DEFAULT 1",
+    // An offer can point at one of the company's own jobs (job_id) or carry the details of a brand-new one (details JSON).
+    "ALTER TABLE invitations ADD COLUMN job_id VARCHAR(64) NULL",
+    "ALTER TABLE invitations ADD COLUMN details TEXT NULL",
     // Emailed 6-digit reset code (stored only as an HMAC, 10 min life, max 5 wrong tries) —
     // see /auth/forgot-password and /auth/verify-reset-otp.
     "ALTER TABLE users ADD COLUMN password_reset_otp_hash VARCHAR(64) NULL",
@@ -6064,7 +6067,21 @@ if (preg_match('#/invitations$#', $uri) && $method === 'POST') {
 
     $input = safeJson();
     $freelancerId = sanitize($input['freelancer_id'] ?? '', 50);
+    $jobId = sanitize($input['job_id'] ?? '', 64);
     $jobTitle = sanitize($input['job_title'] ?? '', 200);
+    $salaryOffer = sanitize($input['salary_offer'] ?? '', 50);
+
+    // Offer for one of the company's own jobs: it must be theirs and still open.
+    if ($jobId !== '') {
+        $st = $pdo->prepare('SELECT id, title_ku, salary_min, salary_max, status FROM jobs WHERE id = ? AND company_id = ?');
+        $st->execute([$jobId, $authUser['id']]);
+        $linkedJob = $st->fetch();
+        if (!$linkedJob || $linkedJob['status'] !== 'active') jsonErr(400, 'ئەم کارە ئێستا بەردەست نییە.');
+        $jobTitle = $linkedJob['title_ku'];
+        if ($salaryOffer === '' && ((int)$linkedJob['salary_min'] || (int)$linkedJob['salary_max'])) {
+            $salaryOffer = number_format((int)$linkedJob['salary_min']) . ' - ' . number_format((int)$linkedJob['salary_max']) . ' IQD';
+        }
+    }
     if (empty($freelancerId) || empty($jobTitle)) jsonErr(400, 'ناسنامەی فریلانسەر و ناونیشانی کار پێویستن.');
 
     $freelancer = $pdo->prepare("SELECT id, name, plan FROM users WHERE id = ? AND role = 'freelancer'");
@@ -6078,15 +6095,36 @@ if (preg_match('#/invitations$#', $uri) && $method === 'POST') {
         jsonErr(403, 'پلانی ئەم فریلانسەرە ئۆفەری ڕاستەوخۆ وەرناگرێت.');
     }
 
+    // Don't send the same job to the same person twice while an answer is pending / accepted.
+    if ($jobId !== '') {
+        $dup = $pdo->prepare("SELECT id FROM invitations WHERE company_id = ? AND freelancer_id = ? AND job_id = ? AND status IN ('pending','accepted') LIMIT 1");
+        $dup->execute([$authUser['id'], $freelancerId, $jobId]);
+    } else {
+        $dup = $pdo->prepare("SELECT id FROM invitations WHERE company_id = ? AND freelancer_id = ? AND job_title = ? AND status = 'pending' LIMIT 1");
+        $dup->execute([$authUser['id'], $freelancerId, $jobTitle]);
+    }
+    if ($dup->fetch()) jsonErr(409, 'پێشتر ئەم ئۆفەرەت بۆ ئەم کارخوازە ناردووە.');
+
+    // Details of a brand-new job (only a whitelist of short text fields is kept).
+    $details = null;
+    if (is_array($input['details'] ?? null)) {
+        $d = [];
+        foreach (['job_type' => 40, 'workplace_type' => 20, 'location' => 150, 'start_date' => 30, 'description' => 1500] as $k => $max) {
+            $v = trim(sanitize((string)($input['details'][$k] ?? ''), $max));
+            if ($v !== '') $d[$k] = $v;
+        }
+        if ($d) $details = json_encode($d, JSON_UNESCAPED_UNICODE);
+    }
+
     $id = 'inv_' . time() . rand(10, 99);
     $companyName = $authUser['company_name'] ?: $authUser['name'];
     $pdo->prepare('
-        INSERT INTO invitations (id, company_id, company_name, freelancer_id, freelancer_name, job_title, salary_offer, message, status, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO invitations (id, company_id, company_name, freelancer_id, freelancer_name, job_title, salary_offer, message, status, created_at, job_id, details)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ')->execute([
         $id, $authUser['id'], $companyName, $freelancerId, $freelancer['name'],
-        $jobTitle, sanitize($input['salary_offer'] ?? '', 50), sanitize($input['message'] ?? '', 1000),
-        'pending', date('Y-m-d H:i:s'),
+        $jobTitle, $salaryOffer, sanitize($input['message'] ?? '', 1000),
+        'pending', date('Y-m-d H:i:s'), $jobId !== '' ? $jobId : null, $details,
     ]);
 
     notifyUser($pdo, $freelancerId, 'ئۆفەری کاری نوێ 💼', "{$companyName} ئۆفەرێکی نارد بۆت: \"{$jobTitle}\"", '/cvs');
@@ -6099,7 +6137,7 @@ if (preg_match('#/invitations$#', $uri) && $method === 'POST') {
 if (preg_match('#/invitations$#', $uri) && $method === 'GET') {
     $authUser = requireAuth($pdo);
     if ($authUser['role'] === 'employer') {
-        $stmt = $pdo->prepare('SELECT * FROM invitations WHERE company_id = ? ORDER BY created_at DESC');
+        $stmt = $pdo->prepare('SELECT i.*, u.avatar AS freelancer_avatar, u.profession AS freelancer_profession FROM invitations i LEFT JOIN users u ON u.id = i.freelancer_id WHERE i.company_id = ? ORDER BY i.created_at DESC');
     } else {
         $stmt = $pdo->prepare('SELECT * FROM invitations WHERE freelancer_id = ? ORDER BY created_at DESC');
     }
