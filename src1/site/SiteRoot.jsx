@@ -14,8 +14,10 @@ export const SiteRoot = ({ page, children }) => {
     const root = ref.current;
     if (!root) return undefined;
     let timer = null;
-    const run = () => applyContent(root, STUDIO ? siteStore.get(page) : contentRef.current);
+    // our own changes (copies of elements, text, attributes) must not wake the watcher again
+    const run = () => { applyContent(root, STUDIO ? siteStore.get(page) : contentRef.current); mo.takeRecords(); };
     const contentRef = { current: null };
+    const mo = new MutationObserver(() => schedule());
 
     if (!STUDIO) {
       // show the last known content immediately (no flash on repeat visits), then refresh it from the server
@@ -31,7 +33,6 @@ export const SiteRoot = ({ page, children }) => {
 
     const schedule = () => { clearTimeout(timer); timer = setTimeout(run, 120); };
     // React re-renders (accordions, menus, route changes inside the page) may create new elements: re-apply
-    const mo = new MutationObserver(schedule);
     mo.observe(root, { childList: true, subtree: true });
     const off = siteStore.subscribe((p) => { if (STUDIO && p === page) run(); });
     if (STUDIO) run();

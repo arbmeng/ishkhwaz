@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { API_BASE_URL } from '../services/api';
 import {
   SITE_PAGES, keyOf, textNodesOf, originalText, normalize, hasChanges,
-  withStyle, withText, withHidden, withImage, resetElement,
+  withStyle, withText, withHidden, withImage, withDup, resetElement,
 } from './siteContent';
 import { siteStore } from './siteStore';
 
@@ -13,7 +13,7 @@ import { siteStore } from './siteStore';
 
 const BRAND = '#641bd9';
 const TOKEN_KEY = 'ishkhwaz_studio_token';
-const PAGE_URLS = { landing: '/', about: '/app/about', contact: '/app/contact', how: '/app/how-it-works', install: '/app/install' };
+const PAGE_URLS = { landing: '/', about: '/app/about', contact: '/app/contact', how: '/app/how-it-works', install: '/app/install', login: '/app/login', register: '/app/register' };
 const FONT = "'Vazirmatn','IBM Plex Sans Arabic',system-ui,sans-serif";
 
 const SHADOWS = [['', 'بێ سێبەر'], ['0 4px 14px rgba(20,10,50,.10)', 'سووک'], ['0 12px 30px rgba(20,10,50,.18)', 'ناوەند'], ['0 24px 60px rgba(20,10,50,.30)', 'بەهێز'], ['0 0 40px rgba(114,41,232,.55)', 'درەوشاوەی مۆر']];
@@ -151,6 +151,8 @@ export default function Studio() {
   const pickAt = (target) => {
     const r = root();
     if (!r || !target || inStudio(target) || !r.contains(target) || target === r) return null;
+    const clone = target.closest?.('[data-sc-clone]');
+    if (clone?.__scSrc?.isConnected) return clone.__scSrc;
     return target;
   };
   useEffect(() => {
@@ -229,7 +231,7 @@ export default function Studio() {
   const cur = (p) => content.style[key]?.[p] ?? '';
   const setP = (p, v, grouped = true) => commit(withStyle(content, key, p, v), grouped ? `s:${key}:${p}` : '');
   const isHidden = content.hidden.includes(key);
-  const changed = key && (content.style[key] || isHidden || content.img[key] || Object.keys(content.text).some((k) => k.startsWith(key + '#')));
+  const changed = key && (content.style[key] || isHidden || content.dup.includes(key) || content.img[key] || Object.keys(content.text).some((k) => k.startsWith(key + '#')));
 
   const uploadImage = async (file) => {
     try { commit(withImage(content, key, await shrinkImage(file))); } catch { setStatus('وێنەکە زۆر گەورەیە یان نەخوێندرایەوە'); }
@@ -285,6 +287,8 @@ export default function Studio() {
                 <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                   <Btn onClick={() => { const p = el.parentElement; if (p && p !== root() && root().contains(p)) setSel({ el: p, key: keyOf(p, root()) }); }}>↑ باوک</Btn>
                   <Btn onClick={() => commit(withHidden(content, key, !isHidden))}>{isHidden ? 'پیشاندان' : 'شاردنەوە'}</Btn>
+                  <Btn onClick={() => commit(withDup(content, key, true))} title="کۆپیکردنی ئەم توخمە (بۆ زیادکردنی کارتی نوێ)">＋ کۆپی</Btn>
+                  {content.dup.includes(key) && <Btn onClick={() => commit(withDup(content, key, false))}>− لابردنی کۆپی ({content.dup.filter((k) => k === key).length})</Btn>}
                   <Btn onClick={() => commit(resetElement(content, key))} disabled={!changed}>ڕێکخستنەوە</Btn>
                 </div>
               </div>

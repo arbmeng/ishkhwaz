@@ -12,6 +12,7 @@ import { AboutModal } from '../layout/AboutModal';
 import { PlanBadge } from '../ui/PlanBadge';
 import { PageHeader } from '../layout/PageHeader';
 import { FeedbackSheet } from '../ui/FeedbackSheet';
+import { EmailVerifySheet } from '../ui/EmailVerifySheet';
 import { shareLink } from '../../utils/shareLink';
 import { SocialLinks, SOCIAL_FIELDS, parseSocial } from '../ui/SocialLinks';
 import { canSeePlans } from '../../config/features';
@@ -145,6 +146,7 @@ export const UserProfilePage = ({ onNavigate }) => {
 
   /* ── email verification ── */
   const [resendBusy, setResendBusy] = useState(false);
+  const [showVerify, setShowVerify] = useState(false);
   const needsEmailVerification = Boolean(user?.email) && !Number(user?.email_verified);
   const handleResendVerification = async () => {
     soundService.playTick?.();
@@ -611,7 +613,7 @@ export const UserProfilePage = ({ onNavigate }) => {
           <div className="ap-alert">
             <MailWarning className="w-4 h-4 shrink-0" />
             <div className="min-w-0 flex-1"><strong>ئیمەیلەکەت پشتڕاست نەکراوەتەوە</strong><span>{user?.email}</span></div>
-            <button onClick={handleResendVerification} disabled={resendBusy}>{resendBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'ناردنەوە'}</button>
+            <button onClick={() => { soundService.playTick?.(); setShowVerify(true); }}>پشتڕاستکردنەوە</button>
           </div>
         )}
 
@@ -1515,6 +1517,7 @@ export const UserProfilePage = ({ onNavigate }) => {
       `}</style>
       {/* Edit / saved / viewers are pages of their own (not popups); only the small confirm dialogs float. */}
       {showEdit ? <EditModal /> : showSaved ? <SavedModal /> : showViewers ? <ViewersModal /> : <ProfileHero />}
+      <EmailVerifySheet open={showVerify} email={user?.email} token={token} onClose={() => setShowVerify(false)} onVerified={() => updateUserProfile?.({ email_verified: 1 })} />
       <FeedbackSheet open={showFeedback} onClose={() => setShowFeedback(false)} page="profile" />
       {showLogout && <LogoutModal />}
       {showAbout && createPortal(<AboutModal onClose={() => setShowAbout(false)} />, document.body)}

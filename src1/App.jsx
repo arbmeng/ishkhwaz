@@ -412,14 +412,14 @@ function MainAppContent() {
     if (activeTab === 'register') {
       const isCompletingSocialProfile = !!user && needsProfileCompletion;
       return (
-        <RegisterProfileChoicePage
+        <SiteRoot page="register"><RegisterProfileChoicePage
           isCompletingProfile={isCompletingSocialProfile}
           onBack={() => setActiveTab(isCompletingSocialProfile ? 'home' : 'login')}
           onRegistrationComplete={() => {
             clearNeedsProfileCompletion();
             goToPendingShareLinkOrHome();
           }}
-        />
+        /></SiteRoot>
       );
     }
 
@@ -429,13 +429,13 @@ function MainAppContent() {
 
     if (activeTab === 'login') {
       return (
-        <LoginPage
+        <SiteRoot page="login"><LoginPage
           onBack={() => setActiveTab('login')}
           onNavigateRegister={() => setActiveTab('register')}
           onLoginSuccess={() => goToPendingShareLinkOrHome()}
           onForgotPassword={() => setActiveTab('forgot_password')}
           onGuest={() => setActiveTab('home')}
-        />
+        /></SiteRoot>
       );
     }
 

@@ -7,10 +7,12 @@ export const SITE_PAGES = {
   contact: { label: 'پەیوەندی', path: '/contact' },
   how: { label: 'چۆنیەتی کارکردن', path: '/how-it-works' },
   install: { label: 'دابەزاندنی ئەپ', path: '/install' },
+  login: { label: 'چوونەژوورەوە', path: '/login' },
+  register: { label: 'تۆمارکردن', path: '/register' },
 };
 
-export const emptyContent = () => ({ v: 1, text: {}, style: {}, hidden: [], img: {} });
-export const normalize = (c) => ({ ...emptyContent(), ...(c && typeof c === 'object' && !Array.isArray(c) ? c : {}), text: { ...(c?.text || {}) }, style: { ...(c?.style || {}) }, hidden: [...(c?.hidden || [])], img: { ...(c?.img || {}) } });
+export const emptyContent = () => ({ v: 1, text: {}, style: {}, hidden: [], img: {}, dup: [] });
+export const normalize = (c) => ({ ...emptyContent(), ...(c && typeof c === 'object' && !Array.isArray(c) ? c : {}), text: { ...(c?.text || {}) }, style: { ...(c?.style || {}) }, hidden: [...(c?.hidden || [])], img: { ...(c?.img || {}) }, dup: [...(c?.dup || [])] });
 
 const kebab = (p) => p.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
 const sig = (n) => n.tagName.toLowerCase() + (typeof n.className === 'string' && n.className.trim() ? '.' + n.className.trim().split(/\s+/)[0].replace(/[^\w-]/g, '') : '');
@@ -23,7 +25,7 @@ export const keyOf = (el, root) => {
     if (!parent) return null;
     const s = sig(n);
     let idx = 0;
-    for (const sib of parent.children) { if (sib === n) break; if (sig(sib) === s) idx++; }
+    for (const sib of parent.children) { if (sib === n) break; if (!sib.hasAttribute('data-sc-clone') && sig(sib) === s) idx++; }
     parts.unshift(`${s}:${idx}`);
   }
   return parts.length ? parts.join('>') : null;
@@ -34,7 +36,7 @@ export const resolveKey = (root, key) => {
   for (const part of String(key).split('>')) {
     const cut = part.lastIndexOf(':');
     const s = part.slice(0, cut), i = Number(part.slice(cut + 1));
-    cur = [...cur.children].filter((c) => sig(c) === s)[i];
+    cur = [...cur.children].filter((c) => !c.hasAttribute('data-sc-clone') && sig(c) === s)[i];
     if (!cur) return null;
   }
   return cur;
@@ -45,7 +47,7 @@ export const textNodesOf = (el) => [...el.childNodes].filter((n) => n.nodeType =
 
 const ORIG_TEXT = new WeakMap();   // Text node -> its original value
 const ORIG_SRC = new WeakMap();    // <img> -> original src
-const APPLIED = new WeakMap();     // root -> { texts:Set, els:Set, imgs:Set }
+const APPLIED = new WeakMap();     // root -> { texts:Set, els:Set, imgs:Set, clones:[] }
 
 const styleTag = () => {
   let t = document.getElementById('site-content-css');
@@ -58,6 +60,7 @@ export const clearApplied = (root) => {
   if (!a) return;
   a.texts.forEach((n) => { if (ORIG_TEXT.has(n)) n.nodeValue = ORIG_TEXT.get(n); });
   a.imgs.forEach((im) => { if (ORIG_SRC.has(im)) im.setAttribute('src', ORIG_SRC.get(im)); });
+  a.clones?.forEach((cl) => cl.remove());
   a.els.forEach((el) => el.removeAttribute('data-sc'));
   APPLIED.delete(root);
 };
@@ -66,7 +69,7 @@ export const applyContent = (root, content) => {
   if (!root) return;
   clearApplied(root);
   const c = normalize(content);
-  const a = { texts: new Set(), els: new Set(), imgs: new Set() };
+  const a = { texts: new Set(), els: new Set(), imgs: new Set(), clones: [] };
   const rules = [];
   let n = 0;
   const tag = (el) => { let id = el.getAttribute('data-sc'); if (!id) { id = 'k' + (++n); el.setAttribute('data-sc', id); a.els.add(el); } return id; };
@@ -101,6 +104,19 @@ export const applyContent = (root, content) => {
     a.imgs.add(el);
   }
   styleTag().textContent = rules.join('\n');
+  // extra copies of an element ("add another card"): made last, from the already-edited original, and ignored by the key logic
+  const lastAfter = new Map();
+  for (const key of c.dup) {
+    const el = resolveKey(root, key);
+    if (!el || !el.parentNode) continue;
+    const clone = el.cloneNode(true);
+    clone.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
+    clone.setAttribute('data-sc-clone', '1');
+    clone.__scSrc = el;
+    (lastAfter.get(el) || el).after(clone);
+    lastAfter.set(el, clone);
+    a.clones.push(clone);
+  }
   APPLIED.set(root, a);
 };
 
@@ -136,7 +152,13 @@ export const resetElement = (content, key) => {
   delete c.style[key];
   c.hidden = c.hidden.filter((k) => k !== key);
   delete c.img[key];
+  c.dup = c.dup.filter((k) => k !== key);
   for (const k of Object.keys(c.text)) if (k.startsWith(key + '#')) delete c.text[k];
   return c;
 };
-export const hasChanges = (c) => { const n = normalize(c); return !!(Object.keys(n.text).length || Object.keys(n.style).length || n.hidden.length || Object.keys(n.img).length); };
+export const withDup = (content, key, add) => {
+  const c = normalize(content);
+  if (add) c.dup.push(key); else { const i = c.dup.lastIndexOf(key); if (i >= 0) c.dup.splice(i, 1); }
+  return c;
+};
+export const hasChanges = (c) => { const n = normalize(c); return !!(Object.keys(n.text).length || Object.keys(n.style).length || n.hidden.length || Object.keys(n.img).length || n.dup.length); };

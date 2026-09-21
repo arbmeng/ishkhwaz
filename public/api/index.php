@@ -2370,12 +2370,12 @@ if (preg_match('#/auth/resend-verification$#', $uri) && $method === 'POST') {
 // hidden: ["<elementKey>"], img: {"<elementKey>": "https://… | data:image/…"} }.
 // Everything is whitelisted and length-limited here, so an editor can never inject script.
 // ================================================================
-const SITE_PAGES = ['landing', 'about', 'contact', 'how', 'install'];
+const SITE_PAGES = ['landing', 'about', 'contact', 'how', 'install', 'login', 'register'];
 const SITE_STYLE_PROPS = ['backgroundColor', 'color', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textAlign', 'borderRadius', 'padding', 'margin',
     'borderWidth', 'borderStyle', 'borderColor', 'boxShadow', 'opacity', 'backgroundImage', 'maxWidth', 'gap'];
 
 function siteContentClean(array $c): array {
-    $out = ['v' => 1, 'text' => [], 'style' => [], 'hidden' => [], 'img' => []];
+    $out = ['v' => 1, 'text' => [], 'style' => [], 'hidden' => [], 'img' => [], 'dup' => []];
     $key = fn($k) => is_string($k) && strlen($k) <= 200 && preg_match('/^[\w.:>#\-]+$/u', $k);
     foreach (array_slice(is_array($c['text'] ?? null) ? $c['text'] : [], 0, 500, true) as $k => $v) {
         if ($key($k) && is_string($v)) $out['text'][$k] = mb_substr(strip_tags($v), 0, 2000);
@@ -2394,6 +2394,7 @@ function siteContentClean(array $c): array {
         if ($clean) $out['style'][$k] = $clean;
     }
     foreach (array_slice(is_array($c['hidden'] ?? null) ? $c['hidden'] : [], 0, 400) as $k) { if ($key($k)) $out['hidden'][] = $k; }
+    foreach (array_slice(is_array($c['dup'] ?? null) ? $c['dup'] : [], 0, 40) as $k) { if ($key($k)) $out['dup'][] = $k; }
     $budget = 1500000;
     foreach (array_slice(is_array($c['img'] ?? null) ? $c['img'] : [], 0, 60, true) as $k => $v) {
         if (!$key($k) || !is_string($v)) continue;
@@ -2410,7 +2411,7 @@ function siteContentPage(): string {
 }
 
 // Public: what the page should look like right now.
-if (preg_match('#/site-content$#', $uri) && $method === 'GET') {
+if (preg_match('#(?<!admin)/site-content$#', $uri) && $method === 'GET') {
     $page = siteContentPage();
     $st = $pdo->prepare('SELECT published, updated_at FROM site_content WHERE page = ?');
     $st->execute([$page]);
@@ -2496,6 +2497,26 @@ if (preg_match('#/admin/site-content/restore$#', $uri) && $method === 'POST') {
     if (!$v) jsonErr(404, 'Version not found.');
     $pdo->prepare('UPDATE site_content SET draft = ?, updated_at = ?, updated_by = ? WHERE page = ?')->execute([$v['content'], date('Y-m-d H:i:s'), $admin['id'], $v['page']]);
     echo json_encode(['success' => true]);
+    exit(0);
+}
+
+// Admin: everything users wrote in the app's feedback sheet, with simple stats.
+if (preg_match('#/admin/feedback$#', $uri) && $method === 'GET') {
+    requireAdmin($pdo);
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $size = 30;
+    $where = []; $args = [];
+    if (in_array($_GET['category'] ?? '', ['praise', 'idea', 'bug', 'other'], true)) { $where[] = 'category = ?'; $args[] = $_GET['category']; }
+    if ((int)($_GET['rating'] ?? 0) >= 1 && (int)$_GET['rating'] <= 5) { $where[] = 'rating = ?'; $args[] = (int)$_GET['rating']; }
+    $w = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+    $cnt = $pdo->prepare("SELECT COUNT(*) FROM app_feedback {$w}");
+    $cnt->execute($args);
+    $st = $pdo->prepare("SELECT id, user_id, user_name, role, rating, category, message, page, created_at FROM app_feedback {$w} ORDER BY id DESC LIMIT {$size} OFFSET " . (($page - 1) * $size));
+    $st->execute($args);
+    $stats = $pdo->query("SELECT COUNT(*) AS total, COALESCE(ROUND(AVG(rating), 2), 0) AS average FROM app_feedback")->fetch();
+    $byCat = $pdo->query("SELECT category, COUNT(*) AS c FROM app_feedback GROUP BY category")->fetchAll(PDO::FETCH_KEY_PAIR);
+    $byStar = $pdo->query("SELECT rating, COUNT(*) AS c FROM app_feedback GROUP BY rating")->fetchAll(PDO::FETCH_KEY_PAIR);
+    echo json_encode(['success' => true, 'total' => (int)$cnt->fetchColumn(), 'pageSize' => $size, 'items' => $st->fetchAll(), 'stats' => ['total' => (int)$stats['total'], 'average' => (float)$stats['average'], 'byCategory' => $byCat, 'byRating' => $byStar]], JSON_UNESCAPED_UNICODE);
     exit(0);
 }
 
@@ -3849,6 +3870,7 @@ if (preg_match('#/freelancers$#', $uri) && $method === 'GET') {
         ORDER BY (plan_boost_until IS NOT NULL AND plan_boost_until > NOW()) DESC, created_at DESC
     ");
     $freelancers = $stmt->fetchAll();
+    karnamaRenewExpiring($pdo);
     $pubCvs = [];
     foreach ($pdo->query("SELECT id, user_id, title, template_id, view_url, embed_url FROM resumes WHERE is_public = 1 AND karnama_id IS NOT NULL ORDER BY updated_at DESC")->fetchAll() as $cv) {
         $pubCvs[$cv['user_id']][] = ['id' => $cv['id'], 'title' => $cv['title'], 'template_id' => $cv['template_id'], 'view_url' => $cv['view_url'], 'embed_url' => $cv['embed_url']];
@@ -5447,6 +5469,7 @@ if (preg_match('#/admin/plans/delete$#', $uri) && $method === 'POST') {
 // ================================================================
 if (preg_match('#/resumes$#', $uri) && $method === 'GET') {
     $authUser = requireAuth($pdo);
+    karnamaRenewExpiring($pdo);
     $stmt = $pdo->prepare('SELECT id, title, template_id, resume_data, karnama_id, view_url, embed_url, accent_color, language, is_public, created_at, updated_at FROM resumes WHERE user_id = ? AND karnama_id IS NOT NULL ORDER BY updated_at DESC');
     $stmt->execute([$authUser['id']]);
     $rows = $stmt->fetchAll();
@@ -6091,6 +6114,30 @@ function karnamaCreateAndStore(PDO $pdo, array $user, string $title, string $tem
     $pdo->prepare('INSERT INTO resumes (id, user_id, title, template_id, resume_data, created_at, updated_at, karnama_id, view_url, embed_url, accent_color, language, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
         ->execute([$id, $user['id'], mb_substr($title, 0, 150), $r['templateId'] ?? $templateId, json_encode($clean, JSON_UNESCAPED_UNICODE), $now, $now, $r['id'], $r['urls']['view'] ?? '', $r['urls']['embed'] ?? '', $r['accentColor'] ?? $accent, $r['language'] ?? $lang, $r['expiresAt'] ?? null]);
     return ['id' => $id, 'title' => $title, 'template_id' => $r['templateId'] ?? $templateId, 'view_url' => $r['urls']['view'] ?? '', 'embed_url' => $r['urls']['embed'] ?? '', 'accent_color' => $r['accentColor'] ?? $accent, 'language' => $r['language'] ?? $lang, 'resume_data' => $clean];
+}
+
+// Karnama cannot extend a CV's expiry, so a CV that is about to expire is re-created from the data we keep and the row
+// is pointed at the new page (the old one is deleted). Checked at most once an hour, at most 5 CVs at a time.
+function karnamaRenewExpiring(PDO $pdo, int $max = 5): void {
+    $stamp = sys_get_temp_dir() . '/ishkhwaz_karnama_renew.stamp';
+    if (is_file($stamp) && time() - filemtime($stamp) < 3600) return;
+    @touch($stamp);
+    try {
+        $st = $pdo->prepare('SELECT * FROM resumes WHERE karnama_id IS NOT NULL AND expires_at IS NOT NULL AND expires_at < ? ORDER BY expires_at ASC LIMIT ' . (int)$max);
+        $st->execute([date('Y-m-d H:i:s', time() + 21 * 86400)]);
+        foreach ($st->fetchAll() as $r) {
+            $data = json_decode($r['resume_data'], true);
+            if (!is_array($data)) continue;
+            $body = ['language' => $r['language'] ?: 'ku', 'externalRef' => 'ishkhwaz:' . $r['user_id'] . ':' . $r['id'], 'ttlDays' => 365, 'templateId' => $r['template_id'], 'data' => $data];
+            if (!empty($r['accent_color'])) $body['accentColor'] = $r['accent_color'];
+            [$code, $res] = karnamaCall('POST', '/resumes', $body);
+            $n = $res['resume'] ?? null;
+            if (($code !== 201 && $code !== 200) || empty($n['id'])) continue;
+            $pdo->prepare('UPDATE resumes SET karnama_id = ?, view_url = ?, embed_url = ?, expires_at = ?, updated_at = ? WHERE id = ?')
+                ->execute([$n['id'], $n['urls']['view'] ?? '', $n['urls']['embed'] ?? '', $n['expiresAt'] ?? null, date('Y-m-d H:i:s'), $r['id']]);
+            karnamaCall('DELETE', '/resumes/' . rawurlencode($r['karnama_id']));
+        }
+    } catch (Throwable $e) { /* retried in an hour */ }
 }
 
 // Templates the CV builder can offer (free ones for everyone, premium ones need a paid plan — the app shows the lock).
