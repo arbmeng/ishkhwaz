@@ -12,6 +12,7 @@ import { MilestonesPanel } from '../shared/MilestonesPanel';
 import { StarRatingInput } from '../ui/StarRating';
 import { TrendChart } from '../ui/TrendChart';
 import { HScroll } from '../ui/HScroll';
+import { positionsInfo } from '../../utils/jobPositions';
 import { PageHeader } from '../layout/PageHeader';
 import {
   Plus, Check, X, Crown, Edit, Trash2, MessageCircle, FileText, Send,
@@ -228,6 +229,7 @@ const JobCard = ({ job, onOpen, onEdit, onToggle, toggling }) => {
       <div className="mt-4 flex items-center gap-2 text-[10px] font-bold text-[#7b8e88]">
         <Send className="h-3.5 w-3.5" />
         <span>{Number(job.applications_count) || 0} داواکاری</span>
+        <span className="mr-auto rounded-full bg-[#eeeaf5] px-2.5 py-1 font-black text-[#4b13a5]">👥 {positionsInfo(job).label}</span>
       </div>
 
       <div className="mt-4 flex items-center gap-2 border-t border-[#efedf2] pt-3">

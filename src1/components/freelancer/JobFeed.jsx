@@ -1,3 +1,4 @@
+import { positionsInfo } from '../../utils/jobPositions';
 import { profileCompletion } from '../../utils/profileCompletion';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -646,6 +647,10 @@ export const JobFeed = ({ onNavigate }) => {
             {typeLabel}
           </span>
 
+          <span className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-black bg-white/90 backdrop-blur shadow-sm" style={{ color: positionsInfo(job).full ? '#b42318' : TEAL_DEEP }}>
+            👥 {positionsInfo(job).label}
+          </span>
+
           {isBoosted && (
             <span className="absolute top-12 left-3 px-2.5 py-1 rounded-full text-[10px] font-black text-white shadow-sm" style={{ background: TEAL }}>
               🚀 بەرزکراوە
@@ -846,6 +851,7 @@ export const JobFeed = ({ onNavigate }) => {
                         </div>
                         <h3 className="text-sm font-black text-stone-900 truncate">{job.title_ku}</h3>
                         <span className="text-[11px] text-stone-500 font-bold block mt-0.5 truncate">{company}، {govBase}</span>
+                        <span className="text-[10px] font-black block mt-1 truncate" style={{ color: TEAL_DEEP }}>👥 {positionsInfo(job).label}</span>
                         <div className="h-px my-3" style={{ background: `${TEAL}30` }} />
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-bold text-stone-400">مانگانه</span>

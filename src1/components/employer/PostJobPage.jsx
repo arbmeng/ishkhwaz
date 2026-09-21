@@ -89,6 +89,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
   const [skills, setSkills] = useState([]);
   const [skillInput, setSkillInput] = useState('');
   const [deadline, setDeadline] = useState('');
+  const [positions, setPositions] = useState(1);
   const [companyReg, setCompanyReg] = useState('');
   const [companyIndustry, setCompanyIndustry] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -170,6 +171,7 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
         required_skills: JSON.stringify(skills),
         company_name: companyName.trim(),
         deadline: deadline || null,
+        positions,
         company_reg: companyReg.trim(),
         company_industry: companyIndustry.trim(),
         // fee_amount intentionally omitted — the backend falls back to the
@@ -491,6 +493,18 @@ export const PostJobPage = ({ onBack, onSuccess }) => {
                   />
                 </Field>
               ))}
+
+              <Field label="ژمارەی کارخوازی پێویست">
+                <div className="flex items-center justify-between rounded-2xl border border-[#dad7e0] bg-white p-2">
+                  <button type="button" onClick={() => setPositions(n => Math.min(100, n + 1))} aria-label="زیادکردن" className="grid h-11 w-11 place-items-center rounded-xl bg-[#641bd9] text-xl font-black text-white active:scale-95">+</button>
+                  <div className="text-center">
+                    <div className="text-2xl font-black text-[#16111d]">{positions}</div>
+                    <div className="text-[10px] font-bold text-[#8a9e98]">کارخواز</div>
+                  </div>
+                  <button type="button" onClick={() => setPositions(n => Math.max(1, n - 1))} aria-label="کەمکردنەوە" className="grid h-11 w-11 place-items-center rounded-xl bg-[#ece7f4] text-xl font-black text-[#4b13a5] active:scale-95">−</button>
+                </div>
+                <p className="mt-1.5 text-[11px] font-medium text-[#8a9e98]">کاتێک ئەم ژمارەیە کارخواز وەردەگیرێت، کارەکە خۆکارانە دەوەستێت.</p>
+              </Field>
 
               <Field label="کۆتا وادەی وەرگرتنی داواکاری">
                 <input

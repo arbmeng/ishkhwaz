@@ -37,6 +37,7 @@ export const EditJobModal = ({ isOpen, onClose, job }) => {
   const [description, setDescription]   = useState('');
   const [skillsInput, setSkillsInput]   = useState('');
   const [deadline, setDeadline]         = useState('');
+  const [positions, setPositions]       = useState(1);
   const [isSaving, setIsSaving]         = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
@@ -67,6 +68,7 @@ export const EditJobModal = ({ isOpen, onClose, job }) => {
       setSalaryMax(String(job.salary_max || 1200000));
       setDescription(job.description || '');
       setDeadline(job.deadline || '');
+      setPositions(Math.max(1, Number(job.positions) || 1));
       setPinLat(typeof job.lat === 'number' && Math.abs(job.lat) > 0.001 ? job.lat : null);
       setPinLng(typeof job.lng === 'number' && Math.abs(job.lng) > 0.001 ? job.lng : null);
       setLocationName(job.location_name || '');
@@ -267,6 +269,7 @@ export const EditJobModal = ({ isOpen, onClose, job }) => {
       description: description.trim(),
       required_skills: skillsArray,
       deadline: deadline || null,
+      positions,
     });
     setIsSaving(false);
     if (ok) onClose();
@@ -490,6 +493,19 @@ export const EditJobModal = ({ isOpen, onClose, job }) => {
                   className={inputCls + ' font-mono'}
                 />
               </div>
+            </div>
+
+            {/* Freelancers needed (the job pauses itself once this many are accepted) */}
+            <div>
+              <label className={labelCls}>ژمارەی کارخوازی پێویست {Number(job?.hired_count) > 0 ? `(${Number(job.hired_count)} وەرگیراوە)` : ''}</label>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={positions}
+                onChange={(e) => setPositions(Math.max(1, Math.min(100, parseInt(e.target.value, 10) || 1)))}
+                className={inputCls}
+              />
             </div>
 
             {/* Deadline */}

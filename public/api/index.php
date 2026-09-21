@@ -1711,6 +1711,8 @@ foreach ([
     "ALTER TABLE users ADD COLUMN languages TEXT NULL",
     "ALTER TABLE users ADD COLUMN education TEXT NULL",
     "ALTER TABLE jobs ADD COLUMN sector VARCHAR(20) NULL",
+    // How many freelancers the employer wants to hire; the job pauses itself once that many are accepted.
+    "ALTER TABLE jobs ADD COLUMN positions INT NOT NULL DEFAULT 1",
     // Emailed 6-digit reset code (stored only as an HMAC, 10 min life, max 5 wrong tries) —
     // see /auth/forgot-password and /auth/verify-reset-otp.
     "ALTER TABLE users ADD COLUMN password_reset_otp_hash VARCHAR(64) NULL",
@@ -3171,6 +3173,7 @@ if (preg_match('#/jobs$#', $uri) && $method === 'GET') {
     $stmt = $pdo->prepare(
         "SELECT j.*,
                 (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id AND a.payment_status <> 'awaiting_payment') AS applications_count,
+                (SELECT COUNT(*) FROM applications ah WHERE ah.job_id = j.id AND ah.company_status = 'accepted') AS hired_count,
                 (SELECT verified FROM users u WHERE u.id = j.company_id) AS company_verified,
                 (SELECT ROUND(AVG(TIMESTAMPDIFF(SECOND, a.created_at, a.accepted_at) / 3600), 1)
                    FROM applications a WHERE a.company_id = j.company_id AND a.accepted_at IS NOT NULL) AS company_avg_response_hours
@@ -3398,6 +3401,9 @@ if (preg_match('#/jobs$#', $uri) && $method === 'POST') {
         date('Y-m-d H:i:s'),
     ]);
 
+    $positions = max(1, min(100, (int)($input['positions'] ?? 1)));
+    $pdo->prepare('UPDATE jobs SET positions = ? WHERE id = ?')->execute([$positions, $jobId]);
+
     if (in_array($authUser['role'] ?? '', ['admin', 'owner'], true)) {
         notifyAdmins($pdo, 'job_created', ['id' => $jobId, 'company_id' => $authUser['id']]);
     } else {
@@ -3481,6 +3487,9 @@ if (preg_match('#(?<!admin)/jobs/update$#', $uri) && $method === 'POST') {
         in_array($input['sector'] ?? '', JOB_SECTORS, true) ? $input['sector'] : ($existing['sector'] ?? null),
         $jobId,
     ]);
+    if (isset($input['positions']) && is_numeric($input['positions'])) {
+        $pdo->prepare('UPDATE jobs SET positions = ? WHERE id = ?')->execute([max(1, min(100, (int)$input['positions'])), $jobId]);
+    }
 
     $updated = $pdo->prepare('SELECT * FROM jobs WHERE id = ?');
     $updated->execute([$jobId]);
@@ -4702,7 +4711,24 @@ if (preg_match('#/applications/.*?/company-status$#', $uri) && $method === 'POST
             "\"{$app['job_title']}\" لەلایەن {$app['company_name']}", '/cvs');
     }
 
-    echo json_encode(['success' => true, 'application_id' => $appId, 'company_status' => $status]);
+    // Enough freelancers accepted for this job -> pause it so it stops taking applications.
+    $jobPaused = false;
+    if ($status === 'accepted' && !empty($app['job_id'])) {
+        $jobRow = $pdo->prepare('SELECT id, title_ku, positions, status FROM jobs WHERE id = ?');
+        $jobRow->execute([$app['job_id']]);
+        $jobRow = $jobRow->fetch();
+        if ($jobRow && $jobRow['status'] === 'active') {
+            $hired = $pdo->prepare("SELECT COUNT(*) FROM applications WHERE job_id = ? AND company_status = 'accepted'");
+            $hired->execute([$app['job_id']]);
+            if ((int)$hired->fetchColumn() >= max(1, (int)$jobRow['positions'])) {
+                $pdo->prepare("UPDATE jobs SET status = 'paused' WHERE id = ?")->execute([$app['job_id']]);
+                $jobPaused = true;
+                notifyUser($pdo, $authUser['id'], 'کارەکە وەستێنرا', "\"{$jobRow['title_ku']}\" - ژمارەی پێویست کارخواز وەرگیرا، کارەکە وەستێنرا.", '/dashboard');
+            }
+        }
+    }
+
+    echo json_encode(['success' => true, 'application_id' => $appId, 'company_status' => $status, 'job_paused' => $jobPaused]);
     exit(0);
 }
 
