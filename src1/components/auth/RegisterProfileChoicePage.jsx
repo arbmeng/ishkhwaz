@@ -1,3 +1,4 @@
+import { FEATURES } from '../../config/features';
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
@@ -541,6 +542,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
               بەردەوام بە
             </button>
 
+            {FEATURES.googleLogin && (<>
             <div className="flex items-center gap-3">
               <div className="flex-1 h-px" style={{ background: '#e4e2e8' }} />
               <span className="text-[11px] font-bold" style={{ color: '#9aa1a0' }}>یان</span>
@@ -557,6 +559,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
               <GoogleIcon />
               {isGoogleSubmitting ? 'خەریکی تۆمارکردنە...' : 'تۆمارکردن بە گووگڵ'}
             </button>
+            </>)}
 
             <button
               type="button"

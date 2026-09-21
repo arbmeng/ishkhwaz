@@ -1,3 +1,4 @@
+import { FEATURES } from '../../config/features';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
@@ -215,6 +216,7 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
               </button>
             </form>
 
+            {FEATURES.googleLogin && (<>
             <div className="my-5 flex items-center gap-3">
               <div className="h-px flex-1 bg-[#e4e2e8]" />
               <span className="text-[11px] font-bold text-[#9aa1a0]">یان</span>
@@ -230,6 +232,7 @@ export const LoginPage = ({ onBack, onNavigateRegister, onLoginSuccess, onForgot
               {isGoogleSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
               {isGoogleSubmitting ? 'خەریکی چوونەژوورەوەیە...' : 'چوونەژوورەوە بە گووگڵ'}
             </button>
+            </>)}
 
             <p className="mt-7 text-center text-xs font-bold text-[#6b7a75]">
               هەژمارت نییە؟{' '}

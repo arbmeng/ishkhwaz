@@ -2,6 +2,8 @@
 export const FEATURES = {
   // The full-screen jobs map (tab "map", header item "نەخشە"). Off until it's ready.
   map: false,
+  // "Continue with Google" on the login and register pages. Off for now.
+  googleLogin: false,
 };
 
 // Company (employer) accounts don't use plans for now — no Plans page, nav item or upgrade prompts.
