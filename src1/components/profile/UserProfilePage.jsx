@@ -1376,7 +1376,7 @@ export const UserProfilePage = ({ onNavigate }) => {
       <input ref={coverRef} type="file" accept="image/*" onChange={handleCoverChange} className="hidden" />
 
       <style>{`
-        .profile-page-shell{position:relative;isolation:isolate;overflow:clip;background:#f5f4f7!important}
+        .profile-page-shell{position:relative;isolation:isolate;overflow-x:clip;overflow-y:visible;background:#f5f4f7!important}
         .profile-page-shell:before{content:"";position:absolute;inset:0 0 auto 0;height:420px;z-index:0;pointer-events:none;
           background:radial-gradient(60% 90% at 92% 0%,rgba(100,27,217,.13),transparent 66%),radial-gradient(50% 70% at 4% 10%,rgba(100,27,217,.06),transparent 68%)}
         .profile-page-shell .profile-ambient{display:none}
