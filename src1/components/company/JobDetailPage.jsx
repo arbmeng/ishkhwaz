@@ -33,8 +33,9 @@ const STATUS = {
 };
 
 const formatSalary = (job) => {
-  const min = Number(job?.salary_min) || 0;
-  const max = Number(job?.salary_max) || 0;
+  let min = Number(job?.salary_min) || 0;
+  let max = Number(job?.salary_max) || 0;
+  if (min && max && min > max) [min, max] = [max, min];
   if (!min && !max) return 'وەک گفتوگۆ';
   if (min && max && min !== max) return `${min.toLocaleString()} - ${max.toLocaleString()} IQD`;
   return `${(max || min).toLocaleString()} IQD`;

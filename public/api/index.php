@@ -3442,6 +3442,8 @@ if (preg_match('#/jobs$#', $uri) && $method === 'POST') {
 
     $positions = max(1, min(100, (int)($input['positions'] ?? 1)));
     $pdo->prepare('UPDATE jobs SET positions = ? WHERE id = ?')->execute([$positions, $jobId]);
+    // a minimum salary above the maximum is just the two boxes filled the wrong way round
+    $pdo->prepare('UPDATE jobs SET salary_min = salary_max, salary_max = salary_min WHERE id = ? AND salary_min > salary_max AND salary_max > 0')->execute([$jobId]);
 
     if (in_array($authUser['role'] ?? '', ['admin', 'owner'], true)) {
         notifyAdmins($pdo, 'job_created', ['id' => $jobId, 'company_id' => $authUser['id']]);
@@ -3526,6 +3528,7 @@ if (preg_match('#(?<!admin)/jobs/update$#', $uri) && $method === 'POST') {
         in_array($input['sector'] ?? '', JOB_SECTORS, true) ? $input['sector'] : ($existing['sector'] ?? null),
         $jobId,
     ]);
+    $pdo->prepare('UPDATE jobs SET salary_min = salary_max, salary_max = salary_min WHERE id = ? AND salary_min > salary_max AND salary_max > 0')->execute([$jobId]);
     if (isset($input['positions']) && is_numeric($input['positions'])) {
         $pdo->prepare('UPDATE jobs SET positions = ? WHERE id = ?')->execute([max(1, min(100, (int)$input['positions'])), $jobId]);
     }

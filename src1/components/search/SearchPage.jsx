@@ -28,9 +28,10 @@ const parseSkillsList = (v) => {
   try { const x = JSON.parse(v || '[]'); return Array.isArray(x) ? x : []; } catch { return []; }
 };
 const formatSalary = (job) => {
-  const min = Number(job.salary_min) || 0, max = Number(job.salary_max) || 0;
+  let min = Number(job.salary_min) || 0, max = Number(job.salary_max) || 0;
+  if (min && max && min > max) [min, max] = [max, min];
   if (!min && !max) return 'وەک گفتوگۆ';
-  if (min && max && min !== max) return `${min.toLocaleString()}–${max.toLocaleString()} IQD`;
+  if (min && max && min !== max) return `⁦${min.toLocaleString()}–${max.toLocaleString()} IQD⁩`;
   return `${(max || min).toLocaleString()} IQD`;
 };
 const cardTheme = (tier) => {
