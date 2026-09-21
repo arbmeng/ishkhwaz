@@ -5924,7 +5924,7 @@ function karnamaCreateAndStore(PDO $pdo, array $user, string $title, string $tem
     $clean = karnamaCleanCvData($data);
     if (empty($clean['personalInfo']['fullName'])) jsonErr(400, 'ناوی تەواو پێویستە.');
     $id = 'res_' . time() . rand(10, 99);
-    $body = ['language' => $lang, 'externalRef' => 'ishkhwaz-' . $id, 'ttlDays' => 365, 'data' => $clean];
+    $body = ['language' => $lang, 'externalRef' => 'ishkhwaz:' . $user['id'] . ':' . $id, 'ttlDays' => 365, 'data' => $clean];
     if ($templateId !== '') $body['templateId'] = $templateId;
     if ($accent !== '') $body['accentColor'] = $accent;
     [$st, $res] = karnamaCall('POST', '/resumes', $body);
