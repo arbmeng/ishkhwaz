@@ -5004,6 +5004,14 @@ if (preg_match('#/plans/purchase$#', $uri) && $method === 'POST') {
     $tier = $tierStmt->fetch();
     if (!$tier) jsonErr(400, 'Invalid plan.');
 
+    // A cheaper plan than the one already active is not a purchase (no downgrades through this endpoint).
+    if (!empty($authUser['plan']) && $authUser['plan'] !== $planId && (int)$tier['price'] > 0) {
+        $curStmt = $pdo->prepare('SELECT price FROM plan_tiers WHERE id = ?');
+        $curStmt->execute([$authUser['plan']]);
+        $curPrice = (int)$curStmt->fetchColumn();
+        if ($curPrice > (int)$tier['price']) jsonErr(400, 'پلانەکەی ئێستات لەمە بەرزترە.');
+    }
+
     $plan = $planId;
     $price = (int)$tier['price'];
     $id = 'planbuy_' . time() . rand(10, 99);

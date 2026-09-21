@@ -123,6 +123,7 @@ export const PlansPage = ({ onBack }) => {
   const currentTier = tiers.find(t => t.id === user?.plan);
   const currentPlanDef = PLANS.find(p => p.id === user?.plan);
   const hasPaidPlan = !!currentTier && Number(currentTier.price) > 0;
+  const currentPrice = Number(currentTier?.price) || 0;
   const isBoostActive = user?.plan_boost_until && new Date(user.plan_boost_until) > new Date();
   const boostDaysTotal = currentPlanDef?.boostDays || 0;
   const boostDaysLeft = isBoostActive ? Math.max(0, Math.ceil((new Date(user.plan_boost_until) - new Date()) / 86400000)) : 0;
@@ -135,6 +136,7 @@ export const PlansPage = ({ onBack }) => {
   const PlanCard = ({ plan }) => {
     const premium = plan.id === topId;
     const isCurrent = (user?.plan || 'free') === plan.id;
+    const isLower = !isCurrent && plan.price > 0 && plan.price < currentPrice; // cheaper than the plan already active
     const pending = plan.price > 0 ? pendingFor(plan.id) : null;
     const Icon = plan.icon;
     const accent = plan.color.accent;
@@ -227,6 +229,8 @@ export const PlansPage = ({ onBack }) => {
                 isCurrent ? <div className="w-full rounded-2xl py-3.5 text-center text-xs font-bold" style={{ background: premium ? 'rgba(255,255,255,.08)' : '#f5f4f7', color: sub }}>پلانی ئێستا</div> : null
               ) : isCurrent ? (
                 <div className="flex w-full items-center justify-center gap-1.5 rounded-2xl py-3.5 text-xs font-bold" style={{ border: `1px solid ${premium ? hexToRgba(accent, .4) : '#cfbded'}`, background: premium ? hexToRgba(accent, .12) : TEAL_SOFT, color: premium ? tintToward(accent, .4) : TEAL_DEEP }}><CheckCircle2 className="h-4 w-4" />پلانی چالاکە</div>
+              ) : isLower ? (
+                <div className="flex w-full items-center justify-center gap-1.5 rounded-2xl py-3.5 text-xs font-bold" style={{ background: premium ? 'rgba(255,255,255,.06)' : '#f1eff4', color: sub, cursor: 'not-allowed' }} aria-disabled="true"><CheckCircle2 className="h-3.5 w-3.5" />پلانەکەت لەمە بەرزترە</div>
               ) : pending ? (
                 <div className="flex w-full items-center justify-center gap-1.5 rounded-2xl py-3.5 text-xs font-bold" style={{ background: premium ? 'rgba(255,255,255,.08)' : TEAL_SOFT, color: premium ? '#fff' : TEAL_DEEP }}><Loader2 className="h-3.5 w-3.5 animate-spin" />چاوەڕوانی پشکنین...</div>
               ) : (
@@ -259,7 +263,7 @@ export const PlansPage = ({ onBack }) => {
                   <div className="truncate text-[17px] font-bold">{currentTier?.name_ku || 'بنەڕەتی'}</div>
                 </div>
                 <div className="text-left">
-                  <div className="text-[22px] font-bold leading-none">{hasPaidPlan || currentTier ? formatCredits(user?.plan_credits ?? 0) : 0}</div>
+                  <div className="text-[22px] font-bold leading-none">{currentPlanDef && currentPlanDef.credits > 200 ? formatCredits(currentPlanDef.credits) : (hasPaidPlan || currentTier ? formatCredits(user?.plan_credits ?? 0) : 0)}</div>
                   <div className="mt-1 text-[10px] text-white/65">کرێدیتی ماوە</div>
                 </div>
               </div>
