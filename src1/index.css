@@ -235,3 +235,6 @@
    height pushes their content below it. The element's own background still covers the strip and
    its padding is untouched; it is 0 on devices with no notch. */
 .safe-top { border-top: env(safe-area-inset-top, 0px) solid transparent; }
+
+.no-scrollbar{scrollbar-width:none;-ms-overflow-style:none}
+.no-scrollbar::-webkit-scrollbar{display:none}

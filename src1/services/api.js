@@ -333,9 +333,10 @@ export const apiService = {
     }
   },
 
-  async getFreelancers() {
+  async getFreelancers(token) {
     try {
-      const data = await fetchJsonRetry(`${API_BASE_URL}/freelancers`);
+      // the token (when signed in) lets the server include phone numbers
+      const data = await fetchJsonRetry(`${API_BASE_URL}/freelancers`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
       return data.freelancers || [];
     } catch (e) {
       return null; // null = "request failed", never "there are none" — callers keep what they had
@@ -387,7 +388,7 @@ export const apiService = {
       const data = await res.json();
       return data.invitations || [];
     } catch (e) {
-      return [];
+      return null; // failed request, not "no offers" — callers keep what they had
     }
   },
 

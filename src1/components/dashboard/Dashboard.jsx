@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
@@ -92,7 +92,7 @@ const StatCard = ({ icon: Icon, value, label, accent, hint, onClick }) => (
     className={[
       'group relative overflow-hidden rounded-[26px] border p-4 sm:p-5 text-right transition-all duration-300',
       'hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(31,17,54,.08)]',
-      accent ? 'border-[#4b13a5] bg-[#641bd9] text-white' : 'border-[#e8e5ec] bg-white text-[#1c1723]',
+      accent ? 'border-[#4b13a5] bg-gradient-to-br from-[#7229e8] to-[#4b13a5] text-white shadow-[0_14px_34px_rgba(100,27,217,.32)]' : 'border-[#e8e5ec] bg-white text-[#1c1723]',
     ].join(' ')}
   >
     <div className={`absolute -left-8 -top-8 h-24 w-24 rounded-full blur-2xl ${accent ? 'bg-white/10' : 'bg-[#641bd9]/5'}`} />
@@ -113,28 +113,63 @@ const StatCard = ({ icon: Icon, value, label, accent, hint, onClick }) => (
   </button>
 );
 
-const SegmentedTabs = ({ tabs, active, onChange }) => (
-  <HScroll bar={false} arrows={false} className="flex w-full rounded-[22px] border border-[#e8e5ec] bg-white p-1.5 shadow-[0_4px_18px_rgba(31,17,54,.035)]">
-    {tabs.map(({ id, label, Icon, count }) => {
-      const selected = active === id;
-      return (
-        <button
-          key={id}
-          type="button"
-          onClick={() => onChange(id)}
-          className={`min-w-[110px] flex-1 rounded-[16px] px-3 py-2.5 text-xs font-black transition-all ${selected ? 'bg-[#641bd9] text-white shadow-[0_7px_18px_rgba(100,27,217,.18)]' : 'text-[#7b8e88] hover:bg-[#f7f6f9] hover:text-[#1c1723]'
-            }`}
-        >
-          <span className="inline-flex items-center justify-center gap-1.5">
-            <Icon className="h-3.5 w-3.5" />
-            {label}
-            {count !== null && <span className={selected ? 'text-white/70' : 'text-[#a0afa9]'}>({count})</span>}
-          </span>
-        </button>
-      );
-    })}
-  </HScroll>
-);
+// Tab switcher with a sliding gradient pill that glides to the chosen tab.
+const SegmentedTabs = ({ tabs, active, onChange }) => {
+  const box = useRef(null);
+  const [pill, setPill] = useState({ x: 0, w: 0, ready: false });
+  const sig = tabs.map(t => `${t.id}:${t.count}`).join('|');
+
+  const measure = useCallback(() => {
+    const el = box.current?.querySelector(`[data-seg="${active}"]`);
+    if (el) setPill({ x: el.offsetLeft, w: el.offsetWidth, ready: true });
+  }, [active]);
+
+  useLayoutEffect(measure, [measure, sig]);
+  useEffect(() => {
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [measure]);
+  // keep the chosen tab in view when there are more tabs than fit
+  useEffect(() => { box.current?.querySelector(`[data-seg="${active}"]`)?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); }, [active]);
+
+  return (
+    <div className="no-scrollbar overflow-x-auto rounded-[24px] border border-[#e3ddf0] bg-white/90 p-1.5 shadow-[0_8px_26px_rgba(46,16,101,.07)] backdrop-blur">
+      <div ref={box} className="relative flex min-w-full gap-1">
+        <span
+          aria-hidden="true"
+          className="absolute bottom-0 top-0 rounded-[18px]"
+          style={{
+            width: pill.w,
+            transform: `translateX(${pill.x}px)`,
+            left: 0,
+            opacity: pill.ready ? 1 : 0,
+            background: 'linear-gradient(135deg,#7229e8 0%,#5513bf 60%,#3a0f80 100%)',
+            boxShadow: '0 10px 22px rgba(100,27,217,.32), inset 0 1px 0 rgba(255,255,255,.22)',
+            transition: pill.ready ? 'transform .38s cubic-bezier(.34,1.3,.5,1), width .3s ease' : 'none',
+          }}
+        />
+        {tabs.map(({ id, label, Icon, count }) => {
+          const selected = active === id;
+          return (
+            <button
+              key={id}
+              data-seg={id}
+              type="button"
+              onClick={() => onChange(id)}
+              className={`relative z-10 flex min-w-[112px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-[18px] px-3.5 py-3 text-[12px] font-black transition-colors duration-300 active:scale-[.97] ${selected ? 'text-white' : 'text-[#7b7390] hover:text-[#4b13a5]'}`}
+            >
+              <Icon className={`h-4 w-4 transition-transform duration-300 ${selected ? 'scale-110' : ''}`} />
+              {label}
+              {count !== null && count !== undefined && (
+                <span className={`min-w-[22px] rounded-full px-1.5 py-0.5 text-[10px] font-black leading-none transition-colors duration-300 ${selected ? 'bg-white/25 text-white' : 'bg-[#641bd9]/10 text-[#641bd9]'}`}>{count}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const StatusPill = ({ type, children }) => {
   const styles = {

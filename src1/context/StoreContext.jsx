@@ -82,6 +82,8 @@ export const StoreProvider = ({ children }) => {
   // already had and try again shortly, instead of showing "nothing found" until the next 30 s poll / a refresh.
   const syncRetries = useRef(0);
   const syncBackendData = async () => {
+    // offers (invitations) refresh with everything else: on every poll and every realtime notification
+    if (token) fetchInvitations();
     try {
       const [liveJobs, liveApps, liveNotifs, liveFreelancers, liveCompanies, liveCategories, liveWorkTypes, liveSettings, liveTiers] = await Promise.all([
         apiService.getJobs({}, token),
@@ -89,7 +91,7 @@ export const StoreProvider = ({ children }) => {
         // logged out instead of firing a request that's guaranteed to 401.
         token ? apiService.getApplications(token) : Promise.resolve(null),
         apiService.getNotifications(token),
-        apiService.getFreelancers(),
+        apiService.getFreelancers(token),
         apiService.getCompanies(),
         apiService.getCategories(),
         apiService.getWorkTypes(),
