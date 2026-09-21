@@ -465,13 +465,17 @@ function sendAppEmail(string $toEmail, string $subject, string $htmlBody, string
     }
 }
 
-function sendVerificationEmail(string $toEmail, string $name, string $token): bool {
+function sendVerificationEmail(string $toEmail, string $name, string $token, ?string $otp = null): bool {
     $link = 'https://ishkhwaz.zeraworld.com/verify-email?token=' . urlencode($token);
+    $otpBlock = $otp === null ? '' : '<p style="color:#4a5854;line-height:1.8;">کۆدی دڵنیاکردنەوەت (لە ئەپەکەدا بینووسە، ماوەی ١٠ خولەک کاردەکات):</p>'
+        . '<p style="text-align:center;margin:18px 0;"><span dir="ltr" style="display:inline-block;background:#fff;border:2px dashed #12796b;border-radius:12px;padding:12px 26px;font-size:30px;letter-spacing:8px;font-weight:bold;color:#0d5c50;font-family:monospace;">' . $otp . '</span></p>'
+        . '<p style="color:#4a5854;line-height:1.8;">یان ئەم بەستەرەی خوارەوە بەکاربێنە:</p>';
     $subject = 'دڵنیاکردنەوەی ئیمەیل — ئیش خواز';
     $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
     $body = <<<HTML
     <div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;background:#f4f7f6;">
       <h2 style="color:#111d1a;">سڵاو {$safeName} 👋</h2>
+      {$otpBlock}
       <p style="color:#4a5854;line-height:1.8;">بۆ دڵنیابوونەوە لە ئیمەیلەکەت لەسەر ئیش خواز، کرتە لەسەر دوگمەی خوارەوە بکە:</p>
       <p style="text-align:center;margin:28px 0;">
         <a href="{$link}" style="background:#12796b;color:#fff;padding:14px 28px;border-radius:12px;text-decoration:none;font-weight:bold;display:inline-block;">دڵنیاکردنەوەی ئیمەیل</a>
@@ -479,9 +483,18 @@ function sendVerificationEmail(string $toEmail, string $name, string $token): bo
       <p style="color:#9faea9;font-size:12px;">ئەگەر داوات نەکردووە، ئەم ئیمەیلە پشتگوێ بخە.</p>
     </div>
     HTML;
-    $alt = "سڵاو {$name}، بۆ دڵنیابوونەوە لە ئیمەیلەکەت، ئەم بەستەرە بکەرەوە:\n{$link}";
+    $alt = "سڵاو {$name}، " . ($otp !== null ? "کۆدی دڵنیاکردنەوەت: {$otp}\n" : '') . "بۆ دڵنیابوونەوە لە ئیمەیلەکەت، ئەم بەستەرە بکەرەوە:\n{$link}";
 
     return sendAppEmail($toEmail, $subject, $body, $alt);
+}
+
+// A fresh 6-digit code for confirming the account's email. Stored only as an HMAC (like the reset code).
+function issueEmailOtp(PDO $pdo, string $userId): string {
+    $otp = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+    $hash = hash_hmac('sha256', $userId . ':email:' . $otp, TOKEN_SECRET);
+    $pdo->prepare('UPDATE users SET email_otp_hash = ?, email_otp_expires = ?, email_otp_attempts = 0 WHERE id = ?')
+        ->execute([$hash, date('Y-m-d H:i:s', time() + 600), $userId]);
+    return $otp;
 }
 
 function sendPasswordResetEmail(string $toEmail, string $name, string $token, ?string $otp = null): bool {
@@ -1619,6 +1632,11 @@ foreach ([
     "ALTER TABLE users ADD COLUMN password_reset_otp_hash VARCHAR(64) NULL",
     "ALTER TABLE users ADD COLUMN password_reset_otp_expires VARCHAR(32) NULL",
     "ALTER TABLE users ADD COLUMN password_reset_otp_attempts INT DEFAULT 0",
+    // Emailed 6-digit code that confirms the address at sign-up (HMAC only, 10 min, 5 tries) -
+    // see issueEmailOtp() and /auth/verify-email-otp.
+    "ALTER TABLE users ADD COLUMN email_otp_hash VARCHAR(64) NULL",
+    "ALTER TABLE users ADD COLUMN email_otp_expires VARCHAR(32) NULL",
+    "ALTER TABLE users ADD COLUMN email_otp_attempts INT DEFAULT 0",
 ] as $migration) {
     try { $pdo->exec($migration); } catch (Exception $e) { /* already applied */ }
 }
@@ -1987,6 +2005,7 @@ if (preg_match('#/auth/register$#', $uri) && $method === 'POST') {
 
     if (empty($phone) || !preg_match('/^[0-9+\s\-]{7,20}$/', $phone)) jsonErr(400, 'ژمارەی تەلەفۆنی دروست پێویستە.');
     if (strlen($password) < 8) jsonErr(400, 'وشەی نهێنی دەبێت لانیکم ٨ پیت بێت.');
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) jsonErr(400, 'ئیمەیڵێکی دروست پێویستە بۆ تۆمارکردن.');
     if ($role === 'employer' && (empty($companyName) || empty($companyPhone))) {
         jsonErr(400, 'ناوی کۆمپانیا و ژمارەی تەلەفۆنی کۆمپانیا پێویستن.');
     }
@@ -1995,6 +2014,9 @@ if (preg_match('#/auth/register$#', $uri) && $method === 'POST') {
     $check = $pdo->prepare('SELECT id FROM users WHERE phone = ? OR phone = ?');
     $check->execute([$phone, '0' . $phone]);
     if ($check->fetch()) jsonErr(400, 'ئەم ژمارەی تەلەفۆنە پێشتر تۆمارکراوە.');
+    $emailCheck = $pdo->prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?)');
+    $emailCheck->execute([$email]);
+    if ($emailCheck->fetch()) jsonErr(400, 'ئەم ئیمەیڵە پێشتر تۆمارکراوە.');
 
     $userId  = 'usr_' . time() . rand(10, 99);
     $refCode = 'ISHK-' . strtoupper(substr(bin2hex(random_bytes(3)), 0, 6));
@@ -2039,13 +2061,15 @@ if (preg_match('#/auth/register$#', $uri) && $method === 'POST') {
         $createdAt
     ]);
 
-    if ($emailVerifyToken) sendVerificationEmail($email, $name, $emailVerifyToken);
+    $emailOtp = issueEmailOtp($pdo, $userId);
+    $emailSent = sendVerificationEmail($email, $name, $emailVerifyToken, $emailOtp);
 
     notifyAdmins($pdo, 'user_registered', ['id' => $userId, 'name' => $name, 'role' => $role]);
     logActivity($pdo, $userId, 'register', $role);
 
     echo json_encode([
         'success' => true,
+        'email_sent' => $emailSent,
         'token'   => generateToken($userId, $phone),
         'user'    => [
             'id' => $userId, 'name' => $name, 'profession' => '', 'phone' => $phone, 'email' => $email,
@@ -2111,12 +2135,43 @@ if (preg_match('#/auth/resend-verification$#', $uri) && $method === 'POST') {
     // A fresh token each time — the old one (if the user still has an old
     // email open somewhere) stops working, same as most real verification
     // flows only ever honoring the latest link sent.
+    if (!empty($authUser['email_verify_sent_at']) && strtotime($authUser['email_verify_sent_at']) > time() - 60) {
+        jsonErr(429, 'کۆدێکی نوێ تازە نێردراوە. ١ خولەک چاوەڕوان بە.');
+    }
     $newToken = bin2hex(random_bytes(32));
     $pdo->prepare('UPDATE users SET email_verify_token = ?, email_verify_sent_at = ? WHERE id = ?')
         ->execute([$newToken, date('Y-m-d H:i:s'), $authUser['id']]);
 
-    $sent = sendVerificationEmail($authUser['email'], $authUser['name'], $newToken);
+    $sent = sendVerificationEmail($authUser['email'], $authUser['name'], $newToken, issueEmailOtp($pdo, $authUser['id']));
     echo json_encode(['success' => true, 'sent' => $sent, 'message' => 'ئیمەیلی دڵنیاکردنەوە نێردرایەوە.']);
+    exit(0);
+}
+
+// ================================================================
+// 2c2. Auth: Verify email code  POST /auth/verify-email-otp  { otp }
+//      (needs the account's own session; 5 wrong tries burn the code)
+// ================================================================
+if (preg_match('#/auth/verify-email-otp$#', $uri) && $method === 'POST') {
+    if (!rateLimitCheck($pdo, $clientIp, 'verify_email_otp')) jsonErr(429, 'زۆر جار هەوڵت دا. کەمێک چاوەڕوان بە.');
+    $authUser = requireAuth($pdo);
+    if ((int)($authUser['email_verified'] ?? 0) === 1) { echo json_encode(['success' => true, 'email_verified' => 1]); exit(0); }
+
+    $otp = preg_replace('/\D/', '', (string)(safeJson()['otp'] ?? ''));
+    $bad = 'کۆدەکە هەڵەیە یان بەسەرچووە.';
+    if (strlen($otp) !== 6 || empty($authUser['email_otp_hash']) || empty($authUser['email_otp_expires'])
+        || strtotime($authUser['email_otp_expires']) < time()) jsonErr(400, $bad);
+    if ((int)($authUser['email_otp_attempts'] ?? 0) >= 5) {
+        $pdo->prepare('UPDATE users SET email_otp_hash = NULL, email_otp_expires = NULL, email_otp_attempts = 0 WHERE id = ?')->execute([$authUser['id']]);
+        jsonErr(400, 'زۆر جار کۆدی هەڵەت نووسی. کۆدێکی نوێ داوا بکە.');
+    }
+    $expected = hash_hmac('sha256', $authUser['id'] . ':email:' . $otp, TOKEN_SECRET);
+    if (!hash_equals($authUser['email_otp_hash'], $expected)) {
+        $pdo->prepare('UPDATE users SET email_otp_attempts = COALESCE(email_otp_attempts, 0) + 1 WHERE id = ?')->execute([$authUser['id']]);
+        jsonErr(400, $bad);
+    }
+    $pdo->prepare('UPDATE users SET email_verified = 1, email_otp_hash = NULL, email_otp_expires = NULL, email_otp_attempts = 0 WHERE id = ?')->execute([$authUser['id']]);
+    logActivity($pdo, $authUser['id'], 'email_verified_otp');
+    echo json_encode(['success' => true, 'email_verified' => 1]);
     exit(0);
 }
 

@@ -130,6 +130,22 @@ export const apiService = {
     }
   },
 
+  // Confirms the emailed 6-digit code (needs the account's own session token).
+  async verifyEmailOtp(otp, token) {
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/verify-email-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, message: data.message };
+      return data;
+    } catch (e) {
+      return { success: false, message: 'ناتوانرێت پەیوەندی بکرێت.' };
+    }
+  },
+
   async resendVerificationEmail(token) {
     try {
       const res = await fetch(`${API_BASE_URL}/auth/resend-verification`, {

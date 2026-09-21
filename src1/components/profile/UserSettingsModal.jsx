@@ -37,53 +37,22 @@ export const UserSettingsModal = ({ onClose }) => {
   return (
     <div className="snap-settings-overlay" dir="rtl">
       <style>{`
-        .snap-settings-overlay{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.52);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:0;font-family:'Noto Kufi Arabic','Vazirmatn',system-ui,sans-serif}
-        .snap-settings-shell{width:100%;height:100%;background:#f5f5f5;overflow:auto}
-        .snap-settings-inner{width:100%;max-width:620px;margin:0 auto;min-height:100%}
-        .snap-settings-head{position:sticky;top:0;z-index:4;height:64px;background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border-bottom:1px solid #e9e9e9;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
-        .snap-settings-close{width:38px;height:38px;border:0;border-radius:13px;background:#f0f0f0;color:#111;display:flex;align-items:center;justify-content:center}
-        .snap-settings-title{font-size:16px;font-weight:950;letter-spacing:-.03em}
-        .snap-settings-head-spacer{width:38px}
-        .snap-settings-body{padding:18px 14px 32px}
-        .snap-settings-profile{background:#fff;border:1px solid #e9e9e9;border-radius:22px;padding:18px;display:flex;align-items:center;gap:12px;margin-bottom:12px}
-        .snap-settings-avatar{width:52px;height:52px;border-radius:18px;background:#111;color:#ffdf00;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:950;overflow:hidden}
-        .snap-settings-avatar img{width:100%;height:100%;object-fit:cover}
-        .snap-settings-profile strong{display:block;font-size:13px;font-weight:950}
-        .snap-settings-profile span{display:block;color:#999;font-size:9px;font-weight:700;margin-top:3px;direction:ltr;text-align:right}
-        .snap-settings-section{margin:16px 2px 7px;color:#777;font-size:9px;font-weight:950}
-        .snap-settings-card{background:#fff;border:1px solid #e9e9e9;border-radius:20px;overflow:hidden}
-        .snap-setting-row{width:100%;min-height:58px;background:#fff;border:0;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:11px;padding:10px 13px;text-align:right;color:#111}
-        .snap-setting-row:last-child{border-bottom:0}
-        .snap-setting-icon{width:34px;height:34px;border-radius:11px;background:#f3f3f3;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-        .snap-setting-copy{flex:1;min-width:0}
-        .snap-setting-copy strong{display:block;font-size:10px;font-weight:900}
-        .snap-setting-copy span{display:block;font-size:8px;color:#999;font-weight:700;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .snap-setting-row>svg{color:#aaa}
-        .snap-form{background:#fff;border:1px solid #e9e9e9;border-radius:20px;padding:15px}
-        .snap-field{margin-bottom:13px}
-        .snap-field:last-child{margin-bottom:0}
-        .snap-field label{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:900;margin-bottom:7px;color:#333}
-        .snap-field input{width:100%;height:44px;border:1px solid #e2e2e2;background:#f8f8f8;border-radius:13px;padding:0 12px;outline:none;font-size:11px;font-weight:700;color:#111;box-sizing:border-box}
-        .snap-field input:focus{background:#fff;border-color:#111;box-shadow:0 0 0 3px rgba(0,0,0,.06)}
-        .snap-save{width:100%;height:46px;border:0;border-radius:14px;background:#111;color:#fff;font-size:10px;font-weight:950;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px}
-        .snap-save:hover{background:#242424}
-        .snap-save:disabled{opacity:.55}
-        .snap-cancel{width:100%;height:42px;border:1px solid #e3e3e3;border-radius:14px;background:#fff;color:#555;font-size:10px;font-weight:900;margin-top:8px}
-        .snap-error{background:#fff0f0;border:1px solid #ffd5d5;color:#c22;border-radius:13px;padding:10px;font-size:9px;font-weight:800;margin-top:12px}
-        .snap-success{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px;text-align:center;background:#fff}
-        .snap-success-icon{width:72px;height:72px;border-radius:24px;background:#ffdf00;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;color:#111}
-        .snap-success h3{font-size:19px;font-weight:950;margin:0}
-        .snap-success p{font-size:10px;color:#777;font-weight:700;line-height:1.8;margin:7px 0}
-        .snap-security{display:flex;gap:10px;align-items:flex-start;background:#111;color:#fff;border-radius:20px;padding:15px;margin-top:12px}
-        .snap-security-icon{width:34px;height:34px;border-radius:11px;background:#ffdf00;color:#111;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-        .snap-security strong{font-size:10px;display:block}.snap-security span{font-size:8px;line-height:1.8;color:#aaa;display:block;margin-top:3px}
-        @media(min-width:640px){
-          .snap-settings-overlay{padding:20px}
-          .snap-settings-shell{height:auto;max-height:92vh;max-width:620px;border-radius:28px;box-shadow:0 30px 100px rgba(0,0,0,.35)}
-          .snap-settings-inner{min-height:0}
-          .snap-settings-head{border-radius:28px 28px 0 0}
-          .snap-success{min-height:420px}
-        }
+        .snap-settings-overlay{position:fixed;inset:0;z-index:70;background:rgba(5,18,15,.58);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:12px;font-family:'Noto Kufi Arabic','Vazirmatn',system-ui,sans-serif;color:#10201c}
+        .snap-settings-shell{width:100%;height:min(94vh,820px);max-width:760px;background:#f4f8f6;border:1px solid rgba(255,255,255,.75);overflow:hidden;border-radius:30px;box-shadow:0 35px 120px rgba(0,0,0,.34);animation:settingsIn .28s cubic-bezier(.22,1,.36,1)}
+        .snap-settings-inner{width:100%;height:100%;display:flex;flex-direction:column}
+        .snap-settings-head{height:76px;flex:0 0 auto;background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border-bottom:1px solid #e3ece8;display:flex;align-items:center;justify-content:space-between;padding:0 22px}
+        .snap-settings-close{width:42px;height:42px;border:1px solid #e1eae7;border-radius:14px;background:#f4f8f6;color:#17312b;display:flex;align-items:center;justify-content:center;transition:.18s}.snap-settings-close:hover{background:#12796b;color:#fff;border-color:#12796b;transform:translateY(-1px)}
+        .snap-settings-title{font-size:18px;font-weight:950;letter-spacing:-.04em}.snap-settings-head-spacer{width:42px}
+        .snap-settings-body{padding:22px;overflow:auto;display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;align-content:start}
+        .snap-settings-profile{grid-column:1/-1;background:linear-gradient(135deg,#fff,#f3faf7);border:1px solid #dfeae6;border-radius:22px;padding:17px;display:flex;align-items:center;gap:13px;box-shadow:0 8px 25px rgba(13,92,80,.05)}
+        .snap-settings-avatar{width:58px;height:58px;border-radius:18px;background:linear-gradient(135deg,#12796b,#0d5c50);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:950;overflow:hidden;flex:0 0 auto;box-shadow:0 8px 20px rgba(13,92,80,.16)}.snap-settings-avatar img{width:100%;height:100%;object-fit:cover}.snap-settings-profile strong{display:block;font-size:13px;font-weight:950}.snap-settings-profile span{display:block;color:#7b8c87;font-size:9px;font-weight:700;margin-top:4px;direction:ltr;text-align:right}
+        .snap-settings-section{margin:2px 3px 7px;color:#73837e;font-size:9px;font-weight:950}.snap-settings-card,.snap-form{background:#fff;border:1px solid #e1ebe7;border-radius:20px;overflow:hidden;box-shadow:0 7px 24px rgba(13,92,80,.04)}.snap-form{padding:17px}.snap-field{margin-bottom:14px}.snap-field:last-child{margin-bottom:0}.snap-field label{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:950;margin-bottom:7px;color:#233b35}.snap-field input{width:100%;height:46px;border:1px solid #dfe8e5;background:#f7faf9;border-radius:13px;padding:0 13px;outline:none;font-size:11px;font-weight:700;color:#10201c;box-sizing:border-box;transition:.16s}.snap-field input:focus{background:#fff;border-color:#12796b;box-shadow:0 0 0 4px rgba(18,121,107,.09)}
+        .snap-save{width:100%;height:47px;border:0;border-radius:14px;background:linear-gradient(135deg,#12796b,#0d5c50);color:#fff;font-size:10px;font-weight:950;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:15px;box-shadow:0 9px 22px rgba(13,92,80,.18);transition:.18s}.snap-save:hover{transform:translateY(-1px);box-shadow:0 12px 26px rgba(13,92,80,.23)}.snap-save:disabled{opacity:.55}.snap-cancel{width:100%;height:42px;border:1px solid #dfe8e5;border-radius:13px;background:#fff;color:#52645e;font-size:10px;font-weight:900;margin-top:8px}
+        .snap-error{background:#fff2f2;border:1px solid #ffd8d8;color:#c22;border-radius:13px;padding:10px;font-size:9px;font-weight:800;margin-top:12px}.snap-success{min-height:100%;display:flex;align-items:center;justify-content:center;padding:30px;text-align:center;background:#f7fbf9}.snap-success-icon{width:78px;height:78px;border-radius:25px;background:#e7f4f1;margin:0 auto 17px;display:flex;align-items:center;justify-content:center;color:#12796b}.snap-success h3{font-size:20px;font-weight:950;margin:0}.snap-success p{font-size:10px;color:#777;font-weight:700;line-height:1.8;margin:7px 0}.snap-security{display:flex;gap:10px;align-items:flex-start;background:linear-gradient(135deg,#10201c,#173d35);color:#fff;border-radius:20px;padding:15px;box-shadow:0 10px 26px rgba(16,32,28,.12)}.snap-security-icon{width:36px;height:36px;border-radius:12px;background:#e7f4f1;color:#12796b;display:flex;align-items:center;justify-content:center;flex:0 0 auto}.snap-security strong{font-size:10px;display:block}.snap-security span{font-size:8px;line-height:1.8;color:#b8c9c4;display:block;margin-top:3px}
+        .snap-setting-row{width:100%;min-height:64px;background:#fff;border:0;border-bottom:1px solid #edf2f0;display:flex;align-items:center;gap:11px;padding:11px 14px;text-align:right;color:#10201c;transition:.16s}.snap-setting-row:last-child{border-bottom:0}.snap-setting-row:hover{background:#f6faf8}.snap-setting-icon{width:37px;height:37px;border-radius:12px;background:#e9f5f2;color:#12796b;display:flex;align-items:center;justify-content:center;flex:0 0 auto}.snap-setting-copy{flex:1;min-width:0}.snap-setting-copy strong{display:block;font-size:10px;font-weight:950}.snap-setting-copy span{display:block;font-size:8px;color:#87958f;font-weight:700;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.snap-setting-row>svg{color:#a6b5b0}
+        @keyframes settingsIn{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:none}}
+        @media(max-width:680px){.snap-settings-overlay{padding:0;align-items:stretch}.snap-settings-shell{height:100%;max-height:none;border-radius:0;border:0}.snap-settings-head{height:68px;padding:0 15px}.snap-settings-body{display:flex;flex-direction:column;padding:16px 13px calc(28px + env(safe-area-inset-bottom));gap:0}.snap-settings-profile{padding:15px;border-radius:19px}.snap-settings-section{margin-top:15px}.snap-settings-card,.snap-form{border-radius:18px}.snap-settings-title{font-size:16px}}
+        @media(prefers-reduced-motion:reduce){.snap-settings-overlay *{animation:none!important;transition:none!important}}
       `}</style>
 
       <div className="snap-settings-shell">

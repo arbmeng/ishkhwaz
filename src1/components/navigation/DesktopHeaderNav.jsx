@@ -38,6 +38,9 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
     };
   }, [token]);
 
+  // Search, companies and freelancers are one place now (tabs inside the search page).
+  const searchActive = ['search', 'companies', 'freelancers'].includes(activeTab);
+
   const handleNav = (tabId) => {
     soundService.playTick?.();
     setActiveTab(tabId);
@@ -94,41 +97,13 @@ export const DesktopHeaderNav = ({ activeTab, setActiveTab }) => {
             <button
               onClick={() => handleNav('search')}
               className={`px-3.5 py-2 rounded-xl transition-all relative ${
-                activeTab === 'search'
+                searchActive
                   ? 'text-[#12796b] font-black'
                   : 'text-[#5a6b65] hover:text-[#111d1a]'
               }`}
             >
               گەڕان
-              {activeTab === 'search' && (
-                <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />
-              )}
-            </button>
-
-            <button
-              onClick={() => handleNav('companies')}
-              className={`px-3.5 py-2 rounded-xl transition-all relative ${
-                activeTab === 'companies'
-                  ? 'text-[#12796b] font-black'
-                  : 'text-[#5a6b65] hover:text-[#111d1a]'
-              }`}
-            >
-              کۆمپانیاکان
-              {activeTab === 'companies' && (
-                <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />
-              )}
-            </button>
-
-            <button
-              onClick={() => handleNav('freelancers')}
-              className={`px-3.5 py-2 rounded-xl transition-all relative ${
-                activeTab === 'freelancers'
-                  ? 'text-[#12796b] font-black'
-                  : 'text-[#5a6b65] hover:text-[#111d1a]'
-              }`}
-            >
-              کارخوازان
-              {activeTab === 'freelancers' && (
+              {searchActive && (
                 <span className="absolute -bottom-2.5 left-3.5 right-3.5 h-[2.5px] bg-[#12796b] rounded-full" />
               )}
             </button>

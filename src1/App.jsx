@@ -5,7 +5,6 @@ import { BottomNavbar } from './components/navigation/BottomNavbar';
 import { DesktopHeaderNav } from './components/navigation/DesktopHeaderNav';
 import { JobFeed } from './components/freelancer/JobFeed';
 import { Dashboard } from './components/dashboard/Dashboard';
-import { DirectoryPage } from './components/company/DirectoryPage';
 import { UserProfilePage } from './components/profile/UserProfilePage';
 import { PlansPage } from './components/plans/PlansPage';
 import { JobMapPage } from './components/map/JobMapPage';
@@ -13,6 +12,9 @@ import { SplashOnboarding } from './components/onboarding/SplashOnboarding';
 import { RegisterProfileChoicePage } from './components/auth/RegisterProfileChoicePage';
 import { LoginPage } from './components/auth/LoginPage';
 import LandingPage from './components/landing/LandingPage';
+import { getAppPath, isSiteRoot, withApp, installHistoryPrefix } from './utils/appPath';
+
+installHistoryPrefix();
 import { ConnectAuthorizePage } from './components/auth/ConnectAuthorizePage';
 import { AuthModal } from './components/auth/AuthModal';
 import { AccountBlockedModal } from './components/auth/AccountBlockedModal';
@@ -42,7 +44,7 @@ import { FEATURES, canSeePlans } from './config/features';
 // refresh or shared link keeps the id exactly.
 const getJobIdFromUrl = () => {
   if (typeof window === 'undefined') return null;
-  const m = window.location.pathname.match(/^\/(?:dashboard\/)?jobs\/([^/?#]+)/i);
+  const m = getAppPath().match(/^\/(?:dashboard\/)?jobs\/([^/?#]+)/i);
   return m ? decodeURIComponent(m[1]) : null;
 };
 
@@ -81,7 +83,7 @@ function MainAppContent() {
   // URL Path & LocalStorage Sync for Clean Subdomain URLs (e.g. /login, /register, /map, /search, /companies, /cvs, /dashboard, /profile)
   const getInitialTab = () => {
     if (typeof window !== 'undefined') {
-      const path = window.location.pathname.replace(/^\/ishkhwaz|\/$/g, '').replace(/^\/|\/$/g, '').toLowerCase();
+      const path = getAppPath().replace(/^\/ishkhwaz|\/$/g, '').replace(/^\/|\/$/g, '').toLowerCase();
       const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
       const target = hash || path;
 
@@ -133,7 +135,9 @@ function MainAppContent() {
       // visit after that), never wherever the user happened to be when they
       // last closed it.
       if (!target) {
-        return user ? 'home' : 'landing'; // the landing page is the site's front door
+        // "/" is the website (landing page); "/app/" is the app itself (login for guests).
+        if (user) return 'home';
+        return isSiteRoot() ? 'landing' : 'login';
       }
     }
     return 'login';
@@ -146,7 +150,7 @@ function MainAppContent() {
   // /search/{sub} URL, so this default is what most people actually land on.
   const getInitialSearchTab = () => {
     if (typeof window === 'undefined') return 'companies';
-    const path = window.location.pathname.replace(/^\/ishkhwaz|\/$/g, '').replace(/^\/|\/$/g, '').toLowerCase();
+    const path = getAppPath().replace(/^\/ishkhwaz|\/$/g, '').replace(/^\/|\/$/g, '').toLowerCase();
     const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
     const sub = (hash || path).split('/')[1] || '';
     if (sub === 'jobs' || sub === 'job') return 'jobs';
@@ -163,7 +167,7 @@ function MainAppContent() {
   // later, inside a useEffect, races that rewrite and loses every time.
   const [initialShareLinkQuery] = useState(() => {
     if (typeof window === 'undefined') return null;
-    if (window.location.pathname.replace(/\/$/, '') !== '/search') return null;
+    if (getAppPath().replace(/\/$/, '') !== '/search') return null;
     const params = new URLSearchParams(window.location.search);
     return (params.get('company') || params.get('job')) ? window.location.search : null;
   });
@@ -190,7 +194,7 @@ function MainAppContent() {
       else if (tabId === 'job_view') path = `/dashboard/jobs/${encodeURIComponent(params?.jobId ?? viewJobId ?? '')}`;
       else if (tabId === 'job_detail') path = `/jobs/${encodeURIComponent(params?.jobId ?? viewJobId ?? '')}`;
       else if (tabId === 'plans') path = '/plans';
-      else if (tabId === 'home' || tabId === 'landing') path = '/';
+      else if (tabId === 'home') path = '/';
       else if (tabId === 'post_job') path = '/post-job';
       else if (tabId === 'karnama_cv') path = '/cv';
       else if (tabId === 'resumes') path = '/resumes';
@@ -207,8 +211,10 @@ function MainAppContent() {
         // in-app page behind it — so a page's Back button can safely use
         // history.back() and never fall out of the site (a cold deep link's
         // first entry has no state, so it doesn't get the flag).
-        if (params?.replace) window.history.replaceState({ tabId, appNav: !!window.history.state?.appNav }, '', path);
-        else window.history.pushState({ tabId, appNav: true }, '', path);
+        // The landing page is the site root; everything else lives under /app/.
+        const url = tabId === 'landing' ? '/' : withApp(path);
+        if (params?.replace) window.history.replaceState({ tabId, appNav: !!window.history.state?.appNav }, '', url);
+        else window.history.pushState({ tabId, appNav: true }, '', url);
       } catch (e) { }
     }
   };
@@ -297,7 +303,7 @@ function MainAppContent() {
     const handlePopState = () => {
       const initial = getInitialTab();
       setViewJobId(getJobIdFromUrl());
-      const allowedLoggedOut = ['register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'job_detail', 'verify_email', 'forgot_password', 'reset_password'];
+      const allowedLoggedOut = ['landing', 'register', 'login', 'install_app', 'connect', 'home', 'search', 'companies', 'job_detail', 'verify_email', 'forgot_password', 'reset_password'];
       if (!user && !allowedLoggedOut.includes(initial)) {
         setActiveTabState('login');
       } else {
@@ -307,6 +313,13 @@ function MainAppContent() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [user]);
+
+  // A signed-in user who opens the bare website root gets the app: move the URL to /app/ too.
+  useEffect(() => {
+    if (user && activeTab !== 'landing' && isSiteRoot()) {
+      try { window.history.replaceState(window.history.state, '', activeTab === 'home' ? '/app/' : withApp('/' + activeTab)); } catch (e) { }
+    }
+  }, [user, activeTab]);
 
   const handleCompleteSplash = () => {
     // The 3-slide onboarding carousel only ever plays once, on a brand-new
@@ -424,7 +437,7 @@ function MainAppContent() {
     }
 
     if (activeTab === 'freelancers' || activeTab === 'companies') {
-      return <DirectoryPage initialMode={activeTab} onSelectJob={() => setActiveTab('home')} onNavigate={setActiveTab} />;
+      return <SearchPage initialTab={activeTab} onNavigate={setActiveTab} />;
     }
 
     if (activeTab === 'my_applications' || activeTab === 'my_company_dashboard') {

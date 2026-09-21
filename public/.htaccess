@@ -50,6 +50,11 @@
   RewriteCond %{HTTP_HOST} ^ishkhwaz\.
   RewriteRule ^(plans|messages|map|dashboard)/?$ /index.html [L]
 
+  # The app itself lives under /app/ (the site root is the landing page). Same host gate and same reason:
+  # never let a stray folder on the server shadow it.
+  RewriteCond %{HTTP_HOST} ^ishkhwaz\.
+  RewriteRule ^app(/.*)?$ /index.html [L]
+
   # Frontend Single Page App fallback
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f

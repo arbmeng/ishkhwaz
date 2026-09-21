@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useStore } from '../../context/StoreContext';
+import { getAppPath } from '../../utils/appPath';
 import { soundService } from '../../services/soundService';
 import {
   Search, Building2, Briefcase, MapPin, BadgeCheck,
@@ -93,7 +94,7 @@ export const SearchPage = ({ initialTab = 'companies', onNavigate }) => {
   useEffect(() => {
     const slug = activeTab === 'companies' ? 'company' : activeTab;
     const path = `/search/${slug}`;
-    if (window.location.pathname !== path) {
+    if (getAppPath() !== path) {
       try { window.history.pushState({ tabId: 'search', sub: slug }, '', path); } catch (e) { }
     }
   }, [activeTab]);
@@ -113,7 +114,7 @@ export const SearchPage = ({ initialTab = 'companies', onNavigate }) => {
   useEffect(() => {
     const handlePopState = () => {
       if (isEmployer) return;
-      const parts = window.location.pathname.split('/');
+      const parts = getAppPath().split('/');
       const sub = parts[2] || '';
       const freelancerId = parts[3] || null;
       if (sub === 'jobs') setActiveTab('jobs');
@@ -150,7 +151,7 @@ export const SearchPage = ({ initialTab = 'companies', onNavigate }) => {
   // (/search/freelancers/:id) rather than an in-app click — resolved once
   // the freelancers list has actually loaded (it's fetched async).
   const [pendingFreelancerId, setPendingFreelancerId] = useState(() => {
-    const parts = window.location.pathname.split('/');
+    const parts = getAppPath().split('/');
     return parts[2] === 'freelancers' && parts[3] ? parts[3] : null;
   });
   useEffect(() => {
@@ -181,7 +182,7 @@ export const SearchPage = ({ initialTab = 'companies', onNavigate }) => {
     setViewingFreelancerProfile(free);
     openedProfileViaPushRef.current = true;
     const path = `/search/freelancers/${free.id}`;
-    if (window.location.pathname !== path) {
+    if (getAppPath() !== path) {
       try { window.history.pushState({ tabId: 'search', sub: 'freelancers', freelancerId: free.id }, '', path); } catch (e) { }
     }
   };

@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useStore } from '../../context/StoreContext';
 import { soundService } from '../../services/soundService';
 import { compressImageFile } from '../../utils/image';
+import { apiService } from '../../services/api';
+import { kurdistanGovernorates } from '../../data/kurdistanLocations';
 import { signInWithProvider } from '../../services/supabaseClient';
 import { AuthBrandPanel, AuthAssistant, AUTH_PAD_LG } from './AuthBrandPanel';
 
@@ -47,8 +49,8 @@ const TEAL_DEEP = '#0d5c50';
 const TEAL_SOFT = '#e7f4f1';
 
 export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrationComplete, isCompletingProfile = false }) => {
-  const { register, login, user, updateUserProfile } = useAuth();
-  const { addToast, categories: liveCategories = [] } = useStore();
+  const { register, login, user, token, updateUserProfile } = useAuth();
+  const { addToast, categories: liveCategories = [], workTypes: liveWorkTypes = [] } = useStore();
   const fileInputRef = useRef(null);
 
   // Steps: 1 | 2 | 3 | 4 | 5 (Completion)
@@ -109,6 +111,14 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
   const [desiredCategories, setDesiredCategories] = useState([]);
   const [desiredCategory, setDesiredCategory] = useState('');
   const [preferredGov, setPreferredGov] = useState('سلێمانی');
+  const [preferredDist, setPreferredDist] = useState('');
+  const [preferredSub, setPreferredSub] = useState('');
+  // Email confirmation code (sent right after the account is created)
+  const [otpPending, setOtpPending] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [resendIn, setResendIn] = useState(0);
   const [bio, setBio] = useState('');
   const [skills, setSkills] = useState([]);
   const [skillInput, setSkillInput] = useState('');
@@ -285,6 +295,8 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
           avatar,
           bio,
           governorate: preferredGov,
+          district: preferredDist,
+          sub_district: preferredSub,
           favorite_categories: role === 'employer' ? (desiredCategory ? [desiredCategory] : []) : desiredCategories,
           skills: role === 'freelancer' ? skills : undefined,
           company_name: role === 'employer' ? companyName.trim() : '',
@@ -309,6 +321,8 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
           avatar: avatar,
           bio: bio,
           favGov: preferredGov,
+          favDist: preferredDist,
+          favSubDist: preferredSub,
           category: role === 'employer' ? desiredCategory : desiredCategories,
           skills: role === 'freelancer' ? skills : undefined,
           // Company fields (employer only)
@@ -324,6 +338,9 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         });
       }
       soundService.playSuccess();
+      // A brand-new account must confirm its email with the emailed code before it is finished;
+      // a social sign-up (completing profile) already has a verified email.
+      if (!isCompletingProfile) { setOtpPending(true); setResendIn(60); }
       setStep(COMPLETE_STEP);
     } catch (err) {
       const message = err?.message || 'تۆمارکردن سەرکەوتوو نەبوو. تکایە دووبارە هەوڵبدەرەوە.';
@@ -336,6 +353,41 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
   };
 
   const governorates = ['سلێمانی', 'هەولێر', 'دهۆک', 'هەڵەبجە', 'کەرکووک'];
+
+  // City -> district (قەزا) -> sub-district (ناحیە), from the real administrative data.
+  const govObj = kurdistanGovernorates.find(g => g.name_ku === preferredGov);
+  const distOptions = govObj?.districts || [];
+  const distObj = distOptions.find(d => d.name_ku === preferredDist);
+  const subOptions = distObj?.subDistricts || [];
+
+  useEffect(() => {
+    if (resendIn <= 0) return undefined;
+    const t = setTimeout(() => setResendIn(n => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendIn]);
+
+  const submitOtp = async (code) => {
+    if (otpBusy || code.length !== 6) return;
+    setOtpBusy(true); setOtpError('');
+    const res = await apiService.verifyEmailOtp(code, token);
+    setOtpBusy(false);
+    if (res?.success) {
+      soundService.playSuccess();
+      setOtpPending(false);
+    } else {
+      setOtpError(res?.message || 'کۆدەکە هەڵەیە.');
+      setOtpCode('');
+    }
+  };
+
+  const resendOtp = async () => {
+    if (resendIn > 0) return;
+    soundService.playTick();
+    setOtpError('');
+    const res = await apiService.resendVerificationEmail(token);
+    if (res?.success) { setResendIn(60); addToast({ title: 'نێردرایەوە', message: 'کۆدێکی نوێ بۆ ئیمەیڵەکەت نێردرا.', type: 'success' }); }
+    else setOtpError(res?.message || 'ناردنەوە سەرکەوتوو نەبوو.');
+  };
 
   const inputCls = "w-full rounded-2xl bg-white/85 border border-slate-200/90 focus:border-[#12796b] focus:bg-white focus:shadow-[0_0_0_4px_rgba(18,121,107,.08),0_8px_24px_rgba(15,23,42,.04)] outline-none transition-all text-xs text-slate-900 placeholder:text-slate-400";
   const labelCls = "text-xs font-bold text-slate-700 block mb-1.5";
@@ -517,7 +569,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
                 <Phone className="w-4 h-4 absolute right-4 text-slate-400 pointer-events-none" />
                 <span className="absolute right-9 text-xs font-mono font-bold text-slate-400 pointer-events-none">+964</span>
                 <input
-                  type="tel" required placeholder="0750 123 4567" value={phone}
+                  type="tel" required placeholder="750 123 4567" value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/^0+/, ''))}
                   className={`${inputCls} pr-[4.6rem] pl-4 py-3.5 font-mono font-semibold`}
                 />
@@ -526,7 +578,7 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
               <div className="relative flex items-center">
                 <Mail className="w-4 h-4 absolute right-4 text-slate-400 pointer-events-none" />
                 <input
-                  type="email" placeholder="ئیمەیڵ (ئارەزوومەندانە)" value={email}
+                  type="email" required placeholder="ئیمەیڵ (کۆدی دڵنیاکردنەوەت بۆ دێت)" value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className={`${inputCls} pr-11 pl-4 py-3.5 font-mono`}
                 />
@@ -604,6 +656,35 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
                 {liveCategories.map(c => <option key={c.id} value={c.name_ku}>{c.name_ku}</option>)}
               </select>
 
+              {/* location picker */}
+              <div className="space-y-2.5">
+                <label className={labelCls}>شوێنی کۆمپانیا</label>
+                <div className="flex flex-wrap gap-2">
+                  {governorates.map(gov => {
+                    const active = preferredGov === gov;
+                    return (
+                      <button key={gov} type="button" onClick={() => { soundService.playTick(); setPreferredGov(gov); setPreferredDist(''); setPreferredSub(''); }}
+                        className={`px-4 py-2.5 rounded-full text-xs font-bold ${chipActiveCls(active)}`}
+                        style={chipActiveStyle(active)}>
+                        {gov}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className={`grid gap-2 ${subOptions.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  <select value={preferredDist} onChange={e => { setPreferredDist(e.target.value); setPreferredSub(''); }} className={`${inputCls} px-4 py-3`}>
+                    <option value="">قەزا (هەموو)</option>
+                    {distOptions.map(d => <option key={d.id} value={d.name_ku}>{d.name_ku}</option>)}
+                  </select>
+                  {subOptions.length > 0 && (
+                    <select value={preferredSub} onChange={e => setPreferredSub(e.target.value)} className={`${inputCls} px-4 py-3`}>
+                      <option value="">ناحیە (هەموو)</option>
+                      {subOptions.map(sd => <option key={sd.id} value={sd.name_ku}>{sd.name_ku}</option>)}
+                    </select>
+                  )}
+                </div>
+              </div>
+
               {/* Company size & type */}
               <div className="pt-1 space-y-2.5">
                 <div>
@@ -674,19 +755,32 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
                 </div>
               </div>
 
-              <div>
-                <label className={labelCls}>پارێزگای دڵخواز</label>
+              {/* location picker */}
+              <div className="space-y-2.5">
+                <label className={labelCls}>شار و ناوچەی دڵخواز</label>
                 <div className="flex flex-wrap gap-2">
                   {governorates.map(gov => {
                     const active = preferredGov === gov;
                     return (
-                      <button key={gov} type="button" onClick={() => { soundService.playTick(); setPreferredGov(gov); }}
+                      <button key={gov} type="button" onClick={() => { soundService.playTick(); setPreferredGov(gov); setPreferredDist(''); setPreferredSub(''); }}
                         className={`px-4 py-2.5 rounded-full text-xs font-bold ${chipActiveCls(active)}`}
                         style={chipActiveStyle(active)}>
                         {gov}
                       </button>
                     );
                   })}
+                </div>
+                <div className={`grid gap-2 ${subOptions.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  <select value={preferredDist} onChange={e => { setPreferredDist(e.target.value); setPreferredSub(''); }} className={`${inputCls} px-4 py-3`}>
+                    <option value="">قەزا (هەموو)</option>
+                    {distOptions.map(d => <option key={d.id} value={d.name_ku}>{d.name_ku}</option>)}
+                  </select>
+                  {subOptions.length > 0 && (
+                    <select value={preferredSub} onChange={e => setPreferredSub(e.target.value)} className={`${inputCls} px-4 py-3`}>
+                      <option value="">ناحیە (هەموو)</option>
+                      {subOptions.map(sd => <option key={sd.id} value={sd.name_ku}>{sd.name_ku}</option>)}
+                    </select>
+                  )}
                 </div>
               </div>
 
@@ -822,14 +916,14 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
 
               <div>
                 <label className={labelCls}>جۆری کار</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: 'fullTime', label: 'کاتژمێری تەواو' },
-                    { id: 'partTime', label: 'بەشی' },
-                    { id: 'remote', label: 'ڕیمۆت' },
-                  ].map(t => (
+                <div className="flex flex-wrap gap-2">
+                  {/* Work types come from the database (admin-managed); the fallback only covers the moment before they load. */}
+                  {(liveWorkTypes.length
+                    ? liveWorkTypes.map(t => ({ id: t.id, label: t.name_ku }))
+                    : [{ id: 'fullTime', label: 'کاتژمێری تەواو' }, { id: 'partTime', label: 'بەشی' }, { id: 'remote', label: 'ڕیمۆت' }]
+                  ).map(t => (
                     <button key={t.id} type="button" onClick={() => { soundService.playTick(); setReqJobType(t.id); }}
-                      className={`py-2.5 rounded-full text-[11px] font-extrabold ${chipActiveCls(reqJobType === t.id)}`}
+                      className={`flex-1 min-w-[30%] px-3 py-2.5 rounded-full text-[11px] font-extrabold ${chipActiveCls(reqJobType === t.id)}`}
                       style={chipActiveStyle(reqJobType === t.id)}>
                       {t.label}
                     </button>
@@ -954,7 +1048,41 @@ export const RegisterProfileChoicePage = ({ onBack, onSelectOption, onRegistrati
         )}
 
         {/* WELCOME COMPLETION SCREEN */}
-        {step === COMPLETE_STEP && (
+        {step === COMPLETE_STEP && otpPending && (
+          <div className="text-center space-y-5 animate-fadeIn max-w-md mx-auto">
+            <div className="w-20 h-20 rounded-full border-4 flex items-center justify-center mx-auto" style={{ background: TEAL_SOFT, borderColor: TEAL, color: TEAL }}>
+              <Mail className="w-9 h-9" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black" style={{ color: '#111' }}>ئیمەیڵەکەت دڵنیا بکەرەوە</h2>
+              <p className="text-xs text-slate-500 font-medium leading-6">
+                کۆدێکی ٦ ژمارەیی نێردرا بۆ<br />
+                <span dir="ltr" className="font-mono font-bold text-slate-700">{email}</span>
+              </p>
+            </div>
+            <input
+              value={otpCode}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, '').slice(0, 6);
+                setOtpCode(v); setOtpError('');
+                if (v.length === 6) submitOtp(v);
+              }}
+              inputMode="numeric" autoComplete="one-time-code" maxLength={6} dir="ltr" autoFocus
+              placeholder="••••••"
+              className={`${inputCls} py-4 text-center font-mono text-3xl tracking-[0.5em]`}
+            />
+            {otpError && <p className="text-xs font-bold text-rose-600">{otpError}</p>}
+            <button type="button" disabled={otpBusy || otpCode.length !== 6} onClick={() => submitOtp(otpCode)} className={primaryBtnCls} style={primaryBtnStyle}>
+              {otpBusy ? 'خەریکی پشکنینە...' : 'دڵنیاکردنەوە'}
+            </button>
+            <button type="button" onClick={resendOtp} disabled={resendIn > 0} className="text-xs font-bold disabled:opacity-60" style={{ color: TEAL }}>
+              {resendIn > 0 ? `ناردنەوەی کۆد لە ${resendIn} چرکەدا` : 'کۆدەکەم پێنەگەیشت، دووبارە بینێرە'}
+            </button>
+            <p className="text-[10px] text-slate-400">سندوقی Spam یش بپشکنە. کۆدەکە ١٠ خولەک کاردەکات.</p>
+          </div>
+        )}
+
+        {step === COMPLETE_STEP && !otpPending && (
           <div className="text-center space-y-6 animate-fadeIn">
 
             <div className="w-20 h-20 rounded-full border-4 flex items-center justify-center mx-auto" style={{ background: TEAL_SOFT, borderColor: TEAL, color: TEAL }}>

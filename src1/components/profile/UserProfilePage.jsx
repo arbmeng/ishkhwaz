@@ -12,7 +12,7 @@ import { AboutModal } from '../layout/AboutModal';
 import { PlanBadge } from '../ui/PlanBadge';
 import { canSeePlans } from '../../config/features';
 import {
-  Settings, Share2, Camera, FileText, Eye, CheckCircle2, Save,
+  Settings, Share2, Camera, FileText, Eye, CheckCircle2, Save, Pencil, ChevronRight,
   Heart, Trash2, Briefcase, ChevronLeft, LogOut, User,
   Bell, MapPin, Plus, X, Layers, Sparkles, Building2,
   ExternalLink, ShieldCheck, FileCheck,
@@ -54,7 +54,7 @@ const Field = ({ label, children }) => (
 );
 
 const SectionCard = ({ title, icon: SIcon, children, className = '' }) => (
-  <div className={`rounded-2xl border p-5 space-y-4 ${className}`} style={{ background: '#fff', borderColor: '#eef3f1', boxShadow: '0 1px 3px rgba(17,61,54,.04)' }}>
+  <div className={`rounded-2xl border p-5 space-y-4 ${className}`} style={{ background: '#fafbfb', borderColor: '#f0f2f3' }}>
     {title && (
       <div className="flex items-center gap-2 pb-3 border-b" style={{ borderColor: '#f4f7f6' }}>
         {SIcon && (
@@ -553,160 +553,136 @@ export const UserProfilePage = ({ onNavigate }) => {
      Visual direction: centered identity, strong avatar, compact stats,
      white surfaces, warm yellow accent, black typography.
   ══════════════════════════════════════════════════════════════════ */
-  const ProfileHeroImpl = () => (
-    <div className="snap-profile w-full max-w-4xl mx-auto" dir="rtl" style={{ fontFamily: NK }}>
-      <div className="snap-topbar">
-        <button type="button" onClick={() => { soundService.playTick?.(); setShowSettings(true); }}
-          className="snap-settings-btn" aria-label="ڕێکخستنەکان" aria-haspopup="dialog">
-          <Settings className="w-[18px] h-[18px]" />
-          <span>ڕێکخستن</span>
-        </button>
-        <span className="snap-page-title">{isEmployer ? 'پڕۆفایلی کۆمپانیا' : 'پڕۆفایل'}</span>
-        <button type="button" onClick={handleShare} className="snap-icon-btn" aria-label="هاوبەشکردن">
-          <Share2 className="w-[18px] h-[18px]" />
-        </button>
-      </div>
+  const ProfileHeroImpl = () => {
+    // One soft rounded row, used for every menu item (same look as the settings sheet).
+    const row = (key, Icon, title, { hint, onClick, danger } = {}) => (
+      <button key={key} type="button" className={`ap-row${danger ? ' ap-danger' : ''}`} onClick={() => { soundService.playTick?.(); onClick?.(); }}>
+        <span className="ap-row-ic"><Icon className="w-[19px] h-[19px]" /></span>
+        <span className="ap-row-t">{title}</span>
+        {hint != null && hint !== '' && <span className="ap-row-hint">{hint}</span>}
+        {!danger && <ChevronLeft className="ap-chev w-4 h-4" />}
+      </button>
+    );
+    const stats = isEmployer ? [
+      { val: employerJobs.length, label: 'هەلی کار', fn: () => onNavigate?.('my_company_dashboard') },
+      { val: employerReceivedApplications, label: 'داواکاری', fn: () => onNavigate?.('my_company_dashboard') },
+      { val: profileViews, label: 'بینین', fn: () => setShowViewers(true) },
+    ] : [
+      { val: profileViews, label: 'بینین', fn: () => setShowViewers(true) },
+      { val: applCount, label: 'داواکاری', fn: () => onNavigate?.('my_applications') },
+      { val: savedCount, label: 'پاشەکەوت', fn: () => setShowSaved(true) },
+    ];
+    const skillList = skills.length ? skills : parseJsonArray(user?.skills);
 
-      {needsEmailVerification && (
-        <div className="snap-alert">
-          <MailWarning className="w-4 h-4 shrink-0" />
-          <div className="min-w-0 flex-1">
-            <strong>ئیمەیلەکەت پشتڕاست نەکراوەتەوە</strong>
-            <span>{user?.email}</span>
+    return (
+      <div className="ap" dir="rtl" style={{ fontFamily: NK }}>
+        <header className="ap-top">
+          <h1 className="ap-title">{isEmployer ? 'پڕۆفایلی کۆمپانیا' : 'پڕۆفایل'}</h1>
+          <div className="ap-top-actions">
+            <button type="button" className="ap-circle" onClick={handleShare} aria-label="هاوبەشکردن"><Share2 className="w-[18px] h-[18px]" /></button>
+            <button type="button" className="ap-circle" onClick={() => { soundService.playTick?.(); setShowSettings(true); }} aria-label="ڕێکخستنەکان" aria-haspopup="dialog"><Settings className="w-[18px] h-[18px]" /></button>
           </div>
-          <button onClick={handleResendVerification} disabled={resendBusy}>
-            {resendBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'ناردنەوە'}
-          </button>
-        </div>
-      )}
+        </header>
 
-      <section className="snap-identity">
-        <div className="snap-avatar-wrap">
-          <div className="snap-avatar-ring" style={{ '--pct': `${completion}%` }}>
-            <div className="snap-avatar">
-              <button type="button" onClick={() => avatarRef.current?.click()} className="snap-avatar-button" aria-label="گۆڕینی وێنە">
-                {displayAvatar
-                  ? <img src={displayAvatar} alt={displayName} />
-                  : <span>{initial}</span>}
-                <span className="snap-camera"><Camera className="w-4 h-4" /></span>
-              </button>
-            </div>
+        {needsEmailVerification && (
+          <div className="ap-alert">
+            <MailWarning className="w-4 h-4 shrink-0" />
+            <div className="min-w-0 flex-1"><strong>ئیمەیلەکەت پشتڕاست نەکراوەتەوە</strong><span>{user?.email}</span></div>
+            <button onClick={handleResendVerification} disabled={resendBusy}>{resendBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'ناردنەوە'}</button>
           </div>
-          <span className="snap-completion">{completion}%</span>
-        </div>
+        )}
 
-        <div className="snap-name-row">
-          <h1>{displayName}</h1>
-          {isVIP && <PlanBadge plan={userPlanTier.id} size="sm" />}
-        </div>
-        <p className="snap-handle">{displayTitle}</p>
-        <p className="snap-location">{location || 'سلێمانی'}{joinYear ? ` · ئەندام لە ${joinYear}` : ''}</p>
-
-        <div className="snap-actions">
-          <button onClick={() => { soundService.playTick?.(); setShowEdit(true); }} className="snap-primary">
-            <UserRoundCheck className="w-4 h-4" /> {isEmployer ? 'دەستکاری کۆمپانیا' : 'دەستکاری پڕۆفایل'}
-          </button>
-          {!isEmployer && (
-            <button onClick={() => { soundService.playTick?.(); onNavigate?.('resumes'); }} className="snap-secondary">
-              <FileText className="w-4 h-4" /> CV
+        <section className="ap-id">
+          <div className="ap-avatar-wrap">
+            <button type="button" className="ap-avatar" onClick={() => avatarRef.current?.click()} aria-label="گۆڕینی وێنە">
+              {displayAvatar ? <img src={displayAvatar} alt={displayName} /> : <span>{initial}</span>}
             </button>
-          )}
-        </div>
+            <button type="button" className="ap-pencil" onClick={() => avatarRef.current?.click()} aria-label="گۆڕینی وێنە"><Pencil className="w-3 h-3" /></button>
+          </div>
+          <div className="ap-id-text">
+            <h2>{displayName}{isVIP && <PlanBadge plan={userPlanTier.id} size="sm" />}</h2>
+            <p dir="ltr">{user?.email || user?.phone || displayTitle}</p>
+            <span className="ap-chip">{displayTitle}{location ? ` · ${govObj?.name_ku || ''}` : ''}</span>
+          </div>
+        </section>
 
-        <div className="snap-stats">
-          {(isEmployer ? [
-            { val: employerJobs.length, label: 'هەلی کار', fn: () => onNavigate?.('my_company_dashboard') },
-            { val: employerReceivedApplications, label: 'داواکاری', fn: () => onNavigate?.('my_company_dashboard') },
-            { val: profileViews, label: 'بینین', fn: () => setShowViewers(true) },
-          ] : [
-            { val: profileViews, label: 'بینین', fn: () => setShowViewers(true) },
-            { val: applCount, label: 'داواکاری', fn: () => onNavigate?.('my_applications') },
-            { val: savedCount, label: 'پاشەکەوت', fn: () => setShowSaved(true) },
-          ]).map(({ val, label, fn }) => (
-            <button key={label} onClick={() => { soundService.playTick?.(); fn(); }} className="snap-stat">
+        <div className="ap-stats">
+          {stats.map(({ val, label, fn }) => (
+            <button key={label} type="button" className="ap-stat" onClick={() => { soundService.playTick?.(); fn(); }}>
               <strong>{val}</strong><span>{label}</span>
             </button>
           ))}
         </div>
-      </section>
 
-      <div className="snap-completion-card">
-        <div>
-          <span>پڕۆفایلی پیشەیی</span>
-          <strong>{completion}% تەواوە</strong>
+        <div className="ap-progress-card">
+          <div className="ap-progress-top"><span>تەواوی پڕۆفایل</span><strong>{completion}%</strong></div>
+          <div className="ap-bar"><i style={{ width: `${completion}%` }} /></div>
+          {completion < 90 && (
+            <div className="ap-progress-foot">
+              <small>زانیارییە کەمەکان تەواو بکە بۆ پڕۆفایلێکی بەهێزتر.</small>
+              <button type="button" onClick={() => { soundService.playTick?.(); setShowEdit(true); }}>تەواوکردن</button>
+            </div>
+          )}
         </div>
-        <div className="snap-progress"><i style={{ width: `${completion}%` }} /></div>
-        <div className="snap-completion-foot">
-          <p>{completion >= 90 ? 'پڕۆفایلەکەت ئامادەیە.' : 'زانیارییە کەمەکان تەواو بکە بۆ پڕۆفایلێکی بەهێزتر.'}</p>
-          {completion < 90 && <button type="button" onClick={() => { soundService.playTick?.(); setShowEdit(true); }}>تەواوکردن</button>}
-        </div>
-      </div>
 
-      <div className="snap-grid">
-        <section className="snap-card snap-about">
-          <div className="snap-section-head"><span>دەربارە</span><button onClick={() => setShowEdit(true)}>دەستکاری</button></div>
+        <div className="ap-label">گشتی</div>
+        <div className="ap-group">
+          {row('edit', User, isEmployer ? 'دەستکاری کۆمپانیا' : 'دەستکاری پڕۆفایل', { onClick: () => setShowEdit(true) })}
+          {isFreelancer && row('cv', FileText, 'کارنامەکانم (CV)', { hint: user?.cv_url ? 'بارکراوە' : '', onClick: () => onNavigate?.('resumes') })}
+          {isFreelancer && row('apps', Briefcase, 'داواکارییەکانم', { hint: applCount, onClick: () => onNavigate?.('my_applications') })}
+          {isFreelancer && row('saved', Heart, 'کارە پاشەکەوتکراوەکان', { hint: savedCount, onClick: () => setShowSaved(true) })}
+          {isEmployer && row('dash', Briefcase, 'داشبۆردی کۆمپانیا', { hint: employerJobs.length, onClick: () => onNavigate?.('my_company_dashboard') })}
+          {row('viewers', Eye, 'بینەرانی پڕۆفایل', { hint: profileViews, onClick: () => setShowViewers(true) })}
+        </div>
+
+        <div className="ap-label">دەربارە</div>
+        <section className="ap-card">
+          <div className="ap-card-head"><span>{isEmployer ? 'دەربارەی کۆمپانیا' : 'دەربارەی من'}</span><button onClick={() => setShowEdit(true)}>دەستکاری</button></div>
           <p>{bio || user?.bio || (isEmployer ? 'کورتەیەک دەربارەی کۆمپانیاکەت بنووسە.' : 'کورتەیەک دەربارەی خۆت و ئەزموونەکانت بنووسە.')}</p>
+          <div className="ap-place"><MapPin className="w-4 h-4" />{location || 'سلێمانی'}{joinYear ? ` · ئەندام لە ${joinYear}` : ''}</div>
         </section>
 
-        {isFreelancer ? (
+        {isFreelancer && (
           <>
-            <section className="snap-card">
-              <div className="snap-section-head"><span>کارنامەکان</span><button onClick={() => onNavigate?.('resumes')}>هەموو</button></div>
-              <button className="snap-list-row" onClick={() => onNavigate?.('resumes')}>
-                <span className="snap-list-icon"><FileText className="w-5 h-5" /></span>
-                <span><strong>کارنامەی فەرمی</strong><small>{user?.cv_url ? 'سیڤی بارکراوە' : 'دروستکردنی CV'}</small></span>
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-            </section>
-
-            <section className="snap-card">
-              <div className="snap-section-head"><span>شوێن</span></div>
-              <div className="snap-list-row static">
-                <span className="snap-list-icon"><MapPin className="w-5 h-5" /></span>
-                <span><strong>{govObj?.name_ku || 'سلێمانی'}{distObj?.name_ku ? `، ${distObj.name_ku}` : ''}</strong><small>ناوچەی کارکردن</small></span>
+            <section className="ap-card">
+              <div className="ap-card-head"><span>شارەزایی</span><button onClick={() => setShowEdit(true)}>زیادکردن</button></div>
+              <div className="ap-chips">
+                {skillList.map(sk => <span key={sk}>#{String(sk).replace(/\s+/g, '_')}</span>)}
+                {skillList.length === 0 && <small>هیچ شارەزاییەک زیاد نەکراوە.</small>}
               </div>
             </section>
-
-            <section className="snap-card snap-wide">
-              <div className="snap-section-head"><span>شارەزایی</span><button onClick={() => setShowEdit(true)}>زیادکردن</button></div>
-              <div className="snap-chips">
-                {(skills.length ? skills : parseJsonArray(user?.skills)).map(s => <span key={s}>{s}</span>)}
-                {skills.length === 0 && !parseJsonArray(user?.skills).length && <small>هیچ شارەزاییەک زیاد نەکراوە.</small>}
-              </div>
-            </section>
-
-            <section className="snap-card snap-wide">
-              <div className="snap-section-head"><span>ئەزموونی کار</span><button onClick={() => setShowEdit(true)}>زیادکردن</button></div>
-              {experiences.length === 0 ? <p className="snap-empty">هیچ ئەزموونێک زیاد نەکراوە.</p> : (
-                <div className="snap-timeline">
+            <section className="ap-card">
+              <div className="ap-card-head"><span>ئەزموونی کار</span><button onClick={() => setShowEdit(true)}>زیادکردن</button></div>
+              {experiences.length === 0 ? <small className="ap-empty">هیچ ئەزموونێک زیاد نەکراوە.</small> : (
+                <div className="ap-timeline">
                   {experiences.map((exp, i) => (
-                    <div className="snap-experience" key={exp.id || i}>
-                      <span className="snap-dot" />
-                      <div><div className="snap-exp-top"><strong>{exp.title}</strong><small>{exp.period}</small></div>{exp.description && <p>{exp.description}</p>}</div>
+                    <div className="ap-exp" key={exp.id || i}>
+                      <span className="ap-dot" />
+                      <div><div className="ap-exp-top"><strong>{exp.title}</strong><small>{exp.period}</small></div>{exp.description && <p>{exp.description}</p>}</div>
                     </div>
                   ))}
                 </div>
               )}
             </section>
           </>
-        ) : (
-          <>
-            {Number(user?.verified) === 1 && (
-              <section className="snap-card snap-wide snap-verified"><ShieldCheck className="w-5 h-5" /><span>هەژماری پشتڕاستکراوە</span></section>
-            )}
-            <section className="snap-card">
-              <div className="snap-section-head"><span>شوێن</span></div>
-              <div className="snap-list-row static"><span className="snap-list-icon"><MapPin className="w-5 h-5" /></span><span><strong>{govObj?.name_ku || 'سلێمانی'}</strong><small>{distObj?.name_ku || 'ناوچەی کارکردن'}</small></span></div>
-            </section>
-            <section className="snap-card">
-              <div className="snap-section-head"><span>هەلی کار</span><button onClick={() => onNavigate?.('my_company_dashboard')}>بینین</button></div>
-              <div className="snap-list-row static"><span className="snap-list-icon"><Briefcase className="w-5 h-5" /></span><span><strong>{employerJobs.length}</strong><small>هەلی کار بڵاوکراوە</small></span></div>
-            </section>
-          </>
         )}
+        {isEmployer && Number(user?.verified) === 1 && (
+          <section className="ap-card ap-verified"><ShieldCheck className="w-5 h-5" /><span>هەژماری پشتڕاستکراوە</span></section>
+        )}
+
+        <div className="ap-label">ڕێکخستن</div>
+        <div className="ap-group">
+          <div className="ap-row ap-static">
+            <span className="ap-row-ic"><Bell className="w-[19px] h-[19px]" /></span>
+            <span className="ap-row-t">ئاگادارکردنەوەکان</span>
+            <button type="button" role="switch" aria-checked={pushEnabled} aria-label="ئاگادارکردنەوەکان" className="ap-switch" onClick={handleTogglePush} disabled={pushBusy}><i /></button>
+          </div>
+          {row('settings', Settings, 'ڕێکخستنەکان', { onClick: () => setShowSettings(true) })}
+          {row('logout', LogOut, 'چوونەدەرەوە', { onClick: () => setShowLogout(true), danger: true })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
   const EditModalImpl = () => {
     const [activeSection, setActiveSection] = useState(isEmployer ? 'company_info' : 'basic');
 
@@ -737,42 +713,20 @@ export const UserProfilePage = ({ onNavigate }) => {
     ];
 
     // Shared field styling — one place so every tab's inputs stay consistent.
-    const fieldCls = 'w-full bg-white border rounded-xl px-4 py-3 text-xs font-bold outline-none transition';
-    const fieldStyle = { borderColor: '#e4eae7', color: TXT };
-    const fieldFocus = 'focus:border-[#12796b]';
+    const fieldCls = 'w-full bg-[#f6f7f8] border border-transparent rounded-2xl px-4 py-3.5 text-[13px] font-medium outline-none transition';
+    const fieldStyle = { color: TXT };
+    const fieldFocus = 'focus:bg-white focus:border-[#12796b]/40 focus:shadow-[0_0_0_4px_rgba(18,121,107,.08)]';
     return (
       <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-0 lg:p-6"
         style={{ animation: 'profileFadeUp 0.25s ease both' }}>
         <div
-          className="w-full max-w-full lg:max-w-5xl bg-white rounded-none lg:rounded-2xl min-h-screen lg:min-h-0 max-h-screen lg:max-h-[90vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
+          className="ap-edit w-full max-w-full lg:max-w-4xl bg-white rounded-none lg:rounded-[32px] min-h-screen lg:min-h-0 max-h-screen lg:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
           onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}
         >
-          {/* Header Bar */}
-          <div
-            className="px-6 flex items-center justify-between shrink-0 relative overflow-hidden"
-            style={{
-              paddingTop: 'max(20px, calc(env(safe-area-inset-top) + 16px))',
-              paddingBottom: '20px',
-              background: `linear-gradient(120deg, ${TEAL_DEEP}, ${TEAL})`,
-            }}
-          >
-            <div
-              className="absolute inset-0 pointer-events-none opacity-[0.08]"
-              style={{
-                backgroundImage: `repeating-linear-gradient(45deg, #fff 0 1.5px, transparent 1.5px 22px)`,
-              }}
-            />
-            <button onClick={() => setShowEdit(false)} className="w-9 h-9 rounded-2xl flex items-center justify-center transition active:scale-95 relative" style={{ background: 'rgba(255,255,255,0.15)', color: '#fff' }}>
-              <X className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-2.5 relative">
-              <h3 className="text-sm sm:text-base font-black text-white">
-                {isEmployer ? 'دەستکاری پڕۆفایلی کۆمپانیا' : 'دەستکاری پڕۆفایل'}
-              </h3>
-              <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.15)' }}>
-                {isEmployer ? <Building2 className="w-4 h-4 text-white" /> : <User className="w-4 h-4 text-white" />}
-              </div>
-            </div>
+          {/* Header — soft wash, round back button, big title (same look as the profile page) */}
+          <div className="ap-modal-head shrink-0" style={{ paddingTop: 'max(16px, calc(env(safe-area-inset-top) + 12px))' }}>
+            <button onClick={() => setShowEdit(false)} className="ap-circle" aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
+            <h3>{isEmployer ? 'دەستکاری پڕۆفایلی کۆمپانیا' : 'دەستکاری پڕۆفایل'}</h3>
           </div>
 
           <div
@@ -1121,37 +1075,12 @@ export const UserProfilePage = ({ onNavigate }) => {
 
           </div>
 
-          {/* Sticky footer — save/cancel always reachable, same pattern as the other modals */}
-          <div
-            className="px-6 border-t flex items-center justify-between gap-3 bg-white shrink-0"
-            style={{
-              borderColor: '#eef3f1',
-              paddingTop: '14px',
-              paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 14px))',
-            }}
-          >
-            <span className="text-xs font-bold hidden sm:block" style={{ color: MUTED }}>
-              {tabs.find(t => t.id === activeSection)?.label}
-            </span>
-            <div className="flex items-center gap-2 flex-1 sm:flex-none">
-              <button
-                type="button"
-                onClick={() => setShowEdit(false)}
-                className="flex-1 sm:flex-none py-3 sm:py-2.5 px-4 rounded-xl border text-xs font-bold transition active:scale-95"
-                style={{ background: 'white', borderColor: '#e4eae7', color: SUB }}
-              >
-                داخستن
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="flex-1 sm:flex-none py-3 sm:py-2.5 px-6 rounded-xl text-white text-xs font-black shadow-sm flex items-center justify-center gap-2 active:scale-95 transition"
-                style={{ background: TEAL }}
-              >
-                {saved ? <><CheckCircle2 className="w-4 h-4" /> پاشەکەوتکرا</> : <><Save className="w-4 h-4" /> {saving ? 'خەریکی...' : 'پاشەکەوتکردن'}</>}
-              </button>
-            </div>
+          {/* Footer — always-reachable save pill */}
+          <div className="ap-modal-foot shrink-0" style={{ paddingBottom: 'max(14px, calc(env(safe-area-inset-bottom) + 14px))' }}>
+            <button type="button" onClick={() => setShowEdit(false)} className="ap-ghost">داخستن</button>
+            <button type="button" onClick={handleSave} disabled={saving} className="ap-save">
+              {saved ? <><CheckCircle2 className="w-4 h-4" /> پاشەکەوتکرا</> : <><Save className="w-4 h-4" /> {saving ? 'خەریکی...' : 'پاشەکەوتکردن'}</>}
+            </button>
           </div>
 
         </div>
@@ -1164,59 +1093,46 @@ export const UserProfilePage = ({ onNavigate }) => {
      sticky desktop header (z-50) would otherwise paint over the backdrop. */
   const renderSettings = () => {
     const go = (fn) => () => { soundService.playTick?.(); setShowSettings(false); fn(); };
+    const item = (Icon, title, hint, fn, danger) => (
+      <button type="button" className={`ap-row${danger ? ' ap-danger' : ''}`} onClick={go(fn)}>
+        <span className="ap-row-ic"><Icon className="w-[19px] h-[19px]" /></span>
+        <span className="ap-row-t">{title}{hint && <small>{hint}</small>}</span>
+        {!danger && <ChevronLeft className="ap-chev w-4 h-4" />}
+      </button>
+    );
     return createPortal(
-      <div className="snap-sheet-overlay" onClick={() => setShowSettings(false)}>
-        <div className="snap-sheet" role="dialog" aria-modal="true" aria-label="ڕێکخستنەکان" dir="rtl" onClick={e => e.stopPropagation()}>
-          <div className="snap-sheet-grab" aria-hidden="true" />
-          <header className="snap-sheet-head">
+      <div className="ap-overlay" onClick={() => setShowSettings(false)}>
+        <div className="ap-sheet" role="dialog" aria-modal="true" aria-label="ڕێکخستنەکان" dir="rtl" onClick={e => e.stopPropagation()}>
+          <div className="ap-modal-head">
+            <button type="button" className="ap-circle" onClick={() => setShowSettings(false)} aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
             <h2>ڕێکخستنەکان</h2>
-            <button type="button" className="snap-icon-btn" onClick={() => setShowSettings(false)} aria-label="داخستن"><X className="w-5 h-5" /></button>
-          </header>
-          <div className="snap-sheet-body">
-            <div className="snap-sheet-account">
-              <div className="snap-sheet-avatar">{displayAvatar ? <img src={displayAvatar} alt="" /> : <span>{initial}</span>}</div>
-              <div className="min-w-0 flex-1">
-                <strong>{displayName}</strong>
-                <span dir="ltr">{user?.phone || user?.email || ''}</span>
-              </div>
+          </div>
+          <div className="ap-sheet-body">
+            <div className="ap-account">
+              <div className="ap-account-av">{displayAvatar ? <img src={displayAvatar} alt="" /> : <span>{initial}</span>}</div>
+              <div className="min-w-0 flex-1"><strong>{displayName}</strong><span dir="ltr">{user?.email || user?.phone || ''}</span></div>
               <button type="button" onClick={go(() => setShowEdit(true))}>دەستکاری</button>
             </div>
 
-            <div className="snap-sheet-label">ئاگادارکردنەوە</div>
-            <div className="snap-sheet-group">
-              <div className="snap-row" style={{ cursor: 'default' }}>
-                <span className="snap-row-icon"><Bell className="w-[18px] h-[18px]" /></span>
-                <span className="snap-row-copy"><strong>ئاگادارکردنەوەی ئامێر</strong><small>{pushEnabled ? 'چالاکە' : 'ناچالاکە'}</small></span>
-                <button type="button" role="switch" aria-checked={pushEnabled} aria-label="ئاگادارکردنەوەی ئامێر"
-                  className="snap-switch" onClick={handleTogglePush} disabled={pushBusy}><i /></button>
+            <div className="ap-label">ئاگادارکردنەوە</div>
+            <div className="ap-group">
+              <div className="ap-row ap-static">
+                <span className="ap-row-ic"><Bell className="w-[19px] h-[19px]" /></span>
+                <span className="ap-row-t">ئاگادارکردنەوەی ئامێر<small>{pushEnabled ? 'چالاکە' : 'ناچالاکە'}</small></span>
+                <button type="button" role="switch" aria-checked={pushEnabled} aria-label="ئاگادارکردنەوەی ئامێر" className="ap-switch" onClick={handleTogglePush} disabled={pushBusy}><i /></button>
               </div>
             </div>
 
-            <div className="snap-sheet-label">هەژمار و یارمەتی</div>
-            <div className="snap-sheet-group">
-              {canSeePlans(user) && (
-                <button type="button" className="snap-row" onClick={go(() => onNavigate?.('plans'))}>
-                  <span className="snap-row-icon"><Sparkles className="w-[18px] h-[18px]" /></span>
-                  <span className="snap-row-copy"><strong>پلانەکانی ئیش خواز</strong><small>{userPlanTier ? `پلانی ئێستا: ${userPlanTier.name_ku}` : 'بەرزکردنەوەی هەژمار'}</small></span>
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-              )}
-              <button type="button" className="snap-row" onClick={go(() => onNavigate?.('how_it_works'))}>
-                <span className="snap-row-icon"><HelpCircle className="w-[18px] h-[18px]" /></span>
-                <span className="snap-row-copy"><strong>چۆنیەتی کارکردنی ئەپ</strong><small>چوونەژوورەوە و بەکارهێنانی سیستەم</small></span>
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button type="button" className="snap-row" onClick={go(() => setShowAbout(true))}>
-                <span className="snap-row-icon"><Info className="w-[18px] h-[18px]" /></span>
-                <span className="snap-row-copy"><strong>دەربارەی ئیش خواز</strong><small>زانیاری و پەیوەندی پشتگیری</small></span>
-                <ChevronLeft className="w-4 h-4" />
-              </button>
+            <div className="ap-label">هەژمار و یارمەتی</div>
+            <div className="ap-group">
+              {canSeePlans(user) && item(Sparkles, 'پلانەکانی ئیش خواز', userPlanTier ? `پلانی ئێستا: ${userPlanTier.name_ku}` : 'بەرزکردنەوەی هەژمار', () => onNavigate?.('plans'))}
+              {item(HelpCircle, 'چۆنیەتی کارکردنی ئەپ', 'چوونەژوورەوە و بەکارهێنانی سیستەم', () => onNavigate?.('how_it_works'))}
+              {item(Info, 'دەربارەی ئیش خواز', 'زانیاری و پەیوەندی پشتگیری', () => setShowAbout(true))}
             </div>
 
-            <button type="button" className="snap-row snap-danger" onClick={go(() => setShowLogout(true))}>
-              <span className="snap-row-icon"><LogOut className="w-[18px] h-[18px]" /></span>
-              <span className="snap-row-copy"><strong>چوونەدەرەوە</strong></span>
-            </button>
+            <div className="ap-group" style={{ marginTop: 18 }}>
+              {item(LogOut, 'چوونەدەرەوە', '', () => setShowLogout(true), true)}
+            </div>
           </div>
         </div>
       </div>,
@@ -1230,10 +1146,10 @@ export const UserProfilePage = ({ onNavigate }) => {
       style={{ animation: 'profileFadeUp 0.25s ease both' }}>
       <div className="w-full max-w-lg bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
         onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
-        <div className="p-5 border-b border-[#f0f4f2] flex items-center justify-between bg-[#fbfdfc]">
-          <button onClick={() => setShowSaved(false)} className="w-9 h-9 rounded-full bg-[#f0f4f2] flex items-center justify-center transition"><X className="w-5 h-5 text-[#4a5854]" /></button>
-          <h3 className="text-lg font-black flex items-center gap-2" style={{ color: '#1a2321' }}>
-            <Heart className="w-5 h-5 fill-rose-500 text-rose-500" /> کارە پاشەکەوتکراوەکان ({savedList.length})
+        <div className="ap-modal-head">
+          <button onClick={() => setShowSaved(false)} className="ap-circle" aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
+          <h3>
+            کارە پاشەکەوتکراوەکان ({savedList.length})
           </h3>
         </div>
         <div className="p-5 overflow-y-auto space-y-2.5 flex-1 text-right">
@@ -1259,7 +1175,7 @@ export const UserProfilePage = ({ onNavigate }) => {
           ))}
         </div>
         <div className="p-4 border-t border-[#f0f4f2] bg-[#fbfdfc]">
-          <button onClick={() => setShowSaved(false)} className="w-full py-3 rounded-2xl text-white font-bold text-xs transition" style={{ background: '#111d1a' }}>داخستن</button>
+          <button onClick={() => setShowSaved(false)} className="ap-save w-full">داخستن</button>
         </div>
       </div>
     </div>
@@ -1271,9 +1187,9 @@ export const UserProfilePage = ({ onNavigate }) => {
       style={{ animation: 'profileFadeUp 0.25s ease both' }}>
       <div className="w-full max-w-md bg-white rounded-t-[32px] sm:rounded-2xl max-h-[85vh] flex flex-col shadow-2xl border border-[#e4eae7] overflow-hidden"
         onClick={e => e.stopPropagation()} dir="rtl" style={{ fontFamily: NK }}>
-        <div className="p-5 border-b border-[#f0f4f2] flex items-center justify-between bg-[#fbfdfc]">
-          <button onClick={() => setShowViewers(false)} className="w-9 h-9 rounded-full bg-[#f0f4f2] flex items-center justify-center transition"><X className="w-5 h-5 text-[#4a5854]" /></button>
-          <h3 className="text-lg font-black flex items-center gap-2" style={{ color: '#1a2321' }}><Eye className="w-5 h-5" style={{ color: TEAL }} /> بینەرانی پڕۆفایل</h3>
+        <div className="ap-modal-head">
+          <button onClick={() => setShowViewers(false)} className="ap-circle" aria-label="گەڕانەوە"><ChevronRight className="w-5 h-5" /></button>
+          <h3>بینەرانی پڕۆفایل</h3>
         </div>
         <div className="p-5 overflow-y-auto space-y-3 flex-1 text-right">
           <div className="p-3.5 rounded-2xl text-xs font-bold text-center" style={{ background: '#eef1f0', border: '1px solid #dde3e0', color: '#1e584f' }}>
@@ -1289,7 +1205,7 @@ export const UserProfilePage = ({ onNavigate }) => {
             : <div className="text-center py-8 text-xs font-bold" style={{ color: '#6b7975' }}>بینەرە نوێیەکان لێرەدا دەردەکەون.</div>}
         </div>
         <div className="p-4 border-t border-[#f0f4f2] bg-[#fbfdfc]">
-          <button onClick={() => setShowViewers(false)} className="w-full py-3 rounded-2xl text-white font-bold text-xs" style={{ background: '#111d1a' }}>داخستن</button>
+          <button onClick={() => setShowViewers(false)} className="ap-save w-full">داخستن</button>
         </div>
       </div>
     </div>
@@ -1337,46 +1253,95 @@ export const UserProfilePage = ({ onNavigate }) => {
       <input ref={coverRef} type="file" accept="image/*" onChange={handleCoverChange} className="hidden" />
 
       <style>{`
-        .profile-page-shell{position:relative;isolation:isolate;overflow:hidden;background:#f4f7f6!important}
-        .profile-ambient{position:absolute!important;z-index:0!important;pointer-events:none}
-        .profile-ambient-a{width:520px;height:520px;right:-260px;top:80px;background:radial-gradient(circle,rgba(18,121,107,.11),transparent 68%)}
-        .profile-ambient-b{width:460px;height:460px;left:-260px;bottom:60px;background:radial-gradient(circle,rgba(13,92,80,.07),transparent 68%)}
-        .profile-commandbar{animation:profileFadeUp .45s cubic-bezier(.22,1,.36,1) both}
-        .profile-page-shell{--ink:#10201c;--sub:#50625c;--muted:#7b8c87;--line:#e2ebe7;--teal:#12796b;--teal-deep:#0d5c50;--mint:#e9f5f2;--mint-line:#cfe6df;--bg:#f4f7f6;--danger:#dc2626}
-        .profile-page-shell .profile-commandbar{max-width:1180px;margin-left:auto;margin-right:auto}
-        .profile-page-shell .profile-commandbar>div{border-radius:30px!important;box-shadow:0 18px 55px rgba(13,92,80,.09)!important}
-        .profile-page-shell .profile-commandbar .grid>div{background:linear-gradient(180deg,#fff,#f8fbfa)!important;border-color:#e2ebe7!important;border-radius:18px!important}
-        .snap-profile{color:var(--ink);padding-bottom:42px;max-width:1180px!important;margin:0 auto}
-        .snap-profile button:focus-visible,.snap-sheet button:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
-        .snap-topbar{height:68px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 2px}
-        .snap-page-title{font-size:17px;font-weight:950;letter-spacing:-.03em}
-        .snap-icon-btn{width:46px;height:46px;border:1px solid var(--line);background:rgba(255,255,255,.92);border-radius:15px;display:flex;align-items:center;justify-content:center;color:var(--teal-deep);transition:.2s;box-shadow:0 5px 18px rgba(13,92,80,.05)}
-        .snap-icon-btn:hover{background:var(--teal);border-color:var(--teal);color:#fff;transform:translateY(-2px)}
-        .snap-settings-btn{height:46px;padding:0 17px;border:1px solid var(--mint-line);background:#fff;color:var(--teal-deep);border-radius:15px;display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:950;transition:.2s;box-shadow:0 5px 18px rgba(13,92,80,.05)}
-        .snap-settings-btn:hover{background:var(--teal);border-color:var(--teal);color:#fff;transform:translateY(-2px)}
-        .snap-settings-btn svg{transition:transform .35s}.snap-settings-btn:hover svg{transform:rotate(60deg)}
-        .snap-alert{display:flex;align-items:center;gap:11px;padding:13px 15px;background:#fffaf0;border:1px solid #f2dfae;border-radius:18px;margin-bottom:14px;color:var(--ink);box-shadow:0 8px 24px rgba(94,72,15,.04)}
-        .snap-alert strong,.snap-alert span{display:block;font-size:10px;font-weight:850}.snap-alert span{color:var(--muted);margin-top:2px;direction:ltr;text-align:right}.snap-alert button{border:0;background:var(--teal);color:#fff;border-radius:11px;padding:9px 13px;font-size:10px;font-weight:950}
-        .snap-identity{position:relative;text-align:center;background:linear-gradient(145deg,#fff 0%,#fbfdfc 70%,#f0f8f5 100%);border:1px solid var(--line);border-radius:30px;padding:34px 28px 20px;box-shadow:0 20px 65px rgba(13,92,80,.09);overflow:hidden}
-        .snap-identity:before{content:"";position:absolute;width:300px;height:300px;top:-190px;left:-100px;border-radius:50%;background:radial-gradient(circle,rgba(18,121,107,.12),transparent 68%);pointer-events:none}
-        .snap-avatar-wrap{position:relative;width:128px;height:128px;margin:0 auto 15px}.snap-avatar-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--teal) var(--pct),#dce9e5 0);padding:1px}
-        .snap-avatar-ring:after{content:"";position:absolute;inset:5px;background:#fff;border-radius:50%}.snap-avatar{position:absolute;inset:10px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,var(--teal),var(--teal-deep));z-index:2;box-shadow:0 10px 30px rgba(13,92,80,.18)}
-        .snap-avatar-button{width:100%;height:100%;border:0;padding:0;display:flex;align-items:center;justify-content:center;background:transparent;color:#fff;font-size:42px;font-weight:950;position:relative}.snap-avatar-button img{width:100%;height:100%;object-fit:cover}.snap-camera{position:absolute;bottom:5px;right:5px;width:29px;height:29px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.16)}
-        .snap-completion{position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);background:var(--teal-deep);color:#fff;padding:4px 9px;border-radius:99px;font:900 9px monospace;z-index:3;box-shadow:0 4px 12px rgba(13,92,80,.2)}
-        .snap-name-row{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap}.snap-name-row h1{font-size:29px;line-height:1.2;font-weight:950;letter-spacing:-.04em;margin:0}.snap-handle{margin:6px 0 0;font-size:13px;font-weight:850;color:var(--sub)}.snap-location{margin:6px 0 18px;font-size:10px;font-weight:750;color:var(--muted)}
-        .snap-actions{display:flex;justify-content:center;gap:9px;margin-bottom:19px}.snap-actions button{height:46px;border-radius:15px;padding:0 21px;border:1px solid var(--mint-line);font-size:11px;font-weight:950;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.2s;box-shadow:0 6px 18px rgba(13,92,80,.05)}.snap-actions button:hover{transform:translateY(-2px)}
-        .snap-primary{background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;border-color:var(--teal)!important}.snap-secondary{background:#fff;color:var(--teal-deep)}.snap-secondary:hover{background:var(--mint)}
-        .snap-stats{max-width:620px;margin:auto;border-top:1px solid var(--line);padding-top:15px;display:grid;grid-template-columns:repeat(3,1fr)}.snap-stat{border:0;background:transparent;min-width:0;padding:7px 0;border-radius:13px;transition:.18s}.snap-stat:hover{background:var(--mint)}.snap-stat+.snap-stat{border-right:1px solid var(--line)}.snap-stat strong,.snap-stat span{display:block}.snap-stat strong{font-size:20px;font-weight:950;line-height:1.1;color:var(--teal-deep)}.snap-stat span{font-size:9px;color:var(--muted);font-weight:850;margin-top:5px}
-        .snap-completion-card{background:linear-gradient(135deg,#117a6b 0%,#0d5c50 100%);color:#fff;border-radius:22px;padding:18px 20px;margin:14px 0;box-shadow:0 14px 36px rgba(13,92,80,.20)}.snap-completion-card>div:first-child{display:flex;align-items:center;justify-content:space-between;font-size:10px}.snap-completion-card strong{font-size:12px}.snap-progress{height:7px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;margin-top:11px}.snap-progress i{display:block;height:100%;background:#fff;border-radius:inherit;transition:width .5s ease}.snap-completion-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}.snap-completion-foot p{margin:0;color:rgba(255,255,255,.82);font-size:9px;font-weight:750}.snap-completion-foot button{flex:0 0 auto;border:0;background:#fff;color:var(--teal-deep);border-radius:11px;padding:8px 13px;font-size:10px;font-weight:950}
-        .snap-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.snap-card{grid-column:span 6;background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:22px;padding:19px;min-width:0;box-shadow:0 8px 30px rgba(13,92,80,.045);transition:.2s}.snap-card:hover{box-shadow:0 12px 34px rgba(13,92,80,.075);transform:translateY(-1px)}.snap-wide{grid-column:1/-1}.snap-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.snap-section-head span{font-size:12px;font-weight:950}.snap-section-head button{border:0;background:var(--mint);color:var(--teal-deep);font-size:9px;font-weight:950;padding:7px 10px;border-radius:10px}.snap-section-head button:hover{background:var(--teal);color:#fff}.snap-card>p{font-size:12px;line-height:2;color:var(--sub);margin:0;font-weight:600}
-        .snap-list-row{width:100%;display:flex;align-items:center;gap:11px;border:1px solid transparent;background:var(--bg);border-radius:16px;padding:12px;text-align:right;color:var(--ink);transition:.18s}.snap-list-row:hover{background:var(--mint);border-color:var(--mint-line)}.snap-list-row.static{cursor:default}.snap-list-icon{width:40px;height:40px;border-radius:13px;background:#fff;color:var(--teal);display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-shadow:0 4px 12px rgba(13,92,80,.07)}.snap-list-row>span:nth-child(2){flex:1;min-width:0}.snap-list-row strong,.snap-list-row small{display:block}.snap-list-row strong{font-size:11px;font-weight:950}.snap-list-row small{font-size:9px;color:var(--muted);font-weight:750;margin-top:3px}.snap-chips{display:flex;flex-wrap:wrap;gap:8px}.snap-chips span{padding:8px 12px;border-radius:11px;background:var(--mint);border:1px solid var(--mint-line);color:var(--teal-deep);font-size:10px;font-weight:850}.snap-chips small,.snap-empty{font-size:10px;color:var(--muted);font-weight:750}.snap-timeline{display:flex;flex-direction:column;gap:16px}.snap-experience{display:grid;grid-template-columns:10px 1fr;gap:11px}.snap-dot{width:8px;height:8px;background:var(--teal);border-radius:50%;margin-top:5px;box-shadow:0 0 0 4px var(--mint)}.snap-exp-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.snap-exp-top strong{font-size:11px;font-weight:950}.snap-exp-top small{font-size:9px;color:var(--muted);font-family:monospace}.snap-experience p{margin:5px 0 0;font-size:10px;line-height:1.8;color:var(--sub)}.snap-verified{display:flex;align-items:center;gap:8px;color:var(--teal-deep);font-size:11px;font-weight:950}.snap-verified svg{color:#16a34a}
-        @media(max-width:900px){.snap-profile{max-width:760px!important}.snap-card{grid-column:span 12}}
-        @media(max-width:640px){.profile-page-shell{padding-left:10px!important;padding-right:10px!important}.snap-profile{padding-bottom:22px}.snap-topbar{height:60px}.snap-settings-btn{padding:0 12px}.snap-settings-btn span{display:none}.snap-identity{border-radius:23px;padding:26px 14px 17px}.snap-name-row h1{font-size:23px}.snap-avatar-wrap{width:116px;height:116px}.snap-actions{width:100%}.snap-actions button{flex:1;padding:0 10px}.snap-grid{grid-template-columns:1fr;gap:10px}.snap-card{grid-column:auto;border-radius:18px;padding:16px}.snap-wide{grid-column:auto}.snap-completion-card{border-radius:18px;padding:16px}.profile-commandbar .grid{gap:7px}.profile-commandbar .grid>div{padding:10px!important}.profile-commandbar h2{font-size:20px!important}}
-        @media(prefers-reduced-motion:reduce){.profile-commandbar,.snap-profile *,.snap-sheet,.snap-sheet-overlay{animation:none!important;transition:none!important}}
-        @keyframes snapFade{from{opacity:0}to{opacity:1}}@keyframes snapSheetUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
-        .snap-sheet-overlay{position:fixed;inset:0;z-index:9000;background:rgba(7,17,15,.55);backdrop-filter:blur(10px);display:flex;align-items:flex-end;justify-content:center;animation:snapFade .2s ease both;font-family:'Noto Kufi Arabic','Vazirmatn',system-ui,sans-serif;color:var(--ink)}
-        .snap-sheet{width:100%;max-width:540px;max-height:92vh;background:#f5f8f7;border:1px solid rgba(255,255,255,.7);border-radius:30px 30px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -24px 80px rgba(0,0,0,.28);animation:snapSheetUp .28s cubic-bezier(.22,1,.36,1) both}.snap-sheet-grab{width:42px;height:4px;border-radius:99px;background:#c5d5d0;margin:10px auto 0}.snap-sheet-head{display:flex;align-items:center;justify-content:space-between;padding:10px 19px}.snap-sheet-head h2{margin:0;font-size:17px;font-weight:950}.snap-sheet-body{padding:5px 17px calc(22px + env(safe-area-inset-bottom));overflow-y:auto;display:flex;flex-direction:column;gap:9px}.snap-sheet-account{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:14px;box-shadow:0 7px 24px rgba(13,92,80,.05)}.snap-sheet-avatar{width:54px;height:54px;border-radius:17px;background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:950;overflow:hidden;flex:0 0 auto}.snap-sheet-avatar img{width:100%;height:100%;object-fit:cover}.snap-sheet-account strong{display:block;font-size:13px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.snap-sheet-account span{display:block;font-size:10px;color:var(--muted);font-weight:700;margin-top:3px;text-align:right}.snap-sheet-account>button{height:36px;padding:0 14px;border-radius:12px;border:1px solid var(--mint-line);background:var(--mint);color:var(--teal-deep);font-size:10px;font-weight:950;flex:0 0 auto}.snap-sheet-label{margin:13px 4px 3px;font-size:9px;font-weight:950;color:var(--muted)}.snap-sheet-group{background:#fff;border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 6px 22px rgba(13,92,80,.04)}.snap-row{width:100%;min-height:62px;display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:0;border-bottom:1px solid #edf2f0;text-align:right;color:var(--ink);cursor:pointer;transition:.16s}.snap-row:last-child{border-bottom:0}.snap-row:hover{background:#f5faf8}.snap-row-icon{width:39px;height:39px;border-radius:12px;background:var(--mint);color:var(--teal);display:flex;align-items:center;justify-content:center;flex:0 0 auto}.snap-row-copy{flex:1;min-width:0}.snap-row-copy strong{display:block;font-size:12px;font-weight:950}.snap-row-copy small{display:block;font-size:10px;color:var(--muted);font-weight:700;margin-top:2px}.snap-row>svg{color:#a9b9b4;flex:0 0 auto}.snap-switch{width:48px;height:28px;border-radius:99px;background:#cbd5d3;padding:3px;display:flex;justify-content:flex-start;border:0;transition:background .2s;flex:0 0 auto}.snap-switch i{width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);display:block}.snap-switch[aria-checked=true]{background:var(--teal);justify-content:flex-end}.snap-switch:disabled{opacity:.6}.snap-row.snap-danger{margin-top:8px;border:1px solid #f6d6d6;border-radius:18px;color:var(--danger)}.snap-row.snap-danger .snap-row-icon{background:#fef0f0;color:var(--danger)}
-        @media(min-width:640px){.snap-sheet-overlay{align-items:center;padding:22px}.snap-sheet{border-radius:30px;max-height:88vh}}
+        .profile-page-shell{position:relative;isolation:isolate;overflow:hidden;background:#fff!important}
+        .profile-page-shell:before{content:"";position:absolute;inset:0 0 auto 0;height:420px;z-index:0;pointer-events:none;
+          background:radial-gradient(52% 70% at 8% 0%,rgba(255,205,232,.75),transparent 62%),radial-gradient(60% 80% at 92% 6%,rgba(178,232,255,.85),transparent 64%),radial-gradient(70% 60% at 50% 46%,rgba(196,222,255,.45),transparent 70%)}
+        .profile-page-shell .profile-ambient{display:none}
+        :root{--ink:#111315;--sub:#4b5259;--muted:#8a9096;--soft:#f6f7f8;--line:#ebedf0;--teal:#12796b;--teal-deep:#0d5c50;--mint:#e7f4f1;--danger:#dc2626}
+        .ap{position:relative;z-index:1;max-width:640px;margin:0 auto;color:var(--ink);padding-bottom:36px}
+        .ap button:focus-visible,.ap-sheet button:focus-visible,.ap-edit button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+        .ap-top{display:flex;align-items:center;justify-content:space-between;height:64px}
+        .ap-title{margin:0;font-size:26px;font-weight:800}
+        .ap-top-actions{display:flex;gap:8px}
+        .ap-circle{width:42px;height:42px;border-radius:50%;border:1px solid rgba(17,19,21,.06);background:rgba(255,255,255,.75);backdrop-filter:blur(8px);display:inline-flex;align-items:center;justify-content:center;color:var(--ink);transition:.18s;flex:0 0 auto}
+        .ap-circle:hover{background:#fff;transform:translateY(-1px)}
+        .ap-alert{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#fffaf0;border:1px solid #f2dfae;border-radius:18px;margin:4px 0 12px}
+        .ap-alert strong,.ap-alert span{display:block;font-size:11px;font-weight:700}.ap-alert span{color:var(--muted);margin-top:2px;direction:ltr;text-align:right}
+        .ap-alert button{border:0;background:var(--teal);color:#fff;border-radius:999px;padding:8px 14px;font-size:11px;font-weight:700}
+        .ap-id{display:flex;align-items:center;gap:16px;margin:10px 0 18px}
+        .ap-avatar-wrap{position:relative;width:88px;height:88px;flex:0 0 auto}
+        .ap-avatar{width:88px;height:88px;border-radius:50%;overflow:hidden;border:0;padding:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#bfe9f5,#e9d5ff);color:var(--teal-deep);font-size:32px;font-weight:800;box-shadow:0 8px 24px rgba(30,60,90,.12)}
+        .ap-avatar img{width:100%;height:100%;object-fit:cover}
+        .ap-pencil{position:absolute;bottom:2px;left:2px;width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center}
+        .ap-id-text{min-width:0}
+        .ap-id-text h2{margin:0;font-size:24px;line-height:1.3;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .ap-id-text p{margin:2px 0 8px;font-size:12px;color:var(--muted);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .ap-chip{display:inline-block;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.8);border:1px solid var(--line);font-size:11px;font-weight:600;color:var(--sub)}
+        .ap-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+        .ap-stat{background:var(--soft);border:0;border-radius:20px;padding:14px 8px;text-align:center;transition:.18s}
+        .ap-stat:hover{background:var(--mint)}
+        .ap-stat strong{display:block;font-size:22px;font-weight:800;line-height:1.1}
+        .ap-stat span{display:block;margin-top:5px;font-size:11px;color:var(--muted);font-weight:600}
+        .ap-progress-card{background:var(--soft);border-radius:20px;padding:14px 16px;margin-top:10px}
+        .ap-progress-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:600;color:var(--sub)}
+        .ap-progress-top strong{font-size:14px;color:var(--teal-deep)}
+        .ap-bar{height:6px;border-radius:99px;background:#e3e6e9;margin-top:10px;overflow:hidden}
+        .ap-bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--teal),#43bea4);transition:width .5s ease}
+        .ap-progress-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+        .ap-progress-foot small{font-size:11px;color:var(--muted)}
+        .ap-progress-foot button{border:0;background:#fff;border-radius:999px;padding:7px 14px;font-size:11px;font-weight:700;color:var(--teal-deep);box-shadow:0 2px 8px rgba(0,0,0,.05)}
+        .ap-label{margin:24px 4px 8px;font-size:12px;color:var(--muted);font-weight:600}
+        .ap-group{display:flex;flex-direction:column;gap:8px}
+        .ap-row{width:100%;min-height:58px;display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--soft);border:0;border-radius:20px;text-align:right;color:var(--ink);font-size:14px;font-weight:600;transition:background .16s,transform .16s}
+        button.ap-row:hover{background:#eff1f2}button.ap-row:active{transform:scale(.99)}
+        .ap-static{cursor:default}
+        .ap-row-ic{display:flex;color:#2a2f33;flex:0 0 auto}
+        .ap-row-t{flex:1;min-width:0}
+        .ap-row-t small{display:block;margin-top:2px;font-size:11px;font-weight:500;color:var(--muted)}
+        .ap-row-hint{min-width:26px;padding:3px 9px;border-radius:999px;background:#fff;font-size:12px;font-weight:700;color:var(--sub);text-align:center}
+        .ap-chev{color:#b4b9bf;flex:0 0 auto}
+        .ap-danger{background:#fff4f4;color:var(--danger)}.ap-danger .ap-row-ic{color:var(--danger)}
+        button.ap-danger:hover{background:#ffeaea}
+        .ap-switch{width:48px;height:28px;border-radius:99px;background:#dcdfe3;padding:3px;display:flex;justify-content:flex-start;border:0;transition:background .2s;flex:0 0 auto}
+        .ap-switch i{width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);display:block;transition:transform .2s}
+        .ap-switch[aria-checked=true]{background:var(--teal);justify-content:flex-end}.ap-switch:disabled{opacity:.6}
+        .ap-card{background:var(--soft);border-radius:20px;padding:16px;margin-bottom:8px}
+        .ap-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+        .ap-card-head span{font-size:13px;font-weight:700}
+        .ap-card-head button{border:0;background:#fff;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;color:var(--teal-deep)}
+        .ap-card>p{margin:0;font-size:13px;line-height:2;color:var(--sub);font-weight:500}
+        .ap-place{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:var(--muted);font-weight:600}
+        .ap-chips{display:flex;flex-wrap:wrap;gap:7px}
+        .ap-chips span{padding:7px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--teal-deep)}
+        .ap-chips small,.ap-empty{font-size:12px;color:var(--muted)}
+        .ap-timeline{display:flex;flex-direction:column;gap:14px}
+        .ap-exp{display:grid;grid-template-columns:10px 1fr;gap:12px}
+        .ap-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);margin-top:7px;box-shadow:0 0 0 4px var(--mint)}
+        .ap-exp-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+        .ap-exp-top strong{font-size:13px;font-weight:700}.ap-exp-top small{font-size:11px;color:var(--muted)}
+        .ap-exp p{margin:4px 0 0;font-size:12px;line-height:1.8;color:var(--sub)}
+        .ap-verified{display:flex;align-items:center;gap:8px;color:var(--teal-deep);font-size:13px;font-weight:700}
+        /* sheets + edit modal */
+        @keyframes apFade{from{opacity:0}to{opacity:1}}@keyframes apUp{from{transform:translateY(28px);opacity:0}to{transform:none;opacity:1}}
+        .ap-overlay{position:fixed;inset:0;z-index:9000;background:rgba(15,20,25,.45);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;animation:apFade .2s ease both;font-family:${NK};color:var(--ink)}
+        .ap-sheet{position:relative;width:100%;max-width:540px;max-height:94vh;background:#fff;border-radius:32px 32px 0 0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -24px 80px rgba(0,0,0,.25);animation:apUp .3s cubic-bezier(.22,1,.36,1) both}
+        .ap-modal-head{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding:18px 20px 12px;
+          background:radial-gradient(60% 120% at 6% 0%,rgba(255,205,232,.7),transparent 62%),radial-gradient(70% 130% at 96% 0%,rgba(178,232,255,.8),transparent 64%),#fff}
+        .ap-modal-head h2,.ap-modal-head h3{margin:0;font-size:24px;font-weight:800;color:var(--ink)}
+        .ap-sheet-body{padding:6px 18px calc(22px + env(safe-area-inset-bottom));overflow-y:auto}
+        .ap-account{display:flex;align-items:center;gap:12px;background:var(--soft);border-radius:22px;padding:12px 14px}
+        .ap-account-av{width:52px;height:52px;border-radius:50%;overflow:hidden;background:linear-gradient(135deg,#bfe9f5,#e9d5ff);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:var(--teal-deep);flex:0 0 auto}
+        .ap-account-av img{width:100%;height:100%;object-fit:cover}
+        .ap-account strong{display:block;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .ap-account span{display:block;font-size:11px;color:var(--muted);margin-top:2px;text-align:right}
+        .ap-account>button{border:0;background:#fff;border-radius:999px;padding:8px 14px;font-size:11px;font-weight:700;color:var(--teal-deep);box-shadow:0 2px 8px rgba(0,0,0,.05)}
+        .ap-modal-foot{display:flex;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--line);background:#fff}
+        .ap-save{flex:1;height:50px;border:0;border-radius:999px;background:linear-gradient(135deg,var(--teal),var(--teal-deep));color:#fff;font-size:13px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 10px 24px rgba(18,121,107,.22);transition:.18s}
+        .ap-save:active{transform:scale(.98)}.ap-save:disabled{opacity:.7}
+        .ap-ghost{height:50px;padding:0 22px;border-radius:999px;background:var(--soft);border:0;font-size:13px;font-weight:700;color:var(--sub)}
+        @media(min-width:640px){.ap-overlay{align-items:center;padding:22px}.ap-sheet{border-radius:32px;max-height:90vh}}
+        @media(max-width:640px){.profile-page-shell{padding-left:14px!important;padding-right:14px!important}.ap-title{font-size:24px}}
+        @media(prefers-reduced-motion:reduce){.ap *,.ap-sheet,.ap-overlay{animation:none!important;transition:none!important}}
       `}</style>
       <ProfileHero />
 
