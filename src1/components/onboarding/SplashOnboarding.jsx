@@ -231,29 +231,17 @@ export const SplashOnboarding = ({ onComplete }) => {
         `}</style>
 
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div
-            className="absolute -right-24 -top-24 h-72 w-72 rounded-full blur-3xl"
-            style={{
-              background: `${TEAL}12`,
-              animation: mounted ? 'ishkOrb 7s ease-in-out infinite' : 'none',
-            }}
-          />
-          <div
-            className="absolute -bottom-32 -left-24 h-80 w-80 rounded-full blur-3xl"
-            style={{
-              background: '#a88dd320',
-              animation: mounted ? 'ishkOrb 9s ease-in-out infinite reverse' : 'none',
-            }}
-          />
-          <div
-            className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
-            style={{ background: `${TEAL}20` }}
-          />
+          <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full"
+            style={{ background: `radial-gradient(circle, ${TEAL}22, transparent 68%)`, animation: mounted ? 'ishkOrb 7s ease-in-out infinite' : 'none' }} />
+          <div className="absolute -bottom-32 -left-24 h-96 w-96 rounded-full"
+            style={{ background: 'radial-gradient(circle, #a88dd333, transparent 68%)', animation: mounted ? 'ishkOrb 9s ease-in-out infinite reverse' : 'none' }} />
+          <div className="absolute left-1/2 top-1/2 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            style={{ background: `radial-gradient(circle, ${TEAL}30, transparent 68%)` }} />
         </div>
 
         <div className="relative flex w-full max-w-md flex-col items-center px-6">
           <div
-            className="relative mb-7 h-28 w-[62px]"
+            className="relative mb-7 h-28 w-28"
             style={{
               animation: mounted
                 ? 'ishkLogoIn 850ms cubic-bezier(.34,1.35,.4,1) both, ishkFloat 3.4s ease-in-out 850ms infinite'
