@@ -1463,8 +1463,8 @@ export const UserProfilePage = ({ onNavigate }) => {
         .ap-cols{display:block}
         @media(max-width:1023px){.ap-page input,.ap-page textarea,.ap-page select{font-size:16px!important}}
         .ap-hdr{margin:-12px -14px 16px;position:sticky;top:0;z-index:30}.ap-hdr>div{position:relative!important}@media(min-width:1024px){.ap-hdr{position:relative}}@media(min-width:640px){.ap-hdr{margin:-20px -20px 20px}}@media(min-width:1024px){.ap-hdr{margin:-20px -32px 28px}}
-        .ap-page{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding-bottom:36px}
-        .ap-page .ap-modal-foot{position:sticky;bottom:calc(74px + env(safe-area-inset-bottom));z-index:5;border:1px solid var(--line);border-radius:26px;margin:0 12px 12px;box-shadow:0 12px 34px rgba(31,12,61,.12)}
+        .ap-page{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding-bottom:120px}
+        .ap-page .ap-modal-foot{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;border:1px solid var(--line);border-radius:26px;margin:0;box-shadow:0 12px 34px rgba(31,12,61,.12)}
         .ap-page .ap-modal-head{padding-top:18px}
         @media(min-width:1024px){
           .ap{max-width:1140px}
@@ -1473,7 +1473,7 @@ export const UserProfilePage = ({ onNavigate }) => {
           .ap-col{min-width:0}
           .ap-col:first-child{position:sticky;top:96px}
           .ap-first{margin-top:6px}
-          .ap-page .ap-modal-foot{bottom:16px}
+          .ap-page .ap-modal-foot{position:sticky;left:auto;right:auto;bottom:16px;margin:0 12px 12px}.ap-page{padding-bottom:36px}
         }
         @media(max-width:640px){.profile-page-shell{padding-left:14px!important;padding-right:14px!important}.ap-title{font-size:24px}}
         @media(prefers-reduced-motion:reduce){.ap *,.ap-sheet,.ap-overlay{animation:none!important;transition:none!important}}
