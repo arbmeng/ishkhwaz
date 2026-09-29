@@ -1,5 +1,6 @@
 # Dependencies & build output
 node_modules/
+__pycache__/
 dist/
 ishkhwaz-dist.zip
 index-*.js
